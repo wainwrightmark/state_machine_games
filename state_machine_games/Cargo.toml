@@ -1,0 +1,23 @@
+[package]
+name = "state_machine_games"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rand= "0.9"
+web-time = "1.1"
+serde = { version = "1", features = ["derive", "rc"] }
+strum = { version = "0.27", features = ["derive"] }
+
+
+leptos = { version = "0.8", features = ["csr"], optional = true}
+leptos-use = {version = "0.16", optional = true}
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
+
+[dev-dependencies]
+insta   = "1.43"
+
+[features]
+leptos = ["dep:leptos", "dep:leptos-use"]
