@@ -1,0 +1,1054 @@
+---
+source: examples/match3_game/src/main.rs
+expression: svg
+---
+        <svg viewbox="0 0 800 800" style="width: 800px; height: 800px; background:white;">
+            
+                    <text x=0 y=20 font_size=72>
+                        Score: 27
+                    </text>
+
+                    <text x=0 y=80 font_size=72>
+                        Moves Left: 18
+                    </text>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 684px) scale(1) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 684px) scale(1) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 684px) scale(0) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 684px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 684px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(404px, 684px) scale(1) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(484px, 684px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(564px, 684px) scale(1) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(564px, 604px) scale(1) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(484px, 604px) scale(1) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(404px, 604px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 684px) scale(1) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 604px) scale(0) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 684px) scale(0) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 604px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 604px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(564px, 524px) scale(1) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(484px, 524px) scale(1) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(404px, 524px) scale(1) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 604px) scale(1) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 604px) scale(0) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 524px) scale(0) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 604px) scale(1) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 604px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 524px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 684px) scale(1) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 444px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 524px) scale(1) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 524px) scale(1) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(564px, 444px) scale(1) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(484px, 444px) scale(1) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 444px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(404px, 444px) scale(0) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 524px) scale(0) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 684px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 444px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 444px) scale(0) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(564px, 364px) scale(1) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(484px, 364px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(404px, 444px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(564px, 284px) scale(1) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(484px, 284px) scale(0) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(404px, 364px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 364px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 604px) scale(1) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 444px) scale(1) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 444px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 284px) scale(0) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 284px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 284px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 204px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(564px, 204px) scale(1) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(484px, 284px) scale(1) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(404px, 284px) scale(0) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 524px) scale(1) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 524px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 204px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 124px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(564px, 124px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(484px, 204px) scale(1) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(404px, 284px) scale(1) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 444px) scale(1) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 444px) scale(0) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 284px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(564px, 44px) scale(0) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(484px, 124px) scale(1) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(404px, 204px) scale(1) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 604px) scale(1) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 124px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 44px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 524px) scale(1) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 444px) scale(0) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 364px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 284px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 364px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 44px) scale(0) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 124px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 124px) scale(0) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 364px) scale(1) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 44px) scale(0) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 364px) scale(1) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 204px) scale(0) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 284px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 204px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 444px) scale(1) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 444px) scale(1) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 364px) scale(1) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 364px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 364px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 204px) scale(0) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 284px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 204px) scale(1) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 284px) scale(1) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 204px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 124px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 124px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 364px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 204px) scale(0) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 364px) scale(1) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 284px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 204px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 284px) scale(1) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 364px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 364px) scale(1) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(404px, 124px) scale(1) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 204px) scale(0) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 204px) scale(1) ; fill: #01befe; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 124px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 284px) scale(1) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 124px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 204px) scale(1) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 204px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 124px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 44px) scale(0) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 364px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 284px) scale(1) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 204px) scale(0) ; fill: #ffdd00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 204px) scale(1) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 124px) scale(1) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 124px) scale(1) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(244px, 44px) scale(0) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 284px) scale(1) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(484px, 44px) scale(0) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(404px, 44px) scale(0) ; fill: #adff02; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(324px, 44px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 204px) scale(1) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 124px) scale(1) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(164px, 44px) scale(0) ; fill: #ff006d; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(84px, 44px) scale(0) ; fill: #8f00ff; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+
+                    <rect x=0 y=0 
+                    width=72 
+                    height =72 
+                    rx="2%" ry="2%"  
+                    transform-origin="center"
+                    style= "transform: translate(4px, 44px) scale(0) ; fill: #ff7d00; stroke: #00000000; transform-box: fill-box; stroke-width: 10px;  transition: fill 1s, stroke 1s, transform 1s;">
+                    </rect>
+        </svg>
