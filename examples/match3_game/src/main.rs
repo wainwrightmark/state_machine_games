@@ -25,7 +25,7 @@ pub fn app() -> impl IntoView {
 
     view! {
         <main>
-        {game_view_component(state_signal, write_signal, settings, assets, storage)}
+        {game_view_component(800.0, 800.0, state_signal, write_signal, settings, assets, storage)}
         </main>
     }
 }

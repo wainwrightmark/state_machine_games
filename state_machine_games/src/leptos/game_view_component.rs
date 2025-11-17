@@ -11,6 +11,8 @@ use crate::{
 };
 
 pub fn game_view_component<T: LeptosGameState>(
+    viewbox_width: f32,
+    viewbox_height: f32,
     signal: ReadSignal<T>,
     write_signal: WriteSignal<T>,
     settings: ReadSignal<T::Settings>,
@@ -52,7 +54,7 @@ pub fn game_view_component<T: LeptosGameState>(
         });
 
     view! {
-        <svg viewbox="0 0 800 800" style="width: 800px; height: 800px;">
+        <svg viewBox=format!("0 0 {viewbox_width} {viewbox_height}")  style="width: 800px; ">
             <For
             each = move || entity_store.read().entities.clone()
             key = |stored_entity_signal| stored_entity_signal.key
