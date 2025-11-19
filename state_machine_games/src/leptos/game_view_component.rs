@@ -1,15 +1,13 @@
 use std::{ops::Deref, time::Duration};
-
 use leptos::prelude::*;
-use leptos_use::use_timestamp;
+use leptos_use::{UseRafFnCallbackArgs, UseRafFnOptions, use_raf_fn, use_raf_fn_with_options};
 
 use crate::{
-    entity_store::EntityStore,
     leptos::{
-        command_sender::CommandSender,
-        game_entity::{LeptosGameEntity, LeptosGameState},
-        leptos_entity_store::LeptosEntityStore,
+        command_sender::CommandSender, game_entity::LeptosGameState,
+        leptos_entity_store::LeptosEntityStore, prelude::LeptosArtifact,
     },
+    prelude::EntityStore,
 };
 
 pub fn game_view_component<T: LeptosGameState>(
@@ -30,8 +28,6 @@ pub fn game_view_component<T: LeptosGameState>(
         Some(Duration::from_secs(0)),
     );
 
-    let timestamp = use_timestamp();
-
     //use_raf_fn(|x|x.)
 
     let entity_store: Memo<LeptosEntityStore<T::Entity>> =
@@ -47,8 +43,7 @@ pub fn game_view_component<T: LeptosGameState>(
 
             match prev_map {
                 Some(mut entity_store) => {
-                    let now = web_time::Instant::now();
-                    let changed = entity_store.update(entities_iter, now);
+                    let changed = entity_store.update(entities_iter);
                     //log::info!("Entity Store {}. {} entities", if changed {"changed"} else {"unchanged"}, entity_store.entities.len());
                     return (entity_store, changed);
                 }
@@ -60,12 +55,28 @@ pub fn game_view_component<T: LeptosGameState>(
             }
         });
 
-    // let node_ref = NodeRef::<Svg>::new();
+    let entities = leptos::control_flow::For(ForProps {
+        each: move || entity_store.read().artifact_signals().collect::<Vec<_>>(),
+        key: |(key, _)| *key,
+        children: move |(_key, signal)| {
+            let command_sender = command_sender.clone();
 
-    // let cs1 = command_sender.clone();
-    // let cs2 = command_sender.clone();
-    // let cs3 = command_sender.clone();
-    // let cs4 = command_sender.clone();
+            view! {
+                {move || {
+                    let r =signal.read();
+                    r.render(command_sender.clone())
+                }}
+            }
+        },
+    });
+
+    use_raf_fn(move |UseRafFnCallbackArgs{delta, timestamp: _}|{
+        //entity_store.
+        let entity_store =entity_store.with_untracked(|es|{
+            es.animate_step(delta);
+        });
+        
+    });
 
     view! {
         <svg viewBox=format!("0 0 {viewbox_width} {viewbox_height}")  style="max-width: 800px;  margin-inline: auto; "
@@ -76,24 +87,7 @@ pub fn game_view_component<T: LeptosGameState>(
         // on:pointercancel = { move|event: PointerEvent|{ cs4.handle_event(PointerEventType::Cancel, event, node_ref);}}
 
         >
-            <For
-            each = move || entity_store.read().entities.clone()
-            key = |stored_entity_signal| stored_entity_signal.key
-            children = move |stored_entity_signal|{
-                let action_sender = command_sender.clone();
-                let now = timestamp.get_untracked();
-
-
-                view!{
-                    {move || {
-                        let r =stored_entity_signal.signal.read();
-                        r.0.render(&r.1, action_sender.clone(), now, timestamp)
-                    }}
-                }
-            }
-
-             />
-
+        {entities}
         </svg>
     }
 }

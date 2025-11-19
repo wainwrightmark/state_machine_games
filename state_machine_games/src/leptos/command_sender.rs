@@ -29,6 +29,7 @@ impl<T: GameState> Clone for CommandSender<T> {
     }
 }
 
+
 impl<T: GameState> CommandSender<T> {
     pub fn new(
         game_state_read: ReadSignal<T>,
@@ -109,33 +110,6 @@ impl<T: GameState> CommandSender<T> {
             duration,
         );
     }
-
-    // pub fn handle_event(&self, t: PointerEventType, event: PointerEvent, node_ref: NodeRef<Svg>){
-
-    //     if let Some(event) = PointerInputEvent::new(t, event, node_ref){
-    //         //log!("Handle Event {event:?}");
-
-    //         Self::handle_input(&self, event);
-    //     }
-    // }
-
-    // fn handle_input(&self, event: PointerInputEvent) {
-
-    //     let mut command: Option<T::Command> = None;
-
-    //     self.input_state.update(|input_state| {
-    //         let state = self.game_state_read.read_untracked();
-    //         let settings = self.settings.read_untracked();
-    //         let assets = self.assets.read_untracked();
-    //         let storage = self.storage.read_untracked();
-
-    //         command = state.handle_pointer_event(input_state, event, &settings, &assets, &storage)
-    //     });
-
-    //     if let Some(command) = command {
-    //         self.send_command(command);
-    //     }
-    // }
 
     pub fn handle_game_input_event(&self, event: impl GameInputEvent<T>) {
         let mut command: Option<T::Command> = None;

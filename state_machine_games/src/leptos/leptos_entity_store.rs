@@ -1,8 +1,8 @@
 use leptos::prelude::{ArcRwSignal, Update};
 
-use crate::entity_store::{EntityStore, StoredEntityMeta, ValueSignal};
+use crate::prelude::*;
 
-pub type LeptosEntityStore<T> = EntityStore<T, ArcRwSignal<(T, StoredEntityMeta<T>)>>;
+pub type LeptosEntityStore<T : GameEntity> = EntityStore<T, ArcRwSignal<T::Artifact>>;
 
 impl<T: Sized + 'static> ValueSignal for ArcRwSignal<T> {
     type Value = T;

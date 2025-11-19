@@ -8,9 +8,7 @@ pub trait GameState: Send + Sync + Sized + 'static {
     type Storage: GameStorage;
     type Command: GameCommand;
     type InputState: GameInputState;
-
-    type Entity: GameEntity;
-    type EntityKey: GameEntityKey;
+    type Entity: GameEntity;    
 
     fn get_entities(
         &self,

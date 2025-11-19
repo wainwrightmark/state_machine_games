@@ -559,7 +559,7 @@ mod tests{
         now += Duration::from_hours(1);
         let _ = entity_store.update(game.get_entities(&settings, &assets, &storage), now);
 
-        let svg_inner = entity_store.entities.iter()
+        let svg_inner = entity_store.stored_entities.iter()
         
         //.filter(|x|x.signal.read_untracked().0.is_score_text())
         .map(|x|{
