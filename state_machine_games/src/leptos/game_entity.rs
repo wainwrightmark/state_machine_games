@@ -8,7 +8,4 @@ pub trait LeptosArtifact<GS: GameState>: GameArtifact {
     fn render(&self, sender: CommandSender<GS>) -> AnyView;
 }
 
-pub trait LeptosGameState:
-    GameState<Entity: GameEntity<GameState = Self, Artifact: LeptosArtifact<Self>>>
-{
-}
+pub trait LeptosGameState: GameState<Entity: GameEntity<Artifact: LeptosArtifact<Self>>> {}

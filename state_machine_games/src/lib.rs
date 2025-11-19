@@ -6,6 +6,7 @@ pub mod game_state;
 pub mod tiny_rng;
 pub mod lens;
 pub mod value_signal;
+mod little_bag;
 
 #[cfg(feature="leptos")]
 pub mod leptos;

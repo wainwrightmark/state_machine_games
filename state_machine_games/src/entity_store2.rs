@@ -1,11 +1,10 @@
-use std::fmt::Debug;
-
-use crate::prelude::*;
+use crate::{little_bag::LittleBag, prelude::*};
+use std::{fmt::Debug, sync::Mutex};
 
 pub struct EntityStore<T: GameEntity, S: ValueSignal<Value = T::Artifact>> {
     pub stored_entities: Vec<StoredEntity<T, S>>,
 
-    animated_entity_indices: Vec<usize>,
+    animated_entity_indices: Mutex<Vec<usize>>,
     swap_vec1: Vec<T>,
     swap_vec2: Vec<T>,
 }
@@ -14,16 +13,15 @@ pub struct StoredEntity<T: GameEntity, S: ValueSignal<Value = T::Artifact>> {
     pub entity: T,
     pub artifact_signal: S,
 
-    pub animations: AnimationList<T::Artifact>,
+    pub animations: LittleBag<Box<dyn Animation<T::Artifact>>>,
     pub state: EntityState,
 }
-
 
 impl<T: GameEntity + Debug, S: ValueSignal<Value = T::Artifact>> Debug for StoredEntity<T, S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("StoredEntity")
             .field("entity", &self.entity)
-            .field("animations", &self.animations.len())
+            //.field("animations", &self.animations.len())
             .field("state", &self.state)
             .finish()
     }
@@ -33,6 +31,8 @@ impl<T: GameEntity, S: ValueSignal<Value = T::Artifact>> StoredEntity<T, S> {
     pub fn new(entity: T) -> Self {
         let (artifact, animations) = entity.on_new();
         let artifact_signal = S::new(artifact);
+
+        let animations = LittleBag::new_from_vec(animations);        
 
         Self {
             entity,
@@ -53,8 +53,11 @@ impl<T: GameEntity, S: ValueSignal<Value = T::Artifact>> StoredEntity<T, S> {
             self.state = EntityState::Dead;
 
             self.artifact_signal.maybe_update(|artifact| {
-                self.animations = T::on_death(artifact, &self.entity);
-                self.animations.len() > 0
+                let animations = self.entity.on_death(artifact);
+
+                let r = !animations.is_empty();
+                self.animations = LittleBag::new_from_vec(animations);
+                r
             });
         }
 
@@ -69,7 +72,7 @@ impl<T: GameEntity, S: ValueSignal<Value = T::Artifact>> StoredEntity<T, S> {
         }
 
         self.artifact_signal.maybe_update(|artifact| {
-            self.animations = new_value.on_update(artifact, self.state);
+            self.animations = LittleBag::new_from_vec(new_value.on_update(artifact, self.state));
             true
         });
 
@@ -78,9 +81,10 @@ impl<T: GameEntity, S: ValueSignal<Value = T::Artifact>> StoredEntity<T, S> {
 }
 
 impl<T: GameEntity, S: ValueSignal<Value = T::Artifact>> EntityStore<T, S> {
-
-    pub fn artifact_signals(&self)-> impl Iterator<Item = (T::EntityKey, S)> {
-        self.stored_entities.iter().map(|x|(x.key(),x.artifact_signal.clone()) )
+    pub fn artifact_signals(&self) -> impl Iterator<Item = (T::EntityKey, S)> {
+        self.stored_entities
+            .iter()
+            .map(|x| (x.key(), x.artifact_signal.clone()))
     }
 
     pub fn new(entities: impl Iterator<Item = T>) -> Self {
@@ -92,29 +96,35 @@ impl<T: GameEntity, S: ValueSignal<Value = T::Artifact>> EntityStore<T, S> {
             .collect();
 
         entities.sort_by_key(|x| x.key());
-        let mut animated_entities = vec![];
-        Self::update_animated_entity_keys(&entities, &mut animated_entities);
+        let animated_entity_indices = Mutex::new(Self::collect_animated_entity_keys(&entities));
 
         Self {
             stored_entities: entities,
             swap_vec1: vec![],
             swap_vec2: vec![],
-            animated_entity_indices: animated_entities,
+            animated_entity_indices,
         }
     }
 
-    fn update_animated_entity_keys(
+    fn collect_animated_entity_keys(
         entities: &Vec<StoredEntity<T, S>>,
-        animated_entities: &mut Vec<usize>,
-    ) {
-        animated_entities.clear();
-        animated_entities.extend(
-            entities
-                .iter()
-                .enumerate()
-                .filter(|(_, x)| !x.animations.is_empty())
-                .map(|(i, _)| i),
-        );
+        //animated_entities: &mut Vec<usize>,
+    ) -> Vec<usize> {
+        // animated_entities.clear();
+        // animated_entities.extend(
+        //     entities
+        //         .iter()
+        //         .enumerate()
+        //         .filter(|(_, x)| !x.animations.is_empty())
+        //         .map(|(i, _)| i),
+        // );
+
+        entities
+            .iter()
+            .enumerate()
+            .filter(|(_, x)| !x.animations.is_empty())
+            .map(|(i, _)| i)
+            .collect()
     }
 
     /// Update the entities.
@@ -190,15 +200,19 @@ impl<T: GameEntity, S: ValueSignal<Value = T::Artifact>> EntityStore<T, S> {
             self.stored_entities.sort_by_key(|x| x.key());
         }
 
-        Self::update_animated_entity_keys(&self.stored_entities, &mut self.animated_entity_indices);
+        self.animated_entity_indices =
+            Mutex::new(Self::collect_animated_entity_keys(&self.stored_entities));
 
         changed
     }
 
-    pub fn animate_step(&mut self, delta_ms: f64) {
-        self.animated_entity_indices.retain(|index| {
-            if let Some(stored_entity) = self.stored_entities.get_mut(*index) {
-                stored_entity.animations.retain_mut(|animation| {
+    #[must_use]
+    pub fn try_animate_step(&self, delta_ms: f64) -> Option<()> {
+        let mut guard = self.animated_entity_indices.lock().ok()?;
+
+        guard.retain(|&index| {
+            if let Some(stored_entity) = self.stored_entities.get(index) {
+                stored_entity.animations.retain(|animation| {
                     match stored_entity
                         .artifact_signal
                         .try_update(|artifact| animation.step(artifact, delta_ms))
@@ -213,5 +227,7 @@ impl<T: GameEntity, S: ValueSignal<Value = T::Artifact>> EntityStore<T, S> {
                 false
             }
         });
+
+        Some(())
     }
 }

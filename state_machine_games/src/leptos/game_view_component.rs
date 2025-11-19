@@ -1,6 +1,6 @@
+use leptos::{logging::error, prelude::*};
+use leptos_use::{UseRafFnCallbackArgs, use_raf_fn};
 use std::{ops::Deref, time::Duration};
-use leptos::prelude::*;
-use leptos_use::{UseRafFnCallbackArgs, UseRafFnOptions, use_raf_fn, use_raf_fn_with_options};
 
 use crate::{
     leptos::{
@@ -70,13 +70,19 @@ pub fn game_view_component<T: LeptosGameState>(
         },
     });
 
-    use_raf_fn(move |UseRafFnCallbackArgs{delta, timestamp: _}|{
-        //entity_store.
-        let entity_store =entity_store.with_untracked(|es|{
-            es.animate_step(delta);
-        });
-        
-    });
+    use_raf_fn(
+        move |UseRafFnCallbackArgs {
+                  delta,
+                  timestamp: _,
+              }| {
+            entity_store.with_untracked(|es| match es.try_animate_step(delta) {
+                Some(()) => {}
+                None => {
+                    error!("Could not animate - lock is poisoned")
+                }
+            });
+        },
+    );
 
     view! {
         <svg viewBox=format!("0 0 {viewbox_width} {viewbox_height}")  style="max-width: 800px;  margin-inline: auto; "

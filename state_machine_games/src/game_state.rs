@@ -17,15 +17,6 @@ pub trait GameState: Send + Sync + Sized + 'static {
         storage: &Self::Storage,
     ) -> impl Iterator<Item = Self::Entity>;
 
-    // fn handle_pointer_event(
-    //     &self,
-    //     input_state: &mut Self::InputState,
-    //     event: PointerInputEvent,
-    //     settings: &Self::Settings,
-    //     assets: &Self::Assets,
-    //     storage: &Self::Storage,
-    // ) -> Option<Self::Command>;
-
     fn apply_command(
         &mut self,
         command: Self::Command,

@@ -1,4 +1,4 @@
-use std::{marker::PhantomData};
+use std::marker::PhantomData;
 
 use strum::EnumIs;
 
@@ -6,29 +6,36 @@ use crate::{game_state::GameState, lens::GetMutLens, prelude::GameEntityKey};
 
 pub type AnimationList<T> = Vec<Box<dyn Animation<T>>>;
 
-pub trait GameArtifact : Send + Sync + 'static{}
+pub trait GameArtifact: Send + Sync + 'static {}
 
-pub trait GameEntity: PartialEq + Send + Sync + 'static {
-    type GameState: GameState<Entity = Self>;
-    type Artifact : GameArtifact;
+pub trait GameEntity: PartialEq + Send + Sync + 'static {    
+    type Artifact: GameArtifact;
     type EntityKey: GameEntityKey;
 
     fn key(&self) -> Self::EntityKey;
 
     /// animations to run when this entity dies
     /// the entity will not be deleted until all animations have finished
-    fn on_death(artifact: &mut Self::Artifact, previous_template: &Self)-> AnimationList<Self::Artifact>;
+    fn on_death(
+        &self,
+        artifact: &mut Self::Artifact,
+        
+    ) -> AnimationList<Self::Artifact>;
 
     /// what to do when this entity is new
-    fn on_new(&self)-> (Self::Artifact, AnimationList<Self::Artifact>);
+    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>);
 
-    fn on_update(&self, artifact: &mut Self::Artifact, former_entity_state: EntityState) -> AnimationList<Self::Artifact>;
+    fn on_update(
+        &self,
+        artifact: &mut Self::Artifact,
+        former_entity_state: EntityState,
+    ) -> AnimationList<Self::Artifact>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, EnumIs)]
-pub enum EntityState{
+pub enum EntityState {
     Alive,
-    Dead
+    Dead,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, EnumIs)]
@@ -37,8 +44,8 @@ pub enum AnimateResult {
     DeleteAnimation,
 }
 
-pub trait Animation<T> : Send + Sync + 'static {
-    fn step(&mut self, target: &mut T, delta_ms: f64) -> AnimateResult;
+pub trait Animation<T>: Send + Sync + 'static {
+    fn step(&self, target: &mut T, delta_ms: f64) -> AnimateResult;
 }
 
 //todo easing
@@ -113,10 +120,10 @@ impl ApproachValue for f32 {
     }
 }
 
-impl<T : 'static, V: ApproachValue, Lens: GetMutLens<Object = T, Value = V>> Animation<T>
+impl<T: 'static, V: ApproachValue, Lens: GetMutLens<Object = T, Value = V>> Animation<T>
     for AnimateMoveTowards<T, V, Lens>
 {
-    fn step(&mut self, object: &mut T, delta_ms: f64) -> AnimateResult {
+    fn step(&self, object: &mut T, delta_ms: f64) -> AnimateResult {
         let current_value = Lens::get_mut(object);
 
         if V::approach(

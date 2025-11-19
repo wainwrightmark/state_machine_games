@@ -11,6 +11,7 @@ strum = { version = "0.27", features = ["derive"] }
 glam = "*"
 leptos = { version = "0.8", features = ["csr"], optional = true }
 leptos-use = { version = "0.16", optional = true }
+const_sized_bit_set = {version = "0.3"}
 
 web-sys = { version = "*", features = [
     "EventTarget",

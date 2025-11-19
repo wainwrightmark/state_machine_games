@@ -139,9 +139,37 @@ impl GameEntity for Match3Entity{
         
     }
 
-    fn death_duration(&self)-> Option<std::time::Duration> {
-        Some(Duration::from_secs(1))
+    
+    
+    type Artifact =;
+    
+    type EntityKey;
+    
+    fn on_death(
+        artifact: &mut Self::Artifact,
+        previous_template: &Self,
+    ) -> AnimationList<Self::Artifact> {
+        todo!()
     }
+    
+    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+        todo!()
+    }
+    
+    fn on_update(
+        &self,
+        artifact: &mut Self::Artifact,
+        former_entity_state: EntityState,
+    ) -> AnimationList<Self::Artifact> {
+        todo!()
+    }
+}
+
+#[derive(Debug)]
+pub struct TileArtifact{
+    pub x : f32,
+    pub y: f32,
+    pub scale: f32,
 }
 
 #[derive(Debug, Clone, Copy)]
