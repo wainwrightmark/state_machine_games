@@ -18,14 +18,14 @@ pub fn main(){
 }
 
 pub fn app() -> impl IntoView {
-    let (state_signal, write_signal) = signal(Match3Game::new_random(123));
+    let (game_state_read, game_state_write) = signal(Match3Game::new_random(123));
     let (settings, _) = signal(());
     let (assets, _) = signal(());
     let (storage, _) = signal(());
 
     view! {
         <main>
-        {game_view_component(800.0, 800.0, state_signal, write_signal, settings, assets, storage)}
+        {game_view_component(800.0, 800.0, game_state_read, game_state_write, settings, assets, storage)}
         </main>
     }
 }
@@ -169,6 +169,7 @@ impl GameState for Match3Game {
     type Settings = ();
     type Assets = ();
     type Storage = ();
+    type InputState = ();
     type Command = Match3Command;
     type Entity = Match3Entity;
     type EntityKey = Match3EntityKey;

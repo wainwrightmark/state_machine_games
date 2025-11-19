@@ -111,28 +111,6 @@ impl FoundWordsState {
         inadvisable
     }
 
-    fn count_selected_characters(
-        &self,
-        level: &DesignedLevel4x4,
-        word_index: usize,
-        chosen: &ChosenState,
-    ) -> usize {
-        if chosen.solution.is_empty() || chosen.is_just_finished {
-            return 0;
-        }
-
-        let Some(word) = level.words.get(word_index) else {
-            return 0;
-        };
-
-        chosen
-            .solution
-            .iter()
-            .zip(word.characters.iter())
-            .take_while(|(tile, character)| level.grid[**tile] == **character)
-            .count()
-    }
-
     #[allow(dead_code)]
     fn count_inevitable_characters(&self, level: &DesignedLevel4x4, word_index: usize) -> usize {
         if let Some(completion) = self.word_completions.get(word_index) {

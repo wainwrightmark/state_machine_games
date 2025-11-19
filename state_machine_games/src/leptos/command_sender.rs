@@ -6,19 +6,21 @@ use crate::game_state::GameState;
 
 #[derive(Debug)]
 pub struct CommandSender<T: GameState> {
-    inner: WriteSignal<T>,
+    game_state_read: ReadSignal<T>,
+    game_state_write: WriteSignal<T>,
+    input_state: ArcRwSignal<T::InputState>,
     settings: ReadSignal<T::Settings>,
     assets: ReadSignal<T::Assets>,
     storage: ReadSignal<T::Storage>,
     transition_callback_at: ArcRwSignal<Option<web_time::Instant>>,
 }
 
-//impl<T: GameState> Copy for CommandSender<T> {}
-
 impl<T: GameState> Clone for CommandSender<T> {
     fn clone(&self) -> Self {
         Self {
-            inner: self.inner.clone(),
+            game_state_read: self.game_state_read.clone(),
+            game_state_write: self.game_state_write.clone(),
+            input_state: self.input_state.clone(),
             settings: self.settings.clone(),
             assets: self.assets.clone(),
             storage: self.storage.clone(),
@@ -29,7 +31,8 @@ impl<T: GameState> Clone for CommandSender<T> {
 
 impl<T: GameState> CommandSender<T> {
     pub fn new(
-        inner: WriteSignal<T>,
+        game_state_read: ReadSignal<T>,
+        game_state_write: WriteSignal<T>,
         settings: ReadSignal<T::Settings>,
         assets: ReadSignal<T::Assets>,
         storage: ReadSignal<T::Storage>,
@@ -45,7 +48,9 @@ impl<T: GameState> CommandSender<T> {
         };
 
         let result = Self {
-            inner,
+            game_state_read,
+            game_state_write,
+            input_state: Default::default(),
             settings,
             assets,
             storage,
@@ -76,7 +81,7 @@ impl<T: GameState> CommandSender<T> {
             }
         }
 
-        match self.inner.try_maybe_update(|x| {
+        match self.game_state_write.try_maybe_update(|x| {
             let transition_result = x.maybe_transition(&settings, &assets, &storage);
 
             (
@@ -95,14 +100,57 @@ impl<T: GameState> CommandSender<T> {
         }
     }
 
-    fn schedule_transition(&self, duration: Duration) {        
+    fn schedule_transition(&self, duration: Duration) {
         let s = self.clone();
         set_timeout(
-            move || {                
+            move || {
                 s.maybe_transition_state();
             },
             duration,
         );
+    }
+
+    // pub fn handle_event(&self, t: PointerEventType, event: PointerEvent, node_ref: NodeRef<Svg>){
+
+    //     if let Some(event) = PointerInputEvent::new(t, event, node_ref){
+    //         //log!("Handle Event {event:?}");
+
+    //         Self::handle_input(&self, event);
+    //     }
+    // }
+
+    // fn handle_input(&self, event: PointerInputEvent) {
+
+    //     let mut command: Option<T::Command> = None;
+
+    //     self.input_state.update(|input_state| {
+    //         let state = self.game_state_read.read_untracked();
+    //         let settings = self.settings.read_untracked();
+    //         let assets = self.assets.read_untracked();
+    //         let storage = self.storage.read_untracked();
+
+    //         command = state.handle_pointer_event(input_state, event, &settings, &assets, &storage)
+    //     });
+
+    //     if let Some(command) = command {
+    //         self.send_command(command);
+    //     }
+    // }
+
+    pub fn handle_game_input_event(&self, event: impl GameInputEvent<T>) {
+        let mut command: Option<T::Command> = None;
+        self.input_state.update(|input_state| {
+            let game_state: &T = &self.game_state_read.read_untracked();
+            let settings: &T::Settings = &self.settings.read_untracked();
+            let assets: &T::Assets = &self.assets.read_untracked();
+            let storage: &T::Storage = &self.storage.read_untracked();
+
+            command = event.handle_event(input_state, game_state, settings, assets, storage);
+        });
+
+        if let Some(command) = command {
+            self.send_command(command);
+        }
     }
 
     pub fn send_command(&self, command: T::Command) {
@@ -112,7 +160,7 @@ impl<T: GameState> CommandSender<T> {
         let assets = self.assets.read_untracked();
         let storage = self.storage.read_untracked();
 
-        match self.inner.try_maybe_update(|x| {
+        match self.game_state_write.try_maybe_update(|x| {
             let transition_result = x.apply_command(command, &settings, &assets, &storage);
             (
                 transition_result.changed,
@@ -130,4 +178,15 @@ impl<T: GameState> CommandSender<T> {
             None => self.transition_callback_at.set(None),
         }
     }
+}
+
+pub trait GameInputEvent<T: GameState> {
+    fn handle_event(
+        &self,
+        input_state: &mut T::InputState,
+        game_state: &T,
+        settings: &T::Settings,
+        assets: &T::Assets,
+        storage: &T::Storage,
+    ) -> Option<T::Command>;
 }

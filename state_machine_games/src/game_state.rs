@@ -7,6 +7,8 @@ pub trait GameState: Send + Sync + Sized + 'static {
     type Assets: GameAssets;
     type Storage: GameStorage;
     type Command: GameCommand;
+    type InputState: GameInputState;
+
     type Entity: GameEntity;
     type EntityKey: GameEntityKey;
 
@@ -16,6 +18,15 @@ pub trait GameState: Send + Sync + Sized + 'static {
         assets: &Self::Assets,
         storage: &Self::Storage,
     ) -> impl Iterator<Item = Self::Entity>;
+
+    // fn handle_pointer_event(
+    //     &self,
+    //     input_state: &mut Self::InputState,
+    //     event: PointerInputEvent,
+    //     settings: &Self::Settings,
+    //     assets: &Self::Assets,
+    //     storage: &Self::Storage,
+    // ) -> Option<Self::Command>;
 
     fn apply_command(
         &mut self,
@@ -62,15 +73,20 @@ pub trait GameSettings: Send + Sync + Sized + 'static {}
 
 impl GameSettings for () {}
 
+pub trait GameInputState: Send + Sync + Sized + Default + 'static {}
+impl GameInputState for () {}
+
 pub trait GameCommand: Send + Sync + Sized + 'static {}
 
-pub trait GameEntityKey: Send + Sync + 'static + PartialEq  + Clone + Copy + PartialOrd + Debug + Eq + Ord + Hash {  
+pub trait GameEntityKey:
+    Send + Sync + 'static + PartialEq + Clone + Copy + PartialOrd + Debug + Eq + Ord + Hash
+{
 }
 
-impl GameEntityKey for u8{}
-impl GameEntityKey for u16{}
-impl GameEntityKey for u32{}
-impl GameEntityKey for u64{}
+impl GameEntityKey for u8 {}
+impl GameEntityKey for u16 {}
+impl GameEntityKey for u32 {}
+impl GameEntityKey for u64 {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MutationResult {
@@ -91,5 +107,3 @@ impl MutationResult {
         transition_callback_in: None,
     };
 }
-
-

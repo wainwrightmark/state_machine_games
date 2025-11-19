@@ -1,6 +1,6 @@
 use crate::{
     entity_store::StoredEntityMeta, game_entity::GameEntity, game_state::GameState,
-    leptos::command_sender::CommandSender,
+    leptos::{command_sender::CommandSender, prelude::Timestamp},
 };
 use leptos::prelude::*;
 
@@ -10,6 +10,8 @@ pub trait LeptosGameEntity: GameEntity + PartialEq + Sized {
         &self,
         meta: &StoredEntityMeta<Self>,
         sender: CommandSender<Self::GameState>,
+        start_time: f64,
+        current_time: Signal<f64>,
     ) -> AnyView;
 }
 

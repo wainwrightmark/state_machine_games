@@ -2387,12 +2387,14 @@ name = "state_machine_games"
 version = "0.1.0"
 dependencies = [
  "getrandom 0.3.4",
+ "glam 0.27.0",
  "insta",
  "leptos",
  "leptos-use",
  "rand 0.9.2",
  "serde",
  "strum 0.27.2",
+ "web-sys",
  "web-time",
 ]
 

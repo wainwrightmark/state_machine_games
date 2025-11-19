@@ -1,4 +1,3 @@
-
 use serde::{Deserialize, Serialize};
 use ws_core::prelude::*;
 
@@ -7,17 +6,12 @@ use crate::found_words_state::FoundWordsState;
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct ChosenState {
     pub solution: Solution4x4,
-    pub is_just_finished: bool,
 }
 
 impl ChosenState {
     const EMPTY_SOLUTION: &'static Solution4x4 = &Solution4x4::new_const();
     pub fn current_solution(&self) -> &Solution4x4 {
-        if self.is_just_finished {
-            Self::EMPTY_SOLUTION
-        } else {
-            &self.solution
-        }
+        &self.solution
     }
 
     /// Is length >=6 and Damerau–Levenshtein distance to a solution <= 1 and same first letter

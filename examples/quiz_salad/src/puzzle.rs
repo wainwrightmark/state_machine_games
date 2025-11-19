@@ -107,6 +107,19 @@ impl std::str::FromStr for PuzzleWord {
 }
 
 impl Puzzle {
+
+    /// Check if this is a valid solution
+    /// If so, return the index of the word
+    pub fn check_solution(&self, solution: &Solution4x4)-> Option<usize>{
+        let tiles: CharsArray<16> = ArrayVec::from_iter(
+                solution.iter().map(|&tile| self.grid[tile])
+        );
+
+        let word = self.words.iter().position(|x|  x.characters == tiles);
+
+        word
+    }
+
     pub fn to_tsv_line(&self) -> String {
         use itertools::Itertools;
         let grid = self.grid().iter().join("");

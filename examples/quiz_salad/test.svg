@@ -1,0 +1,152 @@
+<svg style="max-width: 800px;  margin-inline: auto; " viewBox="0 0 1052 1080">
+    <rect x="0" y="0" width="100%" height="100%" fill="#EECCCC">
+        <!---->
+    </rect><text style="text-align: left; text-anchor: left;" x="0" y="20" font-size="40" font-weight="600"
+        font-family="Montserrat" dominant-baseline="central">A cartoon captain</text>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="22.900002" y="22.900002" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(0) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="280.9" y="22.900002" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="538.9" y="22.900002" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(0) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="796.9" y="22.900002" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="22.900002" y="280.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="280.9" y="280.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="538.9" y="280.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="796.9" y="280.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="22.900002" y="538.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="280.9" y="538.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="538.9" y="538.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="796.9" y="538.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="22.900002" y="796.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="280.9" y="796.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="538.9" y="796.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <rect
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        width="232.2" height="232.2" x="796.9" y="796.9" rx="11.61" ry="11.61" fill="#97FCFF">
+        <!---->
+    </rect>
+    <line x1="655.00006" y1="655.00006" x2="655.00006" y2="397" visibility="visible" stroke="#006AFF"
+        stroke-linecap="round" stroke-width="129" pointer-events="none">
+        <!---->
+    </line>
+    <line x1="655.00006" y1="397" x2="397" y2="655.00006" visibility="visible" stroke="#0015FF" stroke-linecap="round"
+        stroke-width="129" pointer-events="none">
+        <animate attributeName="x2" from="655.00006" to="397" dur="1s" repeatCount="1" fill="freeze">
+            <!---->
+        </animate>
+        <animate attributeName="y2" from="397" to="655.00006" dur="1s" repeatCount="1" fill="freeze">
+            <!---->
+        </animate>
+    </line><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="139" y="139" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">L</text><text
+        style="transform: scale(0) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="397" y="139" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">Y</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="655.00006" y="139" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">C</text><text
+        style="transform: scale(0) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="913.00006" y="139" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">A</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="139" y="397" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">W</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="397" y="397" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">A</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="655.00006" y="397" dominant-baseline="central" text-anchor="middle" fill="#FFFFFF" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">U</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="913.00006" y="397" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">R</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="139" y="655.00006" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">S</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="397" y="655.00006" dominant-baseline="central" text-anchor="middle" fill="#FFFFFF" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">G</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="655.00006" y="655.00006" dominant-baseline="central" text-anchor="middle" fill="#FFFFFF" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">P</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="913.00006" y="655.00006" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">I</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="139" y="913.00006" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">H</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="397" y="913.00006" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">O</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="655.00006" y="913.00006" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">N</text><text
+        style="transform: scale(1) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;"
+        x="913.00006" y="913.00006" dominant-baseline="central" text-anchor="middle" fill="#202251" font-size="129"
+        font-family="Montserrat" font-weight="600" pointer-events="none">D</text>
+    <rect>
+        <!---->
+    </rect>
+    <rect>
+    </rect>
+</svg>

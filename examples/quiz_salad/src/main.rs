@@ -4,18 +4,17 @@ pub mod grid_input;
 pub mod puzzle;
 
 use std::time::Duration;
-
-use glam::Vec2;
+use glam::{FloatExt, Vec2};
 use itertools::Itertools;
+use leptos::logging::log;
 use leptos::prelude::*;
-
-use state_machine_games::leptos::prelude::*;
+use state_machine_games::leptos::pointer_input_event::Location;
+use state_machine_games::leptos::{ prelude::*};
 use state_machine_games::prelude::*;
-
-use ws_core::{Character, GridTile, LevelTrait, Solution4x4, Tile, Tile4x4, Ustr};
+use ws_core::{ArrayVec, Character, LevelTrait, Tile, Tile4x4, Ustr};
 
 use crate::{
-    chosen_state::ChosenState, found_words_state::FoundWordsState, grid_input::GridInputState,
+    chosen_state::ChosenState, found_words_state::FoundWordsState, grid_input::{GridCommand, GridInputState},
     puzzle::Puzzle,
 };
 
@@ -31,24 +30,25 @@ pub fn app() -> impl IntoView {
     )
     .unwrap();
 
-    let (state_signal, write_signal) = signal(QuizSaladGameState::new(&puzzle));
+    let (game_state_read, game_state_write) = signal(QuizSaladGameState::new(&puzzle));   
+    
     let (settings, _) = signal(());
     let (assets, _) = signal(QuizSaladAssets { puzzle });
     let (storage, _) = signal(());
 
     view! {
         <main>
-        {game_view_component(1920.0, 1080.0, state_signal, write_signal, settings, assets, storage)}
+        {game_view_component(1052.0, 1080.0, game_state_read, game_state_write,  settings, assets, storage)}
         </main>
     }
 }
 
 #[derive(Debug)]
 pub struct QuizSaladGameState {
-    pub current_clue: usize,
-    pub grid_input_state: GridInputState,
+    pub current_clue: usize,    
     pub found_words: FoundWordsState,
     pub chosen_state: ChosenState,
+    pub word_just_found: bool,
 }
 
 impl QuizSaladGameState {
@@ -57,9 +57,11 @@ impl QuizSaladGameState {
 
         Self {
             current_clue: Default::default(),
-            grid_input_state: Default::default(),
+            
             found_words,
             chosen_state: Default::default(),
+            word_just_found: false,
+
         }
     }
 }
@@ -69,25 +71,18 @@ pub struct QuizSaladAssets {
 }
 impl GameAssets for QuizSaladAssets {}
 
-#[derive(Debug, Clone)]
-pub enum QuizSaladCommand {
-    InputStart(Tile4x4),
-    InputMove(Tile4x4),
-    InputEnd(Tile4x4),
-    InputStartNoLocation,
-    InputEndNoLocation,
-}
-
-impl GameCommand for QuizSaladCommand {}
-
 #[derive(Debug, PartialEq)]
 pub enum QuizGameEntity {
+
+    BackgroundRect,
+
     ClueText {
         text: Ustr,
     },
     TileRect {
         tile: Tile4x4,
         selected: bool,
+        unneeded: bool,
     },
     WordLineSingleCircle{
         tile: Tile4x4,
@@ -103,12 +98,14 @@ pub enum QuizGameEntity {
         tile: Tile4x4,
         character: Character,
         selected: bool,
+        unneeded: bool,
     },
     NextButton,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum QuizGameEntityKey {
+    BackgroundRect,
     ClueText,
     TileRect(Tile4x4),
     WordLineSingleCircle(Tile4x4),
@@ -122,6 +119,7 @@ impl GameEntity for QuizGameEntity {
 
     fn key(&self) -> <<Self as GameEntity>::GameState as GameState>::EntityKey {
         match self {
+            QuizGameEntity::BackgroundRect => QuizGameEntityKey::BackgroundRect,
             QuizGameEntity::ClueText { .. } => QuizGameEntityKey::ClueText,
             QuizGameEntity::TileRect { tile, .. } => QuizGameEntityKey::TileRect(*tile),
             QuizGameEntity::WordLineSingleCircle { tile } => QuizGameEntityKey::WordLineSingleCircle(*tile),
@@ -142,9 +140,10 @@ impl GameState for QuizSaladGameState {
     type Settings = ();
     type Assets = QuizSaladAssets;
     type Storage = ();
-    type Command = QuizSaladCommand;
+    type Command = GridCommand;
     type Entity = QuizGameEntity;
     type EntityKey = QuizGameEntityKey;
+    type InputState = GridInputState;
 
     fn get_entities(
         &self,
@@ -152,6 +151,7 @@ impl GameState for QuizSaladGameState {
         assets: &Self::Assets,
         _storage: &Self::Storage,
     ) -> impl Iterator<Item = Self::Entity> {
+        let rect = [QuizGameEntity::BackgroundRect];
         let buttons = [QuizGameEntity::NextButton].into_iter();
 
         let text = assets
@@ -161,10 +161,14 @@ impl GameState for QuizSaladGameState {
             .and_then(|x| x.clue)
             .unwrap_or_default();
 
+        let unneeded_tiles = self.found_words.unneeded_tiles;
+
         let clues = [QuizGameEntity::ClueText { text }].into_iter();
-        let tiles = Tile::iter_by_row().map(|tile|{
+        let tiles = Tile::iter_by_row()
+        
+        .map(move |tile|{
             let selected = self.chosen_state.solution.contains(&tile);
-            QuizGameEntity::TileRect { tile, selected }
+            QuizGameEntity::TileRect { tile, selected, unneeded: unneeded_tiles.get_bit(&tile) }
         });
                 
         let circle = if self.chosen_state.solution.len() == 1{
@@ -191,13 +195,22 @@ impl GameState for QuizSaladGameState {
         });
 
 
-        let tile_texts = assets.puzzle.grid.enumerate().map(|(tile, &character)| {
+        let tile_texts = assets.puzzle.grid.enumerate().map(move |(tile, &character)| {
             let selected = self.chosen_state.solution.contains(&tile);
-            QuizGameEntity::TileText { tile, character, selected } 
+            QuizGameEntity::TileText { tile, character, selected, unneeded: unneeded_tiles.get_bit(&tile) } 
         });
 
-        buttons.chain(clues).chain(tiles).chain(circle).chain(line).chain(tile_texts).chain([QuizGameEntity::NextButton])
+        
+        rect.into_iter()
+        .chain(buttons)
+        .chain(clues)
+        .chain(tiles)
+        .chain(circle)
+        .chain(line)
+        .chain(tile_texts)
+        .chain([QuizGameEntity::NextButton])
     }
+
 
     fn apply_command(
         &mut self,
@@ -207,35 +220,28 @@ impl GameState for QuizSaladGameState {
         _storage: &Self::Storage,
     ) -> MutationResult {
         match command {
-            QuizSaladCommand::InputStart(tile) => {
-                self.grid_input_state.handle_input_start(
-                    &mut self.chosen_state,
-                    tile,
-                    &assets.puzzle.grid,
-                    &self.found_words,
-                );
-            }
-            QuizSaladCommand::InputMove(tile) => {
-                self.grid_input_state.handle_input_move(
-                    &mut self.chosen_state,
-                    tile,
-                    &assets.puzzle.grid,
-                    &self.found_words,
-                );
-            }
-            QuizSaladCommand::InputEnd(tile) => {
-                self.grid_input_state
-                    .handle_input_end(&mut self.chosen_state, tile);
-            }
-            QuizSaladCommand::InputStartNoLocation => {
-                self.grid_input_state.handle_input_start_no_location();
-            }
-            QuizSaladCommand::InputEndNoLocation => {
-                self.grid_input_state.handle_input_end_no_location(
-                    &mut self.chosen_state,
-                    self.found_words.is_level_complete(),
-                );
-            }
+            GridCommand::SetChosen(chosen_state) => {
+                self.chosen_state = chosen_state;
+
+                match assets.puzzle.check_solution(&self.chosen_state.solution){
+                    Some(word_index) => {
+                        let completion_index= self.found_words.word_completions.iter().filter(|x|x.is_complete()).count();
+                        match self.found_words.word_completions.get_mut(word_index){
+                            Some(completion) => {
+                                
+                                *completion = found_words_state::Completion::Complete { index: completion_index as u8 };
+                                self.word_just_found = true;
+                                return MutationResult{changed: true, transition_callback_in: Some(Duration::from_millis(1))};
+                            },
+                            None => {},
+                        }
+                    },
+                    None => {
+                        //not a valid solution - do nothing
+                    },
+                }
+
+            },
         }
 
         return MutationResult::CHANGED_NO_TRANSITION;
@@ -244,19 +250,40 @@ impl GameState for QuizSaladGameState {
     fn maybe_transition(
         &mut self,
         _settings: &Self::Settings,
-        _assets: &Self::Assets,
+        assets: &Self::Assets,
         _storage: &Self::Storage,
     ) -> MutationResult {
-        MutationResult::NO_CHANGE
+
+        if self.word_just_found{
+            self.chosen_state.solution = ArrayVec::new();
+
+            let new_unneeded_tiles = assets.puzzle.calculate_unneeded_tiles(self.found_words.unneeded_tiles, |x| self.found_words.get_completion(x).is_complete());
+            self.found_words.unneeded_tiles = new_unneeded_tiles;
+
+            if self.found_words.get_completion(self.current_clue).is_complete(){
+                let new_current_clue = (0..assets.puzzle.words.len()).cycle().skip(self.current_clue).take(assets.puzzle.words.len())
+                .filter(|&index| !self.found_words.get_completion(index).is_complete()).next();
+
+                self.current_clue = new_current_clue.unwrap_or_default();
+            }
+
+            MutationResult::CHANGED_NO_TRANSITION
+        }else{
+            MutationResult::NO_CHANGE
+        }
+
+        
     }
 }
 
 impl LeptosGameState for QuizSaladGameState {}
 
-pub fn tile_position(tile: Tile<4, 4>, from_centre: bool) -> Vec2 {
-    let scale = 258.0;
-    //let font_size = scale * 0.5;
-    let rect_size = scale * 0.9;
+const SCALE: f32 = 258.0;
+const TOP_OFFSET: f32 = 10.0;
+const LEFT_OFFSET: f32 = 10.0;
+
+pub fn tile_position(tile: Tile4x4, from_centre: bool) -> Vec2 {    
+    let rect_size = SCALE * 0.9;
 
     let mut pos = glam::Vec2 {
         x: tile.x() as f32,
@@ -267,10 +294,75 @@ pub fn tile_position(tile: Tile<4, 4>, from_centre: bool) -> Vec2 {
         pos = pos + Vec2::splat(0.45);
     }
 
-    let x = 10.0 + (pos.x * scale) + ((scale - rect_size) * 0.5);
-    let y = 10.0 + (pos.y * scale) + ((scale - rect_size) * 0.5);
+    let x = LEFT_OFFSET + (pos.x * SCALE) + ((SCALE - rect_size) * 0.5);
+    let y = TOP_OFFSET + (pos.y * SCALE) + ((SCALE - rect_size) * 0.5);
 
     Vec2 { x, y }
+}
+
+pub fn location_to_tile(location: Location) -> Option<Tile4x4>{
+    let x = location.x - LEFT_OFFSET;
+    let y = location.y - TOP_OFFSET;
+
+    let x_index = x / SCALE;
+    let y_index = y / SCALE;
+
+    let x2 = x_index.floor() as u8;
+    let y2 = y_index.floor() as u8;
+
+    let tile = Tile4x4::try_new(x2, y2);
+
+    //log!("Event: {x} {y} Tile {tile:?}");
+
+    tile
+}
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub enum QuizSaladInputEvent{
+    TileClicked(Tile4x4)
+}
+
+impl GameInputEvent<QuizSaladGameState> for QuizSaladInputEvent{
+    fn handle_event(
+            &self,
+            _input_state: &mut <QuizSaladGameState as GameState>::InputState,
+            game_state: &QuizSaladGameState,
+            _settings: &<QuizSaladGameState as GameState>::Settings,
+            _assets: &<QuizSaladGameState as GameState>::Assets,
+            _storage: &<QuizSaladGameState as GameState>::Storage,
+        ) -> Option<<QuizSaladGameState as GameState>::Command> {
+        let QuizSaladInputEvent::TileClicked(clicked_tile) = *self;
+
+        if game_state.found_words.unneeded_tiles.get_bit(&clicked_tile){
+            return Some(GridCommand::SetChosen(ChosenState::default()));
+        }
+
+        let current_solution = game_state.chosen_state.current_solution();
+
+        let Some(last_tile) = current_solution.last().copied() else{
+            return Some(GridCommand::SetChosen(ChosenState{solution: ArrayVec::from_iter([clicked_tile])}));                
+        };
+
+        if clicked_tile == last_tile{
+            let mut new_solution = current_solution.clone();
+            new_solution.pop();
+            return Some(GridCommand::SetChosen(ChosenState { solution: new_solution }));
+        }
+
+        if let Some(position) = current_solution.iter().position(|&x| x == clicked_tile) {
+            let mut new_solution = current_solution.clone();
+            new_solution.truncate(position + 1);
+            return Some(GridCommand::SetChosen(ChosenState { solution: new_solution }));
+        }
+
+        if clicked_tile.is_adjacent_to(&last_tile){
+            let mut new_solution = current_solution.clone();
+            new_solution.push(clicked_tile);
+            return Some(GridCommand::SetChosen(ChosenState { solution: new_solution }));
+        }
+        else{
+            return Some(GridCommand::SetChosen(ChosenState::default()));
+        }
+    }
 }
 
 impl LeptosGameEntity for QuizGameEntity {
@@ -278,35 +370,29 @@ impl LeptosGameEntity for QuizGameEntity {
         &self,
         meta: &StoredEntityMeta<Self>,
         sender: CommandSender<Self::GameState>,
+        start_time: f64,
+        current_time: Signal<f64>,
     ) -> AnyView {
-        const SCALE: f32 = 258.0;
+        
         const FONT_SIZE: f32 = SCALE * 0.5;
         const RECT_SIZE: f32 = SCALE * 0.9;
         const PATH_STROKE_WIDTH: f32 = SCALE * 0.5;
         const RADIUS: f32 = RECT_SIZE * 0.05;
         const FILL_COLOR : &'static str = "#97FCFF";
-        const CLUE_FONT_SIZE: f32 = 40.0;
-        
-
-
-
+        const CLUE_FONT_SIZE: f32 = 40.0;    
         const FONT_FAMILY: &'static str = "Montserrat";
-        // const FONT_COLOR: &'static str =  "#000000";
-        // const BOX_FONT_COLOR: &'static str =  "#000000";
-        // const BOX_FONT_COLOR: &'static str =  "#000000";
-
-        // const UNSELECTED_FILL_COLOR: &'static str = "#111111";
-        // const SELECTED_FILL_COLOR: &'static str = "#333333";
-
         const SELECTED_TEXT_COLOR: &'static str = "#FFFFFF";
         const UNSELECTED_TEXT_COLOR: &'static str = "#202251";
-        
-        
-
-        //let width = ((SIDE_LENGTH as f32) + 1.0) * RECT_SIZE;
-        //let height = RECT_SIZE * ((GRID_TOP_OFFSET + GRID_WORDS_GAP) + (SIDE_LENGTH as f32));
 
         match self {
+            QuizGameEntity::BackgroundRect => {
+                view! {
+                    <rect x=0 y=0 width="100%" height = "100%" fill = "#EECCCC">
+                    </rect>
+                }.into_any()
+            }
+
+
             QuizGameEntity::ClueText { text } => view! {
                 <text x=0 y=20 font-size=CLUE_FONT_SIZE font-weight="600" font-family={FONT_FAMILY} dominant-baseline="central" style="text-align: left; text-anchor: left;">{text.to_string()}</text>
             }
@@ -314,15 +400,24 @@ impl LeptosGameEntity for QuizGameEntity {
             QuizGameEntity::TileRect {
                 tile,                
                 selected:_,
+                unneeded
             } => {
                 let Vec2 { x, y } = tile_position(*tile, false);              
                 let sender = sender.clone();
                 let tile = *tile;
 
+                let scale = if *unneeded {0.0} else {1.0};
+                let style = format!("transform: scale({scale}) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;");
+
                 view! {
-                    <rect width={RECT_SIZE} height={RECT_SIZE} x={x} y={y} rx={RADIUS} ry={RADIUS} fill={FILL_COLOR} on:click={move|_|{
-                        sender.send_command(QuizSaladCommand::InputStart(tile));
-                    }}>  </rect>
+                    <rect width={RECT_SIZE} height={RECT_SIZE} x={x} y={y} rx={RADIUS} ry={RADIUS} fill={FILL_COLOR} style=style
+                    
+                    on:click={move|_|{
+                        sender.handle_game_input_event(QuizSaladInputEvent::TileClicked(tile)); 
+                    }}
+                    
+                    
+                    >  </rect>
                     
                 }.into_any()
             },
@@ -330,12 +425,16 @@ impl LeptosGameEntity for QuizGameEntity {
                 tile,
                 character,
                 selected,
+                unneeded
             } => {
                 let Vec2 { x, y } = tile_position(*tile, true);              
-                let color = if *selected {SELECTED_TEXT_COLOR} else {UNSELECTED_TEXT_COLOR};               
+                let color = if *selected {SELECTED_TEXT_COLOR} else {UNSELECTED_TEXT_COLOR};
+
+                let scale = if *unneeded {0.0} else {1.0};
+                let style = format!("transform: scale({scale}) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;");
 
                 view! {
-                    <text x={x} y={y} dominant-baseline="central" text-anchor="middle" fill={color} font-size={FONT_SIZE} font-family={FONT_FAMILY} font-weight={600} pointer-events="none">{character.as_char()} </text>
+                    <text x={x} y={y} style=style dominant-baseline="central" text-anchor="middle" fill={color} font-size={FONT_SIZE} font-family={FONT_FAMILY} font-weight={600} pointer-events="none">{character.as_char()} </text>
                     
                 }.into_any()
             },
@@ -344,24 +443,44 @@ impl LeptosGameEntity for QuizGameEntity {
 
                 let color = wordline_color(0);
                 view!{
-                    <circle cx={x1} cy={y1} fill={color} r=25 pointer-events="none"/>
+                    <circle cx={x1} cy={y1} fill={color} r={PATH_STROKE_WIDTH * 0.5} pointer-events="none"/>
                 }.into_any()
 
             }
             QuizGameEntity::WordLineSegment { index:_, t1, t2, segment_index }=>{
                 let v1 = tile_position(*t1, true);
                 let v2 = tile_position(*t2, true);
-                //let length = v1.distance(v2);
+                // let length = v1.distance(v2);
                 let Vec2 { x: x1, y: y1 } = v1;
                 let Vec2 { x: x2, y: y2 } = v2;
-
                 let color = wordline_color(*segment_index as usize);
 
-                view!{
-                    <line x1={x1} y1={y1} x2={x2} y2={y2} visibility="visible" stroke={color} stroke-linecap="round" stroke-width={PATH_STROKE_WIDTH} pointer-events="none">            
-                    </line>
-                }.into_any()
+                let stroke_width = if meta.is_dead(){
+                    0.0
+                } else{
+                    PATH_STROKE_WIDTH
+                };
+                let is_new = meta.is_new();
 
+                let (x_from, y_from)  = if is_new{
+                    (x1, y1)
+                }else{
+                    (x2, y2)
+                };
+
+                let x2_animated = animate_value(start_time, current_time, x_from, x2, 500.0, Lerp32);
+                let y2_animated = animate_value(start_time, current_time, y_from, y2, 500.0, Lerp32);
+
+                //todo nice line disappear
+                //todo line pulsing if close to the answer
+
+
+                view!{
+                        <line x1={x1} y1={y1} x2={x2_animated} y2={y2_animated} visibility="visible" stroke={color} stroke-linecap="round" stroke-width={stroke_width} pointer-events="none" >
+                            // {animate_x2_y2}
+                            // {animate_stroke_width}
+                        </line>
+                    }.into_any()
             }
             QuizGameEntity::NextButton => {
                 view! {
