@@ -8,8 +8,7 @@ use glam::{FloatExt, Vec2};
 use itertools::Itertools;
 use leptos::logging::log;
 use leptos::prelude::*;
-use state_machine_games::leptos::pointer_input_event::Location;
-use state_machine_games::leptos::{ prelude::*};
+use state_machine_games::{ prelude::*};
 use state_machine_games::prelude::*;
 use ws_core::{ArrayVec, Character, LevelTrait, Tile, Tile4x4, Ustr};
 
@@ -45,6 +44,7 @@ pub fn app() -> impl IntoView {
 
 #[derive(Debug)]
 pub struct QuizSaladGameState {
+    pub puzzle: Puzzle,
     pub current_clue: usize,    
     pub found_words: FoundWordsState,
     pub chosen_state: ChosenState,
@@ -52,12 +52,12 @@ pub struct QuizSaladGameState {
 }
 
 impl QuizSaladGameState {
-    pub fn new(level: &impl LevelTrait<4, 16>) -> Self {
-        let found_words = FoundWordsState::new_from_level(level);
+    pub fn new(puzzle: &impl LevelTrait<4, 16>) -> Self {
+        let found_words = FoundWordsState::new_from_level(puzzle);
 
         Self {
             current_clue: Default::default(),
-            
+            puzzle,
             found_words,
             chosen_state: Default::default(),
             word_just_found: false,
@@ -66,10 +66,6 @@ impl QuizSaladGameState {
     }
 }
 
-pub struct QuizSaladAssets {
-    pub puzzle: Puzzle,
-}
-impl GameAssets for QuizSaladAssets {}
 
 #[derive(Debug, PartialEq)]
 pub enum QuizGameEntity {
