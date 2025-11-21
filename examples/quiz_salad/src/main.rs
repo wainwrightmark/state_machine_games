@@ -29,15 +29,14 @@ pub fn app() -> impl IntoView {
     )
     .unwrap();
 
-    let (game_state_read, game_state_write) = signal(QuizSaladGameState::new(&puzzle));   
+
     
-    let (settings, _) = signal(());
-    let (assets, _) = signal(QuizSaladAssets { puzzle });
-    let (storage, _) = signal(());
 
     view! {
         <main>
-        {game_view_component(1052.0, 1080.0, game_state_read, game_state_write,  settings, assets, storage)}
+        {game_view_component(1052.0, 1080.0, GameState{
+
+        })}
         </main>
     }
 }
@@ -66,39 +65,6 @@ impl QuizSaladGameState {
     }
 }
 
-
-#[derive(Debug, PartialEq)]
-pub enum QuizGameEntity {
-
-    BackgroundRect,
-
-    ClueText {
-        text: Ustr,
-    },
-    TileRect {
-        tile: Tile4x4,
-        selected: bool,
-        unneeded: bool,
-    },
-    WordLineSingleCircle{
-        tile: Tile4x4,
-    },
-
-    WordLineSegment {
-        index: u8,
-        segment_index: u8,
-        t1: Tile4x4,
-        t2: Tile4x4,
-    },
-    TileText {
-        tile: Tile4x4,
-        character: Character,
-        selected: bool,
-        unneeded: bool,
-    },
-    NextButton,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum QuizGameEntityKey {
     BackgroundRect,
@@ -109,6 +75,76 @@ pub enum QuizGameEntityKey {
     TileText(Tile4x4),    
     NextButton,
 }
+
+impl GameEntityKey for QuizGameEntityKey{}
+
+pub struct BackgroundRectEntity;
+
+impl GameEntity for BackgroundRectEntity{
+    type Artifact;
+
+    type EntityKey = QuizGameEntityKey;
+
+    type Command;
+
+    fn key(&self) -> Self::EntityKey {
+        todo!()
+    }
+
+    fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
+        todo!()
+    }
+
+    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+        todo!()
+    }
+
+    fn on_update(
+        &self,
+        artifact: &mut Self::Artifact,
+        former_entity_state: EntityState,
+    ) -> AnimationList<Self::Artifact> {
+        todo!()
+    }
+}
+
+pub struct BackgroundRectArtifact;
+
+impl GameArtifact for BackgroundRectArtifact{
+    
+}
+pub struct ClueTextEntity{text: Ustr}
+
+pub struct TileRectEntity{
+    tile: Tile4x4,
+        selected: bool,
+        unneeded: bool,
+}
+
+pub struct WordLineSingleCircleEntity{
+        tile: Tile4x4,
+    }
+
+pub struct WordLineSegmentEntity{
+    index: u8,
+        segment_index: u8,
+        t1: Tile4x4,
+        t2: Tile4x4,
+}
+
+pub struct TileTextEntity{
+    tile: Tile4x4,
+        character: Character,
+        selected: bool,
+        unneeded: bool,
+}
+
+pub struct NextButtonEntity{
+
+}
+
+
+
 
 impl GameEntity for QuizGameEntity {
     type GameState = QuizSaladGameState;
