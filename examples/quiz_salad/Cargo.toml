@@ -6,7 +6,7 @@ edition = "2024"
 
 
 [dependencies]
-state_machine_games = {path = "../../state_machine_games", features = ["leptos"]}
+state_machine_games = {path = "../../state_machine_games"}
 geometrid = "0.10"
 wasm-logger = "0.2.0"
 console_error_panic_hook = "0.1.7"

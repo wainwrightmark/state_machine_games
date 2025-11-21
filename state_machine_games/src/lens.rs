@@ -17,7 +17,7 @@ pub trait GetRefLens: Lens {
     fn get_ref(object: &Self::Object) -> &Self::Value;
 }
 
-pub trait GetMutLens: GetRefLens {
+pub trait GetMutLens: Lens {
     fn get_mut(object: &mut Self::Object) -> &mut Self::Value;
 }
 
@@ -34,6 +34,10 @@ impl<L: GetMutLens> SetValueLens for L {
         let o = L::get_mut(object);
         *o = value;
     }
+}
+
+pub trait UpdateLens: Lens {
+    fn update(object: &mut Self::Object, fun: impl FnOnce(&mut Self::Value));
 }
 
 // IdentityLens
@@ -126,10 +130,10 @@ impl<L1: Lens, L2: Lens<Object = L1::Value>, L3: Lens<Object = L2::Value>> Lens
 }
 
 impl<
-        L1: GetRefLens,
-        L2: GetRefLens + Lens<Object = L1::Value>,
-        L3: GetRefLens + Lens<Object = L2::Value>,
-    > GetRefLens for Prism3<L1, L2, L3>
+    L1: GetRefLens,
+    L2: GetRefLens + Lens<Object = L1::Value>,
+    L3: GetRefLens + Lens<Object = L2::Value>,
+> GetRefLens for Prism3<L1, L2, L3>
 {
     fn get_ref(object: &Self::Object) -> &Self::Value {
         L3::get_ref(L2::get_ref(L1::get_ref(object)))
@@ -137,10 +141,10 @@ impl<
 }
 
 impl<
-        L1: GetRefLens,
-        L2: GetRefLens + Lens<Object = L1::Value>,
-        L3: GetValueLens + Lens<Object = L2::Value>,
-    > GetValueLens for Prism3<L1, L2, L3>
+    L1: GetRefLens,
+    L2: GetRefLens + Lens<Object = L1::Value>,
+    L3: GetValueLens + Lens<Object = L2::Value>,
+> GetValueLens for Prism3<L1, L2, L3>
 {
     fn get_value(object: &<Self as Lens>::Object) -> <Self as Lens>::Value {
         L3::get_value(L2::get_ref(L1::get_ref(object)))
@@ -148,10 +152,10 @@ impl<
 }
 
 impl<
-        L1: GetMutLens,
-        L2: Lens<Object = L1::Value> + GetMutLens,
-        L3: Lens<Object = L2::Value> + GetMutLens,
-    > GetMutLens for Prism3<L1, L2, L3>
+    L1: GetMutLens,
+    L2: Lens<Object = L1::Value> + GetMutLens,
+    L3: Lens<Object = L2::Value> + GetMutLens,
+> GetMutLens for Prism3<L1, L2, L3>
 {
     fn get_mut(object: &mut Self::Object) -> &mut Self::Value {
         L3::get_mut(L2::get_mut(L1::get_mut(object)))
@@ -205,7 +209,6 @@ impl_set_lens!((L0, l0), (L1, l1));
 impl_set_lens!((L0, l0), (L1, l1), (L2, l2));
 impl_set_lens!((L0, l0), (L1, l1), (L2, l2), (L3, l3));
 
-
 #[macro_export]
 macro_rules! define_lens {
     ($L:ident, $O:ident, $V:ident, $p:ident) => {
@@ -237,6 +240,24 @@ macro_rules! define_lens {
     };
 }
 
+#[macro_export]
+macro_rules! define_signal_lens {
+    ($L:ident, $O:ident, $V:ident, $p:ident) => {
+        #[derive(Debug, Clone, PartialEq, Eq)]
+        pub struct $L;
+
+        impl $crate::lens::Lens for $L {
+            type Object = $O;
+            type Value = $V;
+        }
+
+        impl $crate::lens::UpdateLens for $L {
+            fn update(object: &mut Self::Object, f: impl FnOnce(&mut Self::Value)) {
+                object.$p.update(f);
+            }
+        }
+    };
+}
 
 define_lens!(Vec2XLens, Vec2, f32, x);
 define_lens!(Vec2YLens, Vec2, f32, y);
