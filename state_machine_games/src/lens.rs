@@ -36,9 +36,9 @@ impl<L: GetMutLens> SetValueLens for L {
     }
 }
 
-pub trait UpdateLens: Lens {
-    fn update(object: &mut Self::Object, fun: impl FnOnce(&mut Self::Value));
-}
+// pub trait UpdateLens: Lens {
+//     fn update(object: &mut Self::Object, fun: impl FnOnce(&mut Self::Value));
+// }
 
 // IdentityLens
 #[derive(Debug, Copy, Eq)]
@@ -240,24 +240,24 @@ macro_rules! define_lens {
     };
 }
 
-#[macro_export]
-macro_rules! define_signal_lens {
-    ($L:ident, $O:ident, $V:ident, $p:ident) => {
-        #[derive(Debug, Clone, PartialEq, Eq)]
-        pub struct $L;
+// #[macro_export]
+// macro_rules! define_signal_lens {
+//     ($L:ident, $O:ident, $V:ident, $p:ident) => {
+//         #[derive(Debug, Clone, PartialEq, Eq)]
+//         pub struct $L;
 
-        impl $crate::lens::Lens for $L {
-            type Object = $O;
-            type Value = $V;
-        }
+//         impl $crate::lens::Lens for $L {
+//             type Object = $O;
+//             type Value = $V;
+//         }
 
-        impl $crate::lens::UpdateLens for $L {
-            fn update(object: &mut Self::Object, f: impl FnOnce(&mut Self::Value)) {
-                object.$p.update(f);
-            }
-        }
-    };
-}
+//         impl $crate::lens::UpdateLens for $L {
+//             fn update(object: &mut Self::Object, f: impl FnOnce(&mut Self::Value)) {
+//                 object.$p.update(f);
+//             }
+//         }
+//     };
+// }
 
 define_lens!(Vec2XLens, Vec2, f32, x);
 define_lens!(Vec2YLens, Vec2, f32, y);

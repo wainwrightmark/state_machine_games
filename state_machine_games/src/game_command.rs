@@ -1,3 +1,10 @@
-pub trait GameCommand: Send + Sync + 'static + std::fmt::Debug + Clone {}
+use crate::prelude::MutationResult;
 
-impl GameCommand for () {}
+pub trait AnyGameCommand: Send + Sync + 'static + std::fmt::Debug + Clone {}
+
+pub trait GameCommand<GS> : AnyGameCommand{
+    fn apply_command(&self, games_state: &mut GS) -> MutationResult;
+}
+
+
+impl AnyGameCommand for () {}

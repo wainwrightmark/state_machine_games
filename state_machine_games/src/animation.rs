@@ -5,7 +5,7 @@ use glam::{FloatExt, f32};
 
 pub type AnimationList<T> = Vec<Box<dyn Animation<T>>>;
 
-pub fn animate_towards<L: UpdateLens<Value: ApproachValue>>(
+pub fn animate_towards<L: GetMutLens<Value: ApproachValue>>(
     target_value: L::Value,
     velocity_units_per_ms: L::Value,
 ) -> Box<dyn Animation<L::Object>> {
@@ -45,7 +45,7 @@ impl EaseFunction<f64> for Lerp64 {
 }
 
 #[derive(Debug)]
-pub struct AnimateMoveTowards<T, V: ApproachValue, Lens: UpdateLens<Object = T, Value = V>> {
+pub struct AnimateMoveTowards<T, V: ApproachValue, Lens: GetMutLens<Object = T, Value = V>> {
     pub target_value: V,
     pub velocity_units_per_ms: V,
     pub phantom: PhantomData<Lens>,
@@ -123,24 +123,21 @@ impl ApproachValue for f32 {
     }
 }
 
-impl<T: 'static, V: ApproachValue, Lens: UpdateLens<Object = T, Value = V>> Animation<T>
+impl<T: 'static, V: ApproachValue, Lens: GetMutLens<Object = T, Value = V>> Animation<T>
     for AnimateMoveTowards<T, V, Lens>
 {
     fn step(&self, object: &mut T, delta_ms: f64) -> AnimateResult {
-        let mut result: AnimateResult = AnimateResult::DeleteAnimation;
-        Lens::update(object, |current_value| {
-            if V::approach(
-                current_value,
-                &self.target_value,
-                &self.velocity_units_per_ms,
-                delta_ms,
-            ) {
-                result = AnimateResult::DeleteAnimation;
-            } else {
-                result = AnimateResult::Continue;
-            }
-        });
+        let current_value = Lens::get_mut(object);
 
-        result
+        if V::approach(
+            current_value,
+            &self.target_value,
+            &self.velocity_units_per_ms,
+            delta_ms,
+        ) {
+            AnimateResult::DeleteAnimation
+        } else {
+            AnimateResult::Continue
+        }
     }
 }

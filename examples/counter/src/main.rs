@@ -1,12 +1,33 @@
-use state_machine_games::prelude::*;
+use std::sync::mpsc;
+
 use leptos::prelude::*;
+use state_machine_games::prelude::*;
+type Stores = (
+    ArcRwSignal<SingleTypeEntityStore<SquareButton>>,
+    ArcRwSignal<SingleTypeEntityStore<Circle>>,
+);
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
     console_error_panic_hook::set_once();
-    mount_to_body(|| {
-        leptos_game_component(200.0, 200.0, CounterGameState { n: 2 })
-    });
+    mount_to_body(|| game_component());
+}
+
+fn game_component() -> impl IntoView {
+    let state = CounterGameState { n: 2 };
+
+    let (sender, receiver) = mpsc::channel::<CounterCommand>();
+    let stores = Stores::default();
+    let machine = GameMachine::new(state, stores.clone(), receiver);
+
+    machine.run_game();
+
+    view! {
+        <svg viewBox="0 0 800.0 800.0"  style="max-width: 800px;  margin-inline: auto; ">
+        {move || SingleTypeEntityStore::render(stores.0.clone(), sender.clone())}
+        {move || SingleTypeEntityStore::render(stores.1.clone(), ())}
+        </svg>
+    }
 }
 
 pub struct CounterGameState {
@@ -14,30 +35,25 @@ pub struct CounterGameState {
 }
 
 impl GameState for CounterGameState {
-    type Command = ();
-    type Key = Key;
-
-    fn entities(&self, receiver: &mut impl EntityReceiver<Self::Command, Self::Key>) {
-        receiver.receive([SquareButton { n: self.n }].into_iter());
-
-        if self.n > 5 {
-            receiver.receive(
-                (0..self.n)
-                    .filter(|x| x % 2 == 0)
-                    .map(|n| Circle { inner: n as u8 }),
-            );
-        } else {
-            receiver.receive((0..self.n).map(|n| Circle { inner: n as u8 }));
-        }
-    }
-
-    fn apply_command(&mut self, _command: Self::Command) -> MutationResult {
-        self.n += 1;
-        MutationResult::CHANGED_NO_TRANSITION
-    }
-
     fn maybe_transition(&mut self) -> MutationResult {
         MutationResult::NO_CHANGE
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum CounterCommand {
+    IncrementCount(usize),
+}
+impl AnyGameCommand for CounterCommand {}
+
+impl GameCommand<CounterGameState> for CounterCommand {
+    fn apply_command(&self, games_state: &mut CounterGameState) -> MutationResult {
+        match self {
+            CounterCommand::IncrementCount(n) => {
+                games_state.n += n;
+                MutationResult::CHANGED_NO_TRANSITION
+            }
+        }
     }
 }
 
@@ -55,11 +71,15 @@ pub struct Circle {
 }
 
 impl GameEntity for Circle {
+    type GameState = CounterGameState;
     type Artifact = CircleArtifact;
-    type EntityKey = Key;
-    type Command = ();
+    type Key = Key;
 
-    fn key(&self) -> Self::EntityKey {
+    fn get_entities(game_state: &Self::GameState, receiver: &mut impl EntityReceiver<Self>) {
+        receiver.receive((0..game_state.n).map(|n| Circle { inner: n as u8 }));
+    }
+
+    fn key(&self) -> Self::Key {
         Key::Circle(self.inner)
     }
 
@@ -108,13 +128,16 @@ pub struct SquareButton {
 }
 
 impl GameEntity for SquareButton {
-    type Artifact = TextBoxArtifact;
-    type EntityKey = Key;
+    type GameState = CounterGameState;
+    type Artifact = SquareButtonArtifact;
+    type Key = Key;
 
-    type Command = ();
-
-    fn key(&self) -> Self::EntityKey {
+    fn key(&self) -> Self::Key {
         Key::SquareButton
+    }
+
+    fn get_entities(game_state: &Self::GameState, receiver: &mut impl EntityReceiver<Self>) {
+        receiver.receive([SquareButton { n: game_state.n }].into_iter());
     }
 
     fn on_death(&self, _artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
@@ -123,11 +146,11 @@ impl GameEntity for SquareButton {
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         (
-            TextBoxArtifact {
-                text: RwSignal::new(self.n.to_string()),
-                x: 50.0,
-                y: 50.0,
-                size: RwSignal::new(self.n as f32 * 10.0),
+            SquareButtonArtifact {
+                text: self.n.to_string(),
+                x: 400.0,
+                y: 400.0,
+                size: self.n as f32 * 10.0,
             },
             vec![],
         )
@@ -138,7 +161,7 @@ impl GameEntity for SquareButton {
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
-        artifact.text.set(self.n.to_string());
+        artifact.text = self.n.to_string();
 
         let size_animation = animate_towards::<TextBoxArtifactSizeLens>(self.n as f32 * 10.0, 0.01);
 
@@ -146,24 +169,26 @@ impl GameEntity for SquareButton {
     }
 }
 
-state_machine_games::define_signal_lens!(TextBoxArtifactSizeLens, TextBoxArtifact, f32, size);
+state_machine_games::define_lens!(TextBoxArtifactSizeLens, SquareButtonArtifact, f32, size);
+
+//state_machine_games::define_signal_lens!(TextBoxArtifactSizeLens, SquareButtonArtifact, f32, size);
 
 #[derive(Debug, Clone)]
-pub struct TextBoxArtifact {
-    pub text: RwSignal<String>,
+pub struct SquareButtonArtifact {
+    pub text: String,
     pub x: f32,
     pub y: f32,
 
-    pub size: RwSignal<f32>,
+    pub size: f32,
 }
 
-impl GameArtifact for TextBoxArtifact {
-    type Command = ();
+impl GameArtifact for SquareButtonArtifact {
+    type Command = CounterCommand;
 
-    fn render(self, mut sender: impl CommandSender<Self::Command>) -> impl leptos::IntoView {
+    fn render(self, sender: impl CommandSender<Self::Command>) -> impl leptos::IntoView {
         view! {
-            <rect x=self.x rx="5%" ry="5%" y=self.y width=self.size height=self.size fill="#EE1111" on:click=move |_| sender.send_command(()) />
-            <text font-size={move || format!("{}px", self.size.get() * 0.5)} x={move||{self.x + (self.size.get() * 0.5)} } y={move ||{self.y + (self.size.get() *0.5)}} style="pointer-events: none;user-select: none;font-family: monospace;dominant-baseline: central;text-anchor: middle;">
+            <rect x=self.x rx="5%" ry="5%" y=self.y width=self.size height=self.size fill="#EE1111" on:click=move |_| sender.send_command(CounterCommand::IncrementCount(1)) />
+            <text font-size={move || format!("{}px", self.size * 0.5)} x={move||{self.x + (self.size * 0.5)} } y={move ||{self.y + (self.size *0.5)}} style="pointer-events: none;user-select: none;font-family: monospace;dominant-baseline: central;text-anchor: middle;">
                 {self.text}
             </text>
         }

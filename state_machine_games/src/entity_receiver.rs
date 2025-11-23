@@ -1,17 +1,18 @@
+use crate::prelude::*;
 use std::collections::HashSet;
 
-use leptos::prelude::Notify;
+pub trait EntityReceiver<E: GameEntity> {
+    fn receive(&mut self, entities: impl Iterator<Item = E>);
+}
 
-use crate::prelude::*;
-
-pub struct GeneralEntityReceiver<'s, C: GameCommand, K: GameEntityKey> {
-    store: &'s mut EntityStore<C, K>,
-    remaining_keys: HashSet<K>,
+pub struct GeneralEntityReceiver<'s, E: GameEntity> {
+    store: &'s mut SingleTypeEntityStore<E>,
+    remaining_keys: HashSet<E::Key>,
     changed: bool,
 }
 
-impl<'s, C: GameCommand, K: GameEntityKey> GeneralEntityReceiver<'s, C, K> {
-    pub fn new(store: &'s mut EntityStore<C, K>) -> Self {
+impl<'s, E: GameEntity> GeneralEntityReceiver<'s, E> {
+    pub fn new(store: &'s mut SingleTypeEntityStore<E>) -> Self {
         let remaining_keys = store.entities.keys().copied().collect();
         Self {
             store,
@@ -20,7 +21,7 @@ impl<'s, C: GameCommand, K: GameEntityKey> GeneralEntityReceiver<'s, C, K> {
         }
     }
 
-    pub fn finish(&mut self) {
+    pub fn finish(&mut self)-> bool {
         for k in self.remaining_keys.drain() {
             match self.store.entities.entry(k) {
                 std::collections::btree_map::Entry::Vacant(_) => {
@@ -47,19 +48,12 @@ impl<'s, C: GameCommand, K: GameEntityKey> GeneralEntityReceiver<'s, C, K> {
 
         self.store.animated_entities.extend(animated_entity_keys);
 
-        if self.changed {
-            self.store.trigger.notify();
-        }
+        self.changed
     }
 }
 
-impl<'s, C: GameCommand, K: GameEntityKey> EntityReceiver<C, K>
-    for GeneralEntityReceiver<'s, C, K>
-{
-    fn receive<E: GameEntity<Command = C, EntityKey = K>>(
-        &mut self,
-        entities: impl Iterator<Item = E>,
-    ) {
+impl<'s, E: GameEntity> EntityReceiver<E> for GeneralEntityReceiver<'s, E> {
+    fn receive(&mut self, entities: impl Iterator<Item = E>) {
         for entity in entities {
             let key = entity.key();
 
@@ -68,24 +62,15 @@ impl<'s, C: GameCommand, K: GameEntityKey> EntityReceiver<C, K>
             match self.store.entities.entry(key) {
                 std::collections::btree_map::Entry::Vacant(vacant_entry) => {
                     let se: StoredEntity<E> = StoredEntity::new(entity);
-                    vacant_entry.insert(Box::new(se));
+                    vacant_entry.insert(se);
                     self.changed = true;
                 }
                 std::collections::btree_map::Entry::Occupied(mut occupied_entry) => {
                     let oe = occupied_entry.get_mut();
 
-                    if let Some(new_box) = StoredEntity::update_into_box(entity, oe) {
-                        *oe = new_box;
-                    }
+                    StoredEntity::update(entity, oe)
                 }
             }
         }
     }
-}
-
-pub trait EntityReceiver<C: GameCommand, K: GameEntityKey> {
-    fn receive<E: GameEntity<Command = C, EntityKey = K>>(
-        &mut self,
-        entities: impl Iterator<Item = E>,
-    );
 }

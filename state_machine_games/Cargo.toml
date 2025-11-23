@@ -12,6 +12,8 @@ glam = "0.30.9"
 leptos-use = "0.16.3"
 rand = "0.9.2"
 static_assertions = "1.1.0"
+impl-trait-for-tuples = "0.2.3"
+strum = { version = "0.27.2", features = ["derive"] }
 
 
 

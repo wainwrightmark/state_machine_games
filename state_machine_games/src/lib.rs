@@ -10,9 +10,11 @@ pub mod game_entity;
 pub mod game_entity_key;
 pub mod game_state;
 pub mod lens;
-pub mod leptos_game_component;
+pub mod game_machine;
 pub mod mutation_result;
 pub mod tiny_rng;
+pub mod command_receiver;
+pub mod skeleton;
 
 pub mod prelude {
     pub use crate::animate_result::*;
@@ -27,7 +29,9 @@ pub mod prelude {
     pub use crate::game_entity_key::*;
     pub use crate::game_state::*;
     pub use crate::lens::*;
-    pub use crate::leptos_game_component::*;
+    pub use crate::game_machine::*;
     pub use crate::mutation_result::*;
     pub use crate::tiny_rng::*;
+    pub use crate::command_receiver::*;
+    pub use crate::skeleton::*;
 }

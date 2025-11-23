@@ -1,11 +1,14 @@
 use crate::prelude::*;
 
-pub trait GameEntity: PartialEq + Send + Sync + 'static {
-    type Artifact: GameArtifact<Command = Self::Command>;
-    type EntityKey: GameEntityKey;
-    type Command: GameCommand;
+pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
+    type Artifact: GameArtifact;
+    type Key: GameEntityKey;
+    type GameState : GameState;
 
-    fn key(&self) -> Self::EntityKey;
+    fn key(&self) -> Self::Key;
+
+    //todo give the game state the opportunity to promise that the entities are sorted
+    fn get_entities(game_state: &Self::GameState, receiver: &mut impl EntityReceiver<Self>);
 
     //todo reuse the same vec for all the animations
 
