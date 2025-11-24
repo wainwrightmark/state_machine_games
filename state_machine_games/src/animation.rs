@@ -2,10 +2,11 @@ use std::marker::PhantomData;
 
 use crate::prelude::*;
 use glam::{FloatExt, f32};
+use leptos::logging::log;
 
 pub type AnimationList<T> = Vec<Box<dyn Animation<T>>>;
 
-pub fn animate_towards<L: GetMutLens<Value: ApproachValue>>(
+pub fn animate_towards<L: UpdateLens<Value: ApproachValue>>(
     target_value: L::Value,
     velocity_units_per_ms: L::Value,
 ) -> Box<dyn Animation<L::Object>> {
@@ -45,7 +46,7 @@ impl EaseFunction<f64> for Lerp64 {
 }
 
 #[derive(Debug)]
-pub struct AnimateMoveTowards<T, V: ApproachValue, Lens: GetMutLens<Object = T, Value = V>> {
+pub struct AnimateMoveTowards<T, V: ApproachValue, Lens: UpdateLens<Object = T, Value = V>> {
     pub target_value: V,
     pub velocity_units_per_ms: V,
     pub phantom: PhantomData<Lens>,
@@ -99,6 +100,7 @@ impl ApproachValue for f32 {
         velocity_units_per_ms: &Self,
         delta_ms: f64,
     ) -> bool {
+        //log!("Animating {value} towards {target_value} at {velocity_units_per_ms}");
         match value.total_cmp(target_value) {
             std::cmp::Ordering::Less => {
                 *value += velocity_units_per_ms * delta_ms as f32;
@@ -123,21 +125,24 @@ impl ApproachValue for f32 {
     }
 }
 
-impl<T: 'static, V: ApproachValue, Lens: GetMutLens<Object = T, Value = V>> Animation<T>
+impl<T: 'static, V: ApproachValue, Lens: UpdateLens<Object = T, Value = V>> Animation<T>
     for AnimateMoveTowards<T, V, Lens>
 {
     fn step(&self, object: &mut T, delta_ms: f64) -> AnimateResult {
-        let current_value = Lens::get_mut(object);
+        let mut result: AnimateResult = AnimateResult::DeleteAnimation;
+        Lens::update(object, |current_value| {
+            if V::approach(
+                current_value,
+                &self.target_value,
+                &self.velocity_units_per_ms,
+                delta_ms,
+            ) {
+                result = AnimateResult::DeleteAnimation;
+            } else {
+                result = AnimateResult::Continue;
+            }
+        });
 
-        if V::approach(
-            current_value,
-            &self.target_value,
-            &self.velocity_units_per_ms,
-            delta_ms,
-        ) {
-            AnimateResult::DeleteAnimation
-        } else {
-            AnimateResult::Continue
-        }
+        result
     }
 }

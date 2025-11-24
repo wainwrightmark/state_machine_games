@@ -1,7 +1,11 @@
+use core::f32;
 use std::sync::mpsc;
 
-use leptos::prelude::*;
-use state_machine_games::prelude::*;
+use glam::Vec2;
+use leptos::{logging::log, prelude::*};
+use rand::{RngCore, seq::SliceRandom};
+use rand_core::SeedableRng;
+use state_machine_games::{define_signal_lens, prelude::*};
 type Stores = (
     ArcRwSignal<SingleTypeEntityStore<SquareButton>>,
     ArcRwSignal<SingleTypeEntityStore<Circle>>,
@@ -14,7 +18,10 @@ fn main() {
 }
 
 fn game_component() -> impl IntoView {
-    let state = CounterGameState { n: 2 };
+    let state = CounterGameState {
+        n: 2,
+        rng: TinyRng::seed_from_u64(123),
+    };
 
     let (sender, receiver) = mpsc::channel::<CounterCommand>();
     let stores = Stores::default();
@@ -32,6 +39,7 @@ fn game_component() -> impl IntoView {
 
 pub struct CounterGameState {
     pub n: usize,
+    pub rng: TinyRng,
 }
 
 impl GameState for CounterGameState {
@@ -51,6 +59,7 @@ impl GameCommand<CounterGameState> for CounterCommand {
         match self {
             CounterCommand::IncrementCount(n) => {
                 games_state.n += n;
+                let _ = games_state.rng.next_u64();
                 MutationResult::CHANGED_NO_TRANSITION
             }
         }
@@ -60,14 +69,31 @@ impl GameCommand<CounterGameState> for CounterCommand {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Key {
     SquareButton,
-    Circle(u8),
+    Circle(u32),
 }
 
 impl GameEntityKey for Key {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Circle {
-    pub inner: u8,
+    pub k: u32,
+    pub position_k: u32,
+    pub n: u32,
+}
+
+impl Circle {
+    pub fn position(&self) -> Vec2 {
+        const CENTER: Vec2 = Vec2::splat(400.0);
+        const RADIUS: f32 = 100.0;
+        let theta = f32::consts::TAU * self.position_k as f32 / self.n as f32;
+
+        let x = CENTER.x + RADIUS * f32::cos(theta);
+        let y = CENTER.y + RADIUS * f32::sin(theta);
+
+        //log!("k {} n {} Theta: {theta} x {x} y {y}", self.position_k, self.n);
+
+        Vec2 { x, y }
+    }
 }
 
 impl GameEntity for Circle {
@@ -76,11 +102,21 @@ impl GameEntity for Circle {
     type Key = Key;
 
     fn get_entities(game_state: &Self::GameState, receiver: &mut impl EntityReceiver<Self>) {
-        receiver.receive((0..game_state.n).map(|n| Circle { inner: n as u8 }));
+        let mut arr: Vec<_> = (0u32..game_state.n as u32).collect();
+
+        let mut rng = game_state.rng.clone();
+        arr.shuffle(&mut rng);
+
+        let n = game_state.n as u32;
+        receiver.receive((0..n).map(|k| Circle {
+            k,
+            position_k: arr[k as usize],
+            n,
+        }));
     }
 
     fn key(&self) -> Self::Key {
-        Key::Circle(self.inner)
+        Key::Circle(self.k)
     }
 
     fn on_death(&self, _artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
@@ -88,11 +124,12 @@ impl GameEntity for Circle {
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+        let Vec2 { x, y } = self.position();
         (
             CircleArtifact {
                 size: 10.0,
-                x: 20.0 + (30.0 * self.inner as f32),
-                y: 10.0,
+                x: RwSignal::new(x),
+                y: RwSignal::new(y),
             },
             vec![],
         )
@@ -103,16 +140,24 @@ impl GameEntity for Circle {
         _artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
-        vec![]
+        let Vec2 { x, y } = self.position();
+
+        let x = animate_towards::<CircleXLens>(x, 0.1);
+        let y = animate_towards::<CircleYLens>(y, 0.1);
+
+        vec![x, y]
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct CircleArtifact {
-    pub x: f32,
-    pub y: f32,
+    pub x: RwSignal<f32>,
+    pub y: RwSignal<f32>,
     pub size: f32,
 }
+
+define_signal_lens!(CircleXLens, CircleArtifact, f32, x);
+define_signal_lens!(CircleYLens, CircleArtifact, f32, y);
 
 impl GameArtifact for CircleArtifact {
     type Command = ();
@@ -147,10 +192,10 @@ impl GameEntity for SquareButton {
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         (
             SquareButtonArtifact {
-                text: self.n.to_string(),
+                text: RwSignal::new(self.n.to_string()),
                 x: 400.0,
                 y: 400.0,
-                size: self.n as f32 * 10.0,
+                size: RwSignal::new(self.n as f32 * 10.0),
             },
             vec![],
         )
@@ -161,7 +206,7 @@ impl GameEntity for SquareButton {
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
-        artifact.text = self.n.to_string();
+        artifact.text.set(self.n.to_string());
 
         let size_animation = animate_towards::<TextBoxArtifactSizeLens>(self.n as f32 * 10.0, 0.01);
 
@@ -169,17 +214,15 @@ impl GameEntity for SquareButton {
     }
 }
 
-state_machine_games::define_lens!(TextBoxArtifactSizeLens, SquareButtonArtifact, f32, size);
-
-//state_machine_games::define_signal_lens!(TextBoxArtifactSizeLens, SquareButtonArtifact, f32, size);
+state_machine_games::define_signal_lens!(TextBoxArtifactSizeLens, SquareButtonArtifact, f32, size);
 
 #[derive(Debug, Clone)]
 pub struct SquareButtonArtifact {
-    pub text: String,
+    pub text: RwSignal<String>,
     pub x: f32,
     pub y: f32,
 
-    pub size: f32,
+    pub size: RwSignal<f32>,
 }
 
 impl GameArtifact for SquareButtonArtifact {
@@ -187,8 +230,8 @@ impl GameArtifact for SquareButtonArtifact {
 
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl leptos::IntoView {
         view! {
-            <rect x=self.x rx="5%" ry="5%" y=self.y width=self.size height=self.size fill="#EE1111" on:click=move |_| sender.send_command(CounterCommand::IncrementCount(1)) />
-            <text font-size={move || format!("{}px", self.size * 0.5)} x={move||{self.x + (self.size * 0.5)} } y={move ||{self.y + (self.size *0.5)}} style="pointer-events: none;user-select: none;font-family: monospace;dominant-baseline: central;text-anchor: middle;">
+            <rect x={move||{self.x - (self.size.get() * 0.5)} } y={move ||{self.y - (self.size.get() *0.5)}} rx={move || self.size.get() * 0.2} ry={move|| self.size.get() * 0.2}  width=self.size height=self.size fill="#EE1111" on:click=move |_| sender.send_command(CounterCommand::IncrementCount(1)) />
+            <text font-size={move || format!("{}px", self.size.get() * 0.5)}  x=self.x y=self.y  style="pointer-events: none;user-select: none;font-family: monospace;dominant-baseline: central;text-anchor: middle;">
                 {self.text}
             </text>
         }
