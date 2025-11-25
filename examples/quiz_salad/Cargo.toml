@@ -17,7 +17,6 @@ strum = { version = "0.27", features = ["derive"] }
 itertools = {version = "0.14"}
 ws_core = {path = 'C:\Source\rust\word_salad\ws_core'}
 anyhow = "1"
-glam= "0.27"
 
 
 leptos = { version = "0.8", features = ["csr"] }

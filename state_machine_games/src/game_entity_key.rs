@@ -4,6 +4,8 @@ pub trait GameEntityKey:
 {
 }
 
+//todo blanket impl
+
 impl GameEntityKey for () {}
 impl GameEntityKey for &'static str {}
 impl GameEntityKey for u8 {}

@@ -364,8 +364,8 @@ impl GameEntity for Match3TileEntity {
         artifact.tile.set(self.tile);
         vec![
             animate_towards::<TileArtifactScaleLens>(0.0, 1.0 / 1000.0),
-            animate_towards::<TileArtifactXLens>(Self::get_x(self.tile.x()), SCALE / 1000.0),
-            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE / 1000.0),
+            animate_towards::<TileArtifactXLens>(Self::get_x(self.tile.x()), SCALE as f64 / 1000.0),
+            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64  / 1000.0),
         ]
     }
 
@@ -381,7 +381,7 @@ impl GameEntity for Match3TileEntity {
 
         let animations = vec![
             animate_towards::<TileArtifactScaleLens>(1.0, 1.0 / 1000.0),
-            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE / 100.0),
+            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64  / 100.0),
         ];
 
         (artifact, animations)
@@ -396,8 +396,8 @@ impl GameEntity for Match3TileEntity {
         artifact.tile.set(self.tile);
         //change x,y,selected,scale
         vec![
-            animate_towards::<TileArtifactXLens>(Self::get_x(self.tile.x()), SCALE / 1000.0),
-            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE / 1000.0),
+            animate_towards::<TileArtifactXLens>(Self::get_x(self.tile.x()), SCALE as f64  / 1000.0),
+            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE  as f64 / 1000.0),
         ]
     }
 }

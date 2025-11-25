@@ -1,14 +1,13 @@
 use std::marker::PhantomData;
 
 use crate::prelude::*;
-use glam::{FloatExt, f32};
-use leptos::logging::log;
+use glam::{FloatExt, Vec2, f32};
 
 pub type AnimationList<T> = Vec<Box<dyn Animation<T>>>;
 
 pub fn animate_towards<L: UpdateLens<Value: ApproachValue>>(
     target_value: L::Value,
-    velocity_units_per_ms: L::Value,
+    velocity_units_per_ms: f64,
 ) -> Box<dyn Animation<L::Object>> {
     let animation = AnimateMoveTowards::<L::Object, L::Value, L> {
         target_value,
@@ -48,7 +47,7 @@ impl EaseFunction<f64> for Lerp64 {
 #[derive(Debug)]
 pub struct AnimateMoveTowards<T, V: ApproachValue, Lens: UpdateLens<Object = T, Value = V>> {
     pub target_value: V,
-    pub velocity_units_per_ms: V,
+    pub velocity_units_per_ms: f64,
     pub phantom: PhantomData<Lens>,
 }
 
@@ -57,16 +56,28 @@ pub trait ApproachValue: Send + Sync + 'static {
     fn approach(
         value: &mut Self,
         target_value: &Self,
-        velocity_units_per_ms: &Self,
+        velocity_units_per_ms: f64,
         delta_ms: f64,
     ) -> bool;
+}
+
+impl ApproachValue for Vec2 {
+    fn approach(
+        value: &mut Self,
+        target_value: &Self,
+        velocity_units_per_ms: f64,
+        delta_ms: f64,
+    ) -> bool {
+        *value = value.move_towards(*target_value, (velocity_units_per_ms * delta_ms) as f32);
+        value == target_value
+    }
 }
 
 impl ApproachValue for f64 {
     fn approach(
         value: &mut Self,
         target_value: &Self,
-        velocity_units_per_ms: &Self,
+        velocity_units_per_ms: f64,
         delta_ms: f64,
     ) -> bool {
         match value.total_cmp(target_value) {
@@ -97,13 +108,13 @@ impl ApproachValue for f32 {
     fn approach(
         value: &mut Self,
         target_value: &Self,
-        velocity_units_per_ms: &Self,
+        velocity_units_per_ms: f64,
         delta_ms: f64,
     ) -> bool {
         //log!("Animating {value} towards {target_value} at {velocity_units_per_ms}");
         match value.total_cmp(target_value) {
             std::cmp::Ordering::Less => {
-                *value += velocity_units_per_ms * delta_ms as f32;
+                *value += (velocity_units_per_ms * delta_ms) as f32;
                 if *value >= *target_value {
                     *value = *target_value;
                     return true;
@@ -114,7 +125,7 @@ impl ApproachValue for f32 {
                 return true;
             }
             std::cmp::Ordering::Greater => {
-                *value -= velocity_units_per_ms * delta_ms as f32;
+                *value -= (velocity_units_per_ms * delta_ms) as f32;
                 if *value <= *target_value {
                     *value = *target_value;
                     return true;
@@ -134,7 +145,7 @@ impl<T: 'static, V: ApproachValue, Lens: UpdateLens<Object = T, Value = V>> Anim
             if V::approach(
                 current_value,
                 &self.target_value,
-                &self.velocity_units_per_ms,
+                self.velocity_units_per_ms,
                 delta_ms,
             ) {
                 result = AnimateResult::DeleteAnimation;

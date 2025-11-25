@@ -2143,7 +2143,6 @@ dependencies = [
  "const_sized_bit_set",
  "geometrid",
  "getrandom 0.3.4",
- "glam 0.27.0",
  "insta",
  "itertools 0.14.0",
  "leptos",

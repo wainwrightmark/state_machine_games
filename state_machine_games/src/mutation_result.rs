@@ -16,4 +16,8 @@ impl MutationResult {
         changed: true,
         transition_callback_in_ms: None,
     };
+
+    pub const fn changed_with_transition(ms: f64)-> Self{
+        Self { changed: true, transition_callback_in_ms: Some(ms) }
+    }
 }

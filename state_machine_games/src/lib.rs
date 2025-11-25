@@ -34,4 +34,6 @@ pub mod prelude {
     pub use crate::tiny_rng::*;
     pub use crate::command_receiver::*;
     pub use crate::skeleton::*;
+
+    pub use glam::*;
 }
