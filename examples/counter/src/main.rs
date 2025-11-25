@@ -101,18 +101,19 @@ impl GameEntity for Circle {
     type Artifact = CircleArtifact;
     type Key = Key;
 
-    fn get_entities(game_state: &Self::GameState, receiver: &mut impl EntityReceiver<Self>) {
+    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
         let mut arr: Vec<_> = (0u32..game_state.n as u32).collect();
 
         let mut rng = game_state.rng.clone();
         arr.shuffle(&mut rng);
 
         let n = game_state.n as u32;
-        receiver.receive((0..n).map(|k| Circle {
+
+        (0..n).map(move |k| Circle {
             k,
             position_k: arr[k as usize],
             n,
-        }));
+        })
     }
 
     fn key(&self) -> Self::Key {
@@ -181,8 +182,8 @@ impl GameEntity for SquareButton {
         Key::SquareButton
     }
 
-    fn get_entities(game_state: &Self::GameState, receiver: &mut impl EntityReceiver<Self>) {
-        receiver.receive([SquareButton { n: game_state.n }].into_iter());
+    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+        [SquareButton { n: game_state.n }].into_iter()
     }
 
     fn on_death(&self, _artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {

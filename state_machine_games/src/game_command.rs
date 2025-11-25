@@ -7,4 +7,4 @@ pub trait GameCommand<GS> : AnyGameCommand{
 }
 
 
-impl AnyGameCommand for () {}
+impl AnyGameCommand for () {}//todo remove this?

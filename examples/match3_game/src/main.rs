@@ -1,5 +1,7 @@
+use std::{cmp::Reverse, sync::mpsc};
+
 use geometrid::{prelude::TileMap, vector::Vector};
-use leptos::{logging::log, prelude::*};
+use leptos::prelude::*;
 use rand::{Rng, SeedableRng};
 use state_machine_games::prelude::*;
 use strum::{EnumCount, FromRepr};
@@ -7,10 +9,35 @@ use strum::{EnumCount, FromRepr};
 pub type Match3Tile = geometrid::tile::Tile<8, 8>;
 pub type Match3Grid = geometrid::tile_map::TileMap<Option<Gem>, 8, 8, 64>;
 
+type Stores = (
+    ArcRwSignal<SingleTypeEntityStore<ScoreTextEntity>>,
+    ArcRwSignal<SingleTypeEntityStore<MovesLeftEntity>>,
+    ArcRwSignal<SingleTypeEntityStore<Match3TileEntity>>,
+);
+
 pub fn main() {
     wasm_logger::init(wasm_logger::Config::default());
     console_error_panic_hook::set_once();
-    mount_to_body(|| leptos_game_component(800.0, 800.0, Match3Game::new_random(123)));
+    mount_to_body(|| game_component());
+}
+
+fn game_component() -> impl IntoView {
+    let state = Match3Game::new_random(123);
+
+    let (sender, receiver) = mpsc::channel::<Match3Command>();
+    let stores = Stores::default();
+    let machine = GameMachine::new(state, stores.clone(), receiver);
+
+    machine.run_game();
+
+    view! {
+        <svg viewBox="0 0 800.0 800.0"  style="max-width: 800px;  margin-inline: auto; ">
+        {move || SingleTypeEntityStore::render(stores.0.clone(), ())}
+        {move || SingleTypeEntityStore::render(stores.1.clone(), ())}
+        {move || SingleTypeEntityStore::render(stores.2.clone(), sender.clone())}
+        </svg>
+
+    }
 }
 
 const FONT_SIZE: f32 = 72.0;
@@ -100,16 +127,49 @@ pub enum Match3Command {
     TileClicked(Match3Tile),
 }
 
-impl GameCommand for Match3Command {}
+impl AnyGameCommand for Match3Command {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Match3EntityKey {
-    ScoreText,
-    MovesLeftText,
-    Tile(std::cmp::Reverse<u32> ),
+impl GameCommand<Match3Game> for Match3Command {
+    fn apply_command(&self, games_state: &mut Match3Game) -> MutationResult {
+        if games_state.grid.iter().any(|x| x.is_none()) {
+            return MutationResult::NO_CHANGE;
+        }
+
+        let Match3Command::TileClicked(tile) = *self;
+
+        //log::info!("Tile Clicked {tile}");
+
+        match games_state.selected_tile {
+            Some(former_selected_tile) => {
+                if former_selected_tile == tile {
+                    //Unselect the tile
+                    games_state.selected_tile = None;
+                } else if former_selected_tile.is_contiguous_with(&tile) {
+                    //swap the tiles
+
+                    if let Some(new_moves_left) = games_state.moves_left.checked_sub(1) {
+                        games_state.grid.swap(tile, former_selected_tile);
+                        games_state.moves_left = new_moves_left;
+                        games_state.selected_tile = None;
+                    }
+
+                    //TODO match 3 logic
+                } else {
+                    games_state.selected_tile = Some(tile);
+                }
+            }
+            None => {
+                games_state.selected_tile = Some(tile);
+            }
+        }
+        let transition_callback_in_ms = if true { Some(1000.0) } else { None };
+
+        MutationResult {
+            changed: true,
+            transition_callback_in_ms,
+        }
+    }
 }
-
-impl GameEntityKey for Match3EntityKey {}
 
 #[derive(Debug, Clone)]
 pub struct TextArtifact {
@@ -120,7 +180,7 @@ pub struct TextArtifact {
 }
 
 impl GameArtifact for TextArtifact {
-    type Command = Match3Command;
+    type Command = ();
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
         view! {
             <text x=self.x y=self.y font-size=self.font_size style="user-select: none;">
@@ -156,7 +216,7 @@ impl GameArtifact for TileArtifact {
             transform-origin="center"
             fill={self.fill}
             stroke={move || if self.selected.get() { "#222222FF" } else { "#00000000" }}
-            style= {move || format!("transform-box:fill-box; transform: scale({}); stroke-width: 10px;  transition: stroke 1s;", self.scale.get())} 
+            style= {move || format!("transform-box:fill-box; transform: scale({}); stroke-width: 10px;  transition: stroke 1s;", self.scale.get())}
             on:click=move|_|{ sender.send_command(Match3Command::TileClicked(self.tile.get_untracked()));  } >
             </rect>
         }
@@ -170,15 +230,18 @@ pub struct ScoreTextEntity {
 
 impl GameEntity for ScoreTextEntity {
     type Artifact = TextArtifact;
-    type EntityKey = Match3EntityKey;
-    type Command = Match3Command;
+    type Key = ();
+    type GameState = Match3Game;
 
-    fn key(&self) -> Self::EntityKey {
-        Match3EntityKey::ScoreText
+    fn key(&self) -> Self::Key {
+        ()
     }
 
-    fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
-        vec![]
+    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+        [Self {
+            score: game_state.score,
+        }]
+        .into_iter()
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
@@ -209,15 +272,18 @@ pub struct MovesLeftEntity {
 
 impl GameEntity for MovesLeftEntity {
     type Artifact = TextArtifact;
-    type EntityKey = Match3EntityKey;
-    type Command = Match3Command;
+    type Key = ();
+    type GameState = Match3Game;
 
-    fn key(&self) -> Self::EntityKey {
-        Match3EntityKey::MovesLeftText
+    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+        [Self {
+            moves: game_state.moves_left,
+        }]
+        .into_iter()
     }
 
-    fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
-        vec![]
+    fn key(&self) -> Self::Key {
+        ()
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
@@ -259,13 +325,38 @@ impl Match3TileEntity {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TileKey(u32);
+
+impl GameEntityKey for TileKey {}
+
 impl GameEntity for Match3TileEntity {
     type Artifact = TileArtifact;
-    type EntityKey = Match3EntityKey;
-    type Command = Match3Command;
+    type Key = TileKey;
+    type GameState = Match3Game;
 
-    fn key(&self) -> Self::EntityKey {
-        Match3EntityKey::Tile(std::cmp::Reverse(self.index) )
+    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+        let selected_tile = game_state.selected_tile;
+        game_state.grid.enumerate().flat_map(move |(tile, gem)| {
+            if let Some(Gem {
+                index,
+                gem_type: tile_type,
+            }) = *gem
+            {
+                Some(Match3TileEntity {
+                    tile,
+                    index: index,
+                    gem_type: tile_type,
+                    selected: Some(tile) == selected_tile,
+                })
+            } else {
+                None
+            }
+        })
+    }
+
+    fn key(&self) -> Self::Key {
+        TileKey(self.index)
     }
 
     fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
@@ -312,37 +403,6 @@ impl GameEntity for Match3TileEntity {
 }
 
 impl GameState for Match3Game {
-    type Command = Match3Command;
-    type Key = Match3EntityKey;
-
-    fn entities(&self, receiver: &mut impl EntityReceiver<Self::Command, Self::Key>) {
-        let tiles = self.grid.enumerate().flat_map(|(tile, gem)| {
-            if let Some(Gem {
-                index,
-                gem_type: tile_type,
-            }) = *gem
-            {
-                Some(Match3TileEntity {
-                    tile,
-                    index: index,
-                    gem_type: tile_type,
-                    selected: Some(tile) == self.selected_tile,
-                })
-            } else {
-                None
-            }
-        });
-
-        receiver.receive(tiles);
-        receiver.receive(
-            [MovesLeftEntity {
-                moves: self.moves_left,
-            }]
-            .into_iter(),
-        );
-        receiver.receive([ScoreTextEntity { score: self.score }].into_iter());
-    }
-
     fn maybe_transition(&mut self) -> MutationResult {
         let mut changed = false;
 
@@ -430,46 +490,6 @@ impl GameState for Match3Game {
         MutationResult {
             changed,
             transition_callback_in_ms: if changed { Some(1000.0) } else { None },
-        }
-    }
-
-    fn apply_command(&mut self, command: Self::Command) -> MutationResult {
-        if self.grid.iter().any(|x| x.is_none()) {
-            return MutationResult::NO_CHANGE;
-        }
-
-        let Match3Command::TileClicked(tile) = command;
-
-        //log::info!("Tile Clicked {tile}");
-
-        match self.selected_tile {
-            Some(former_selected_tile) => {
-                if former_selected_tile == tile {
-                    //Unselect the tile
-                    self.selected_tile = None;
-                } else if former_selected_tile.is_contiguous_with(&tile) {
-                    //swap the tiles
-
-                    if let Some(new_moves_left) = self.moves_left.checked_sub(1) {
-                        self.grid.swap(tile, former_selected_tile);
-                        self.moves_left = new_moves_left;
-                        self.selected_tile = None;
-                    }
-
-                    //TODO match 3 logic
-                } else {
-                    self.selected_tile = Some(tile);
-                }
-            }
-            None => {
-                self.selected_tile = Some(tile);
-            }
-        }
-        let transition_callback_in_ms = if true { Some(1000.0) } else { None };
-
-        MutationResult {
-            changed: true,
-            transition_callback_in_ms,
         }
     }
 }

@@ -40,7 +40,7 @@ impl<E: GameEntity> Default for SingleTypeEntityStore<E> {
 impl<E: GameEntity> EntityStoreCombination<E::GameState> for SingleTypeEntityStore<E> {
     fn gather_entities(&mut self, state: &E::GameState) -> bool {
         let mut receiver = GeneralEntityReceiver::new(self);
-        E::get_entities(state, &mut receiver);
+        receiver.receive(E::get_entities(state));        
         receiver.finish()
     }
 

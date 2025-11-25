@@ -7,7 +7,7 @@ use strum::{EnumIter, IntoEnumIterator};
 use timecat::prelude::*;
 
 type Stores = (
-    ArcRwSignal<SingleTypeEntityStore<ChessSquare>>,
+    ArcRwSignal<SingleTypeEntityStore<ChessSquareEntity>>,
     ArcRwSignal<SingleTypeEntityStore<ChessPiece>>,
     ArcRwSignal<SingleTypeEntityStore<ButtonEntity>>,
 );
@@ -55,19 +55,20 @@ fn game_component() -> impl IntoView {
         selected_square: None,
     };
 
-    let (sender, receiver) = mpsc::channel::<ChessButtonCommand>();
+    let (click_sender, click_receiver) = mpsc::channel::<ClickSquareCommand>();
+    let (button_sender, button_receiver) = mpsc::channel::<ChessButtonCommand>();
     let stores = Stores::default();
-    let machine = GameMachine::new(state, stores.clone(), receiver);
+    let machine = GameMachine::new(state, stores.clone(), (click_receiver, button_receiver));
 
     machine.run_game();
 
     view! {
         <svg viewBox="0 0 320.0 320.0"  style="max-width: 800px;  margin-inline: auto; ">
-        {move || SingleTypeEntityStore::render(stores.0.clone(), ())}
+        {move || SingleTypeEntityStore::render(stores.0.clone(), click_sender.clone())}
         {move || SingleTypeEntityStore::render(stores.1.clone(), ())}
         </svg>
         <div>
-            {move || SingleTypeEntityStore::render(stores.2.clone(), sender.clone())}
+            {move || SingleTypeEntityStore::render(stores.2.clone(), button_sender.clone())}
         </div>
 
     }
@@ -91,11 +92,11 @@ impl GameEntity for ButtonEntity {
         *self
     }
 
-    fn get_entities(_game_state: &Self::GameState, receiver: &mut impl EntityReceiver<Self>) {
-        receiver.receive(ButtonEntity::iter());
+    fn get_entities(_game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+        ButtonEntity::iter()
     }
 
-    fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
+    fn on_death(&self, _artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
         vec![]
     }
 
@@ -182,29 +183,73 @@ impl GameCommand<ChessState> for ChessButtonCommand {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ChessSquare {
+#[derive(Debug, Clone)]
+pub struct ClickSquareCommand {
     pub square: Square,
-    pub selected: bool,
 }
 
-impl Ord for ChessSquare {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.square
-            .to_int()
-            .cmp(&other.square.to_int())
-            .then(self.selected.cmp(&other.selected))
+impl AnyGameCommand for ClickSquareCommand {}
+
+impl GameCommand<ChessState> for ClickSquareCommand {
+    fn apply_command(&self, games_state: &mut ChessState) -> MutationResult {
+        match games_state.selected_square {
+            Some(selected_square) => {
+                if selected_square == self.square {
+                    games_state.selected_square = None;
+                } else {
+                    games_state.selected_square = None;
+                    match Move::new(selected_square, self.square, None) {
+                        Ok(m) => match games_state.board.push(m) {
+                            Ok(()) => {}
+                            Err(err) => {
+                                leptos::logging::log!("Error pushing move: {err}");
+                            }
+                        },
+                        Err(err) => {
+                            leptos::logging::log!("Error creating move: {err}");
+                        }
+                    }
+                }
+            }
+            None => {
+                if games_state
+                    .board
+                    .get_piece_at(self.square)
+                    .is_some_and(|p| p.get_color() == games_state.board.turn())
+                {
+                    games_state.selected_square = Some(self.square);
+                } else {
+                    return MutationResult::NO_CHANGE;
+                }
+            }
+        }
+        MutationResult::CHANGED_NO_TRANSITION
     }
 }
 
-impl PartialOrd for ChessSquare {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(Ord::cmp(self, other))
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ChessSquareArtifact {
+    pub square: Square,
+    pub selected: RwSignal<bool>,
 }
 
-impl GameArtifact for ChessSquare {
-    type Command = ();
+// impl Ord for ChessSquare {
+//     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+//         self.square
+//             .to_int()
+//             .cmp(&other.square.to_int())
+//             .then(self.selected.cmp(&other.selected))
+//     }
+// }
+
+// impl PartialOrd for ChessSquare {
+//     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+//         Some(Ord::cmp(self, other))
+//     }
+// }
+
+impl GameArtifact for ChessSquareArtifact {
+    type Command = ClickSquareCommand;
 
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = square_to_position(self.square, false);
@@ -212,18 +257,25 @@ impl GameArtifact for ChessSquare {
             "#739552"
         } else {
             "#ebecd0"
-            
         };
-        let stroke_width = if self.selected { 5 } else { 0 };
+        let stroke_width = move || if self.selected.get() { 5 } else { 0 };
         view! {
-            <rect x=x y=y width=SQUARE_SIZE height=SQUARE_SIZE fill={fill} stroke = {"#000000"} stroke-width={stroke_width} />
+            <rect x=x y=y width=SQUARE_SIZE height=SQUARE_SIZE fill={fill} stroke = {"#000000"} stroke-width={stroke_width}
+                on:click= move|_|{sender.send_command(ClickSquareCommand { square: self.square });}
+             />
 
         }
     }
 }
 
-impl GameEntity for ChessSquare {
-    type Artifact = Self;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ChessSquareEntity {
+    pub square: Square,
+    pub selected: bool,
+}
+
+impl GameEntity for ChessSquareEntity {
+    type Artifact = ChessSquareArtifact;
     type Key = u8;
     type GameState = ChessState;
 
@@ -231,16 +283,16 @@ impl GameEntity for ChessSquare {
         self.square.to_int()
     }
 
-    fn get_entities(game_state: &Self::GameState, receiver: &mut impl EntityReceiver<Self>) {
+    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
         let selected_square = game_state.selected_square;
         let entities = (0..64)
             .map(|i| unsafe { Square::from_int(i) })
-            .map(|square| Self {
+            .map(move |square| Self {
                 square,
                 selected: Some(square) == selected_square,
             });
 
-        receiver.receive(entities);
+        entities
     }
 
     fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
@@ -248,7 +300,13 @@ impl GameEntity for ChessSquare {
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        (*self, vec![])
+        (
+            ChessSquareArtifact {
+                square: self.square,
+                selected: RwSignal::new(self.selected),
+            },
+            vec![],
+        )
     }
 
     fn on_update(
@@ -256,7 +314,7 @@ impl GameEntity for ChessSquare {
         artifact: &mut Self::Artifact,
         former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
-        *artifact = *self;
+        artifact.selected.set(self.selected);
         vec![]
     }
 }
@@ -307,14 +365,14 @@ impl GameEntity for ChessPiece {
         *self
     }
 
-    fn get_entities(game_state: &Self::GameState, receiver: &mut impl EntityReceiver<Self>) {
+    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
         let entities = game_state.board.occupied().flat_map(|square| {
             game_state
                 .board
                 .get_piece_at(square)
                 .map(|piece| ChessPiece { square, piece })
         });
-        receiver.receive(entities);
+        entities
     }
 
     fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
