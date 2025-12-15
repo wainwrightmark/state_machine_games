@@ -150,8 +150,6 @@ pub enum ChessButtonCommand {
     Restart,
 }
 
-impl AnyGameCommand for ChessButtonCommand {}
-
 const DEPTH: i8 = 5;
 
 impl GameCommand<ChessState> for ChessButtonCommand {
@@ -187,8 +185,6 @@ impl GameCommand<ChessState> for ChessButtonCommand {
 pub struct ClickSquareCommand {
     pub square: Square,
 }
-
-impl AnyGameCommand for ClickSquareCommand {}
 
 impl GameCommand<ChessState> for ClickSquareCommand {
     fn apply_command(&self, games_state: &mut ChessState) -> MutationResult {

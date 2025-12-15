@@ -52,7 +52,6 @@ impl GameState for CounterGameState {
 pub enum CounterCommand {
     IncrementCount(usize),
 }
-impl AnyGameCommand for CounterCommand {}
 
 impl GameCommand<CounterGameState> for CounterCommand {
     fn apply_command(&self, games_state: &mut CounterGameState) -> MutationResult {

@@ -1,35 +1,14 @@
 use std::sync::Mutex;
 
 use crate::prelude::*;
-use leptos::{logging::log, prelude::*};
+use leptos::prelude::*;
 
-// pub fn leptos_game_component<GS: GameState>(
-//     viewbox_width: f32,
-//     viewbox_height: f32,
-//     initial_state: GS,
-// ) -> impl IntoView {
-//     let game_machine = GameMachine::new(initial_state);
-//     let store = game_machine.stores.clone();
-//     let command_sender = game_machine.receivers.clone();
-
-//     leptos_use::use_raf_fn(move |args| {
-//         game_machine.game_loop(args.delta);
-//     });
-
-//     // game_machine.store.read_untracked().
-
-//     view! {
-//         <svg viewBox=format!("0 0 {viewbox_width} {viewbox_height}")  style="max-width: 800px;  margin-inline: auto; ">
-//         {move || EntityStore::render(store.clone(), command_sender.clone())}
-//         </svg>
-//     }
-// }
-
-pub fn run_game<GS: GameState,
+pub fn run_game<
+    GS: GameState,
     Stores: EntityStoreCombination<GS>,
-    Receivers: CommandReceiver<GS>,>(){
-        
-    }
+    Receivers: CommandReceiver<GS>,
+>() {
+}
 
 pub struct GameMachine<
     GS: GameState,
@@ -41,8 +20,6 @@ pub struct GameMachine<
     receivers: Receivers,
     ms_until_transition: Option<f64>,
 }
-
-
 
 impl<GS: GameState, S: EntityStoreCombination<GS>> EntityStoreCombination<GS> for ArcRwSignal<S> {
     fn gather_entities(&mut self, state: &GS) -> bool {

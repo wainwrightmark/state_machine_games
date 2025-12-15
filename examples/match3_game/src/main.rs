@@ -127,8 +127,6 @@ pub enum Match3Command {
     TileClicked(Match3Tile),
 }
 
-impl AnyGameCommand for Match3Command {}
-
 impl GameCommand<Match3Game> for Match3Command {
     fn apply_command(&self, games_state: &mut Match3Game) -> MutationResult {
         if games_state.grid.iter().any(|x| x.is_none()) {

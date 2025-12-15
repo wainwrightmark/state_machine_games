@@ -48,7 +48,7 @@ fn game_component() -> impl IntoView {
 
     view! {
         <svg viewBox="0 0 1052.0 1080.0"  style="max-width: 800px;  margin-inline: auto; ">
-        
+
         {move || SingleTypeEntityStore::render(stores.1.clone(), click_sender.clone())}
         {move || SingleTypeEntityStore::render(stores.2.clone(), ())}
         {move || SingleTypeEntityStore::render(stores.3.clone(), ())}
@@ -410,8 +410,6 @@ pub enum QuizSaladCommand {
     TileClicked(Tile4x4),
 }
 
-impl AnyGameCommand for QuizSaladCommand {}
-
 impl GameCommand<QuizSaladGameState> for QuizSaladCommand {
     fn apply_command(&self, game_state: &mut QuizSaladGameState) -> MutationResult {
         let QuizSaladCommand::TileClicked(clicked_tile) = *self;
@@ -727,8 +725,6 @@ impl GameEntity for TileTextEntity {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NextButtonArtifact;
-
-impl AnyGameCommand for NextButtonArtifact {}
 
 impl GameCommand<QuizSaladGameState> for NextButtonArtifact {
     fn apply_command(&self, game_state: &mut QuizSaladGameState) -> MutationResult {
