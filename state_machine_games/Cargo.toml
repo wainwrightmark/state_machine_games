@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 console_error_panic_hook = "0.1.7"
 wasm-logger = "0.2.0"
-leptos = { version = "0.8.12", features = ["csr"] }
+leptos = { version = "0.8", features = ["csr"] }
 glam = {version = "0.30.9"}
 
 leptos-use = "0.16.3"
@@ -22,7 +22,7 @@ getrandom = { version = "0.3", features = ["wasm_js"] }
 
 
 [dev-dependencies]
-insta = "1.43"
+insta = "1.44"
 
 # [features]
 # leptos = ["dep:leptos", "dep:leptos-use", "dep:web-sys"]

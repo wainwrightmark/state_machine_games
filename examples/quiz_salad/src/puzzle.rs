@@ -51,6 +51,10 @@ impl WordTrait<4, 16> for PuzzleWord {
     fn characters(&self) -> &ArrayVec<Character, 16> {
         &self.characters
     }
+
+    fn quiz_question(&self)-> Option<Ustr> {
+        self.clue
+    }
 }
 
 impl PartialOrd for PuzzleWord {

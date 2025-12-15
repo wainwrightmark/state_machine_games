@@ -28,8 +28,6 @@ pub fn main() {
 }
 
 pub fn app() -> impl IntoView {
-    wasm_logger::init(wasm_logger::Config::default());
-    console_error_panic_hook::set_once();
     mount_to_body(|| game_component());
 }
 
@@ -50,10 +48,11 @@ fn game_component() -> impl IntoView {
 
     view! {
         <svg viewBox="0 0 1052.0 1080.0"  style="max-width: 800px;  margin-inline: auto; ">
-        {move || SingleTypeEntityStore::render(stores.0.clone(), ())}
+        
         {move || SingleTypeEntityStore::render(stores.1.clone(), click_sender.clone())}
         {move || SingleTypeEntityStore::render(stores.2.clone(), ())}
         {move || SingleTypeEntityStore::render(stores.3.clone(), ())}
+        {move || SingleTypeEntityStore::render(stores.0.clone(), ())}
 
         </svg>
         <div>
@@ -455,15 +454,21 @@ impl GameCommand<QuizSaladGameState> for QuizSaladCommand {
             game_state.chosen_state = ChosenState {
                 solution: new_solution,
             };
-            if let Some(solution_index) = game_state.puzzle.check_solution(&game_state.chosen_state.solution){
-                if !game_state.found_words.get_completion(solution_index).is_complete(){
+            if let Some(solution_index) = game_state
+                .puzzle
+                .check_solution(&game_state.chosen_state.solution)
+            {
+                if !game_state
+                    .found_words
+                    .get_completion(solution_index)
+                    .is_complete()
+                {
                     game_state.word_just_found = true;
                     return MutationResult::changed_with_transition(500.0);
                 }
             }
 
             return MutationResult::CHANGED_NO_TRANSITION;
-            
         } else {
             game_state.chosen_state = ChosenState::default();
 
@@ -727,14 +732,17 @@ impl AnyGameCommand for NextButtonArtifact {}
 
 impl GameCommand<QuizSaladGameState> for NextButtonArtifact {
     fn apply_command(&self, game_state: &mut QuizSaladGameState) -> MutationResult {
+        leptos::logging::log!("ABC {}", game_state.current_clue);
         let num_clues = game_state.puzzle.words.len();
         game_state.current_clue = (0..num_clues)
             .cycle()
             .skip(game_state.current_clue + 1)
             .take(num_clues)
-            .filter(|index| game_state.found_words.get_completion(*index).is_complete())
+            .filter(|index| !game_state.found_words.get_completion(*index).is_complete())
             .next()
             .unwrap_or_default();
+
+        leptos::logging::log!("DEF {}", game_state.current_clue);
 
         MutationResult::CHANGED_NO_TRANSITION
     }
