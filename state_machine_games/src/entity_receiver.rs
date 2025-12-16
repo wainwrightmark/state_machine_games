@@ -21,7 +21,7 @@ impl<'s, E: GameEntity> GeneralEntityReceiver<'s, E> {
         }
     }
 
-    pub fn finish(&mut self)-> bool {
+    pub fn finish(&mut self) -> bool {
         for k in self.remaining_keys.drain() {
             match self.store.entities.entry(k) {
                 std::collections::btree_map::Entry::Vacant(_) => {

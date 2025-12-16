@@ -108,3 +108,116 @@ impl<GS: GameState, Stores: EntityStoreCombination<GS>, Receivers: CommandReceiv
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::mpsc;
+
+    use crate::prelude::{
+        AnimationList, CommandReceiver, GameArtifact, GameCommand, GameEntity, GameMachine, GameState, MutationResult, SingleTypeEntityStore
+    };
+
+    #[derive(Debug, PartialEq)]
+    struct MyGameState(Vec<u32>);
+
+    impl GameState for MyGameState {
+        fn maybe_transition(&mut self) -> crate::prelude::MutationResult {
+            MutationResult::NO_CHANGE
+        }
+    }
+
+    #[derive(Debug, PartialEq)]
+    struct MyEntity(u32, String);
+
+    #[derive(Debug, Clone)]
+    struct MyArtifact(String);
+
+    #[derive(Debug, Clone)]
+    struct MyCommand(Vec<u32>);
+
+    impl GameCommand<MyGameState> for MyCommand{
+        fn apply_command(&self, game_state: &mut MyGameState) -> MutationResult {
+            game_state.0 = self.0.clone();
+            MutationResult::CHANGED_NO_TRANSITION
+        }
+    }
+
+    impl GameArtifact for MyArtifact {
+        type Command = MyCommand;
+        fn render(
+            self,
+            _sender: impl crate::prelude::CommandSender<Self::Command>,
+        ) -> impl leptos::IntoView {
+            self.0.to_string()
+        }
+    }
+
+    impl GameEntity for MyEntity {
+        type Artifact = MyArtifact;
+        type Key = u32;
+        type GameState = MyGameState;
+        fn key(&self) -> Self::Key {
+            self.0
+        }
+
+        fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+            game_state.0.iter().copied().map(|x| Self(x, x.to_string()))
+        }
+
+        fn on_new(
+            &self,
+        ) -> (
+            Self::Artifact,
+            crate::prelude::AnimationList<Self::Artifact>,
+        ) {
+            (MyArtifact(self.1.clone()), AnimationList::new())
+        }
+
+        fn on_update(
+            &self,
+            artifact: &mut Self::Artifact,
+            former_entity_state: crate::prelude::EntityState,
+        ) -> crate::prelude::AnimationList<Self::Artifact> {
+            artifact.0 = self.1.clone();
+            AnimationList::new()
+        }
+    }
+
+    #[test]
+    pub fn test_game_machine() {
+        let state = MyGameState(vec![1, 2, 3]);
+        let store: SingleTypeEntityStore<MyEntity> = SingleTypeEntityStore::new();
+        let (sender, receiver) = mpsc::channel::<MyCommand>();
+
+        let mut machine = GameMachine::new(state, store, receiver);
+
+        fn assert_entities(store: &SingleTypeEntityStore<MyEntity>, expected: &str) {
+            let mut actual = String::new();
+            for (index, x) in store.entities.values().map(|x| x.artifact.0.as_str()).enumerate() {
+                if index > 0{
+                    actual.push(',');
+                }
+                actual += x;
+                
+            }
+
+            assert_eq!(actual, expected)
+        }
+
+        assert_entities(&machine.stores, "1,2,3");
+
+        machine.step_game(1000.0);
+        assert_entities(&machine.stores, "1,2,3");
+
+        sender.send(MyCommand(vec![2,3,4])).unwrap();
+        assert_entities(&machine.stores, "1,2,3");
+
+        machine.step_game(1000.0);
+        assert_entities(&machine.stores, "2,3,4");
+
+        sender.send(MyCommand(vec![4,2,5])).unwrap();
+
+        machine.step_game(1000.0);
+        assert_entities(&machine.stores, "2,4,5");
+    }
+}
