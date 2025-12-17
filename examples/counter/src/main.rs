@@ -2,7 +2,7 @@ use core::f32;
 use std::sync::mpsc;
 
 use glam::Vec2;
-use leptos::{logging::log, prelude::*};
+use leptos::prelude::*;
 use rand::{RngCore, seq::SliceRandom};
 use rand_core::SeedableRng;
 use state_machine_games::{define_signal_lens, prelude::*};
@@ -161,7 +161,9 @@ define_signal_lens!(CircleYLens, CircleArtifact, f32, y);
 
 impl GameArtifact for CircleArtifact {
     type Command = ();
+}
 
+impl LeptosGameArtifact for CircleArtifact {
     fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         view! {<circle cx=self.x cy=self.y r=self.size fill="#1111EE" />}
     }
@@ -227,7 +229,9 @@ pub struct SquareButtonArtifact {
 
 impl GameArtifact for SquareButtonArtifact {
     type Command = CounterCommand;
+}
 
+impl LeptosGameArtifact for SquareButtonArtifact {
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl leptos::IntoView {
         view! {
             <rect x={move||{self.x - (self.size.get() * 0.5)} } y={move ||{self.y - (self.size.get() *0.5)}} rx={move || self.size.get() * 0.2} ry={move|| self.size.get() * 0.2}  width=self.size height=self.size fill="#EE1111" on:click=move |_| sender.send_command(CounterCommand::IncrementCount(1)) />

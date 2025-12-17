@@ -179,6 +179,10 @@ pub struct TextArtifact {
 
 impl GameArtifact for TextArtifact {
     type Command = ();
+    
+}
+
+impl LeptosGameArtifact for TextArtifact{
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
         view! {
             <text x=self.x y=self.y font-size=self.font_size style="user-select: none;">
@@ -205,7 +209,11 @@ state_machine_games::define_signal_lens!(TileArtifactScaleLens, TileArtifact, f3
 impl GameArtifact for TileArtifact {
     type Command = Match3Command;
 
-    fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    
+}
+
+impl LeptosGameArtifact for TileArtifact{
+fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
         view! {
             <rect x={self.x} y={self.y}
             width={SQUARE_SIZE}

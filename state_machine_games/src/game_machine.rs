@@ -1,7 +1,4 @@
-use std::sync::Mutex;
-
 use crate::prelude::*;
-use leptos::prelude::*;
 
 pub fn run_game<
     GS: GameState,
@@ -21,8 +18,11 @@ pub struct GameMachine<
     ms_until_transition: Option<f64>,
 }
 
-impl<GS: GameState, S: EntityStoreCombination<GS>> EntityStoreCombination<GS> for ArcRwSignal<S> {
+#[cfg(feature = "leptos")]
+impl<GS: GameState, S: EntityStoreCombination<GS>> EntityStoreCombination<GS> for leptos::prelude::ArcRwSignal<S> {
     fn gather_entities(&mut self, state: &GS) -> bool {
+        use leptos::prelude::Update;
+
         self.try_maybe_update(|x| {
             let changed = x.gather_entities(state);
             (changed, changed)
@@ -31,6 +31,8 @@ impl<GS: GameState, S: EntityStoreCombination<GS>> EntityStoreCombination<GS> fo
     }
 
     fn step_animations(&mut self, delta_ms: f64) {
+        use leptos::prelude::UpdateUntracked;
+
         self.update_untracked(|x| {
             x.step_animations(delta_ms);
         })
@@ -50,9 +52,9 @@ impl<GS: GameState, Stores: EntityStoreCombination<GS>, Receivers: CommandReceiv
             ms_until_transition: Some(0.0),
         }
     }
-
+    #[cfg(feature = "leptos")]
     pub fn run_game(self) {
-        let mutex = Mutex::new(self);
+        let mutex = std::sync::Mutex::new(self);
         leptos_use::use_raf_fn(move |args| match mutex.lock() {
             Ok(mut machine) => {
                 machine.step_game(args.delta);
@@ -114,7 +116,8 @@ mod tests {
     use std::sync::mpsc;
 
     use crate::prelude::{
-        AnimationList, CommandReceiver, GameArtifact, GameCommand, GameEntity, GameMachine, GameState, MutationResult, SingleTypeEntityStore
+        AnimationList,  GameArtifact, GameCommand, GameEntity, GameMachine,
+        GameState, MutationResult, SingleTypeEntityStore,
     };
 
     #[derive(Debug, PartialEq)]
@@ -135,7 +138,7 @@ mod tests {
     #[derive(Debug, Clone)]
     struct MyCommand(Vec<u32>);
 
-    impl GameCommand<MyGameState> for MyCommand{
+    impl GameCommand<MyGameState> for MyCommand {
         fn apply_command(&self, game_state: &mut MyGameState) -> MutationResult {
             game_state.0 = self.0.clone();
             MutationResult::CHANGED_NO_TRANSITION
@@ -144,12 +147,6 @@ mod tests {
 
     impl GameArtifact for MyArtifact {
         type Command = MyCommand;
-        fn render(
-            self,
-            _sender: impl crate::prelude::CommandSender<Self::Command>,
-        ) -> impl leptos::IntoView {
-            self.0.to_string()
-        }
     }
 
     impl GameEntity for MyEntity {
@@ -176,7 +173,7 @@ mod tests {
         fn on_update(
             &self,
             artifact: &mut Self::Artifact,
-            former_entity_state: crate::prelude::EntityState,
+            _former_entity_state: crate::prelude::EntityState,
         ) -> crate::prelude::AnimationList<Self::Artifact> {
             artifact.0 = self.1.clone();
             AnimationList::new()
@@ -193,12 +190,16 @@ mod tests {
 
         fn assert_entities(store: &SingleTypeEntityStore<MyEntity>, expected: &str) {
             let mut actual = String::new();
-            for (index, x) in store.entities.values().map(|x| x.artifact.0.as_str()).enumerate() {
-                if index > 0{
+            for (index, x) in store
+                .entities
+                .values()
+                .map(|x| x.artifact.0.as_str())
+                .enumerate()
+            {
+                if index > 0 {
                     actual.push(',');
                 }
                 actual += x;
-                
             }
 
             assert_eq!(actual, expected)
@@ -209,13 +210,13 @@ mod tests {
         machine.step_game(1000.0);
         assert_entities(&machine.stores, "1,2,3");
 
-        sender.send(MyCommand(vec![2,3,4])).unwrap();
+        sender.send(MyCommand(vec![2, 3, 4])).unwrap();
         assert_entities(&machine.stores, "1,2,3");
 
         machine.step_game(1000.0);
         assert_entities(&machine.stores, "2,3,4");
 
-        sender.send(MyCommand(vec![4,2,5])).unwrap();
+        sender.send(MyCommand(vec![4, 2, 5])).unwrap();
 
         machine.step_game(1000.0);
         assert_entities(&machine.stores, "2,4,5");

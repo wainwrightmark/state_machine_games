@@ -110,7 +110,9 @@ define_signal_lens!(
 
 impl GameArtifact for WordLineArtifact {
     type Command = ();
+}
 
+impl LeptosGameArtifact for WordLineArtifact {
     fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         // let v1 = tile_position(*t1, true);
         // let v2 = tile_position(*t2, true);
@@ -492,7 +494,8 @@ pub struct ClueArtifact {
 
 impl GameArtifact for ClueArtifact {
     type Command = ();
-
+}
+impl LeptosGameArtifact for ClueArtifact {
     fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         view! {
             <text x=0 y=20
@@ -562,7 +565,9 @@ define_signal_lens!(TileTextArtifactScaleLens, TileTextArtifact, f32, scale);
 
 impl GameArtifact for TileRectArtifact {
     type Command = QuizSaladCommand;
+}
 
+impl LeptosGameArtifact for TileRectArtifact {
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = tile_position(self.tile, false);
 
@@ -637,7 +642,9 @@ pub struct TileTextArtifact {
 
 impl GameArtifact for TileTextArtifact {
     type Command = ();
+}
 
+impl LeptosGameArtifact for TileTextArtifact {
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = tile_position(self.tile, true);
         let color = move || {
@@ -746,7 +753,9 @@ impl GameCommand<QuizSaladGameState> for NextButtonArtifact {
 
 impl GameArtifact for NextButtonArtifact {
     type Command = NextButtonArtifact;
+}
 
+impl LeptosGameArtifact for NextButtonArtifact {
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
         view! {
             <button on:click=move|_|sender.send_command(NextButtonArtifact)>
@@ -755,6 +764,7 @@ impl GameArtifact for NextButtonArtifact {
         }
     }
 }
+
 impl GameEntity for NextButtonArtifact {
     type Artifact = Self;
     type Key = ();

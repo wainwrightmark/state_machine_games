@@ -110,8 +110,8 @@ impl GameEntity for ButtonEntity {
 
     fn on_update(
         &self,
-        artifact: &mut Self::Artifact,
-        former_entity_state: EntityState,
+        _artifact: &mut Self::Artifact,
+        _former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
         vec![]
     }
@@ -125,7 +125,9 @@ pub enum ButtonArtifact {
 
 impl GameArtifact for ButtonArtifact {
     type Command = ChessButtonCommand;
+}
 
+impl LeptosGameArtifact for ButtonArtifact {
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let command = match self {
             ButtonArtifact::PlayBestMove => ChessButtonCommand::PlayBestMove,
@@ -246,7 +248,9 @@ pub struct ChessSquareArtifact {
 
 impl GameArtifact for ChessSquareArtifact {
     type Command = ClickSquareCommand;
+}
 
+impl LeptosGameArtifact for ChessSquareArtifact {
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = square_to_position(self.square, false);
         let fill = if self.square.get_rank().to_int() % 2 == self.square.get_file().to_int() % 2 {
@@ -291,7 +295,7 @@ impl GameEntity for ChessSquareEntity {
         entities
     }
 
-    fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
+    fn on_death(&self, _artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
         vec![]
     }
 
@@ -308,7 +312,7 @@ impl GameEntity for ChessSquareEntity {
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        former_entity_state: EntityState,
+        _former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
         artifact.selected.set(self.selected);
         vec![]
@@ -340,7 +344,9 @@ impl GameEntityKey for ChessPiece {}
 
 impl GameArtifact for ChessPiece {
     type Command = ();
+}
 
+impl LeptosGameArtifact for ChessPiece {
     fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = square_to_position(self.square, true);
 
@@ -371,7 +377,7 @@ impl GameEntity for ChessPiece {
         entities
     }
 
-    fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
+    fn on_death(&self, _artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
         vec![]
     }
 
@@ -382,7 +388,7 @@ impl GameEntity for ChessPiece {
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        former_entity_state: EntityState,
+        _former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
         *artifact = *self;
         vec![]

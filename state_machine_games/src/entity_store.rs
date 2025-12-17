@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use impl_trait_for_tuples::impl_for_tuples;
-use leptos::prelude::*;
 use std::collections::BTreeMap;
 
 pub trait EntityStoreCombination<GS: GameState>: Send + Sync + 'static {
@@ -55,23 +54,25 @@ impl<E: GameEntity> EntityStoreCombination<E::GameState> for SingleTypeEntitySto
     }
 }
 
-impl<E: GameEntity> SingleTypeEntityStore<E> {
+#[cfg(feature = "leptos")]
+impl<A: LeptosGameArtifact, E: GameEntity<Artifact = A>> SingleTypeEntityStore<E> {
+    
     pub fn render(
-        signal: ArcRwSignal<Self>,
+        signal: leptos::prelude::ArcRwSignal<Self>,
         sender: impl CommandSender<<E::Artifact as GameArtifact>::Command>,
-    ) -> impl IntoView {
-        leptos::control_flow::For(ForProps {
+    ) -> impl leptos::IntoView {
+        leptos::control_flow::For(leptos::prelude::ForProps {
             each: {
                 let signal = signal.clone();
                 move || {
-                    let read_guard = signal.read();
+                    let read_guard = leptos::prelude::Read::read(&signal);
                     //read_guard.trigger.track();
                     read_guard.entities.keys().copied().collect::<Vec<_>>()
                 }
             },
             key: |&k| k,
             children: move |k| {
-                let read_guard: guards::ReadGuard<_, _> = signal.read();
+                let read_guard: leptos::prelude::guards::ReadGuard<_, _> = leptos::prelude::Read::read(&signal);
 
                 let entity = read_guard.entities.get(&k).unwrap();
                 //log!("Rendering child");
