@@ -192,7 +192,7 @@ mod tests {
             let mut actual = String::new();
             for (index, x) in store
                 .entities
-                .values()
+                .iter()
                 .map(|x| x.artifact.0.as_str())
                 .enumerate()
             {

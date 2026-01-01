@@ -458,13 +458,23 @@ impl GameCommand<QuizSaladGameState> for QuizSaladCommand {
                 .puzzle
                 .check_solution(&game_state.chosen_state.solution)
             {
-                if !game_state
+                let c_index = game_state
                     .found_words
-                    .get_completion(solution_index)
-                    .is_complete()
+                    .word_completions
+                    .iter()
+                    .filter(|x| x.is_complete())
+                    .count() as u8;
+
+                if let Some(completion) = game_state
+                    .found_words
+                    .word_completions
+                    .get_mut(solution_index)
                 {
-                    game_state.word_just_found = true;
-                    return MutationResult::changed_with_transition(500.0);
+                    if !completion.is_complete() {
+                        *completion = found_words_state::Completion::Complete { index: c_index };
+                        game_state.word_just_found = true;
+                        return MutationResult::changed_with_transition(500.0);
+                    }
                 }
             }
 

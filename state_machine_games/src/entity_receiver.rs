@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use const_sized_bit_set::prelude::*;
 use std::collections::HashSet;
 
 pub trait EntityReceiver<E: GameEntity> {
@@ -13,7 +14,7 @@ pub struct GeneralEntityReceiver<'s, E: GameEntity> {
 
 impl<'s, E: GameEntity> GeneralEntityReceiver<'s, E> {
     pub fn new(store: &'s mut SingleTypeEntityStore<E>) -> Self {
-        let remaining_keys = store.entities.keys().copied().collect();
+        let remaining_keys = store.entities.iter().map(|x| x.entity.key()).collect();
         Self {
             store,
             remaining_keys,
@@ -23,16 +24,22 @@ impl<'s, E: GameEntity> GeneralEntityReceiver<'s, E> {
 
     pub fn finish(&mut self) -> bool {
         for k in self.remaining_keys.drain() {
-            match self.store.entities.entry(k) {
-                std::collections::btree_map::Entry::Vacant(_) => {
-                    //should not happen
-                }
-                std::collections::btree_map::Entry::Occupied(mut occupied_entry) => {
-                    let oe = occupied_entry.get_mut();
-                    if oe.kill() {
-                        occupied_entry.remove();
-                        self.changed = true
+            match self
+                .store
+                .entities
+                .binary_search_by_key(&k, |x| x.entity.key())
+            {
+                Ok(index) => match self.store.entities.get_mut(index) {
+                    Some(ab) => {
+                        if ab.kill() {
+                            self.store.entities.remove(index);
+                            self.changed = true
+                        }
                     }
+                    None => {}
+                },
+                Err(_) => {
+                    //should not happen
                 }
             }
         }
@@ -42,9 +49,9 @@ impl<'s, E: GameEntity> GeneralEntityReceiver<'s, E> {
             .store
             .entities
             .iter()
-            .filter(|(_, v)| v.has_animations())
-            .map(|x| x.0)
-            .copied();
+            .enumerate()
+            .filter(|(_index, e)| e.has_animations())
+            .map(|x| x.0);
 
         self.store.animated_entities.extend(animated_entity_keys);
 
@@ -59,16 +66,19 @@ impl<'s, E: GameEntity> EntityReceiver<E> for GeneralEntityReceiver<'s, E> {
 
             self.remaining_keys.remove(&key);
 
-            match self.store.entities.entry(key) {
-                std::collections::btree_map::Entry::Vacant(vacant_entry) => {
-                    let se: StoredEntity<E> = StoredEntity::new(entity);
-                    vacant_entry.insert(se);
-                    self.changed = true;
-                }
-                std::collections::btree_map::Entry::Occupied(mut occupied_entry) => {
-                    let oe = occupied_entry.get_mut();
-
+            match self
+                .store
+                .entities
+                .binary_search_by_key(&key, |x| x.entity.key())
+            {
+                Ok(get_index) => {
+                    let oe = self.store.entities.get_mut(get_index).unwrap();
                     StoredEntity::update(entity, oe)
+                }
+                Err(insert_index) => {
+                    let se: StoredEntity<E> = StoredEntity::new(entity);
+                    self.store.entities.insert(insert_index, se);
+                    self.changed = true;
                 }
             }
         }

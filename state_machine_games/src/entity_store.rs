@@ -1,6 +1,6 @@
 use crate::prelude::*;
+use const_sized_bit_set::prelude::*;
 use impl_trait_for_tuples::impl_for_tuples;
-use std::collections::BTreeMap;
 
 pub trait EntityStoreCombination<GS: GameState>: Send + Sync + 'static {
     //Regather entities from the state
@@ -26,26 +26,30 @@ impl<GS: GameState> EntityStoreCombination<GS> for Tuple {
 }
 
 pub struct SingleTypeEntityStore<E: GameEntity> {
-    pub entities: BTreeMap<E::Key, StoredEntity<E>>, //todo just use a vec here
-    pub animated_entities: Vec<E::Key>,              //todo use indices rather than keys
+    pub entities: Vec<StoredEntity<E>>,
+    ///indexes to entities in entities
+    pub animated_entities: BitSetVec,
 }
 
 impl<E: GameEntity> Default for SingleTypeEntityStore<E> {
     fn default() -> Self {
-        Self { entities: Default::default(), animated_entities: Default::default() }
+        Self {
+            entities: Default::default(),
+            animated_entities: Default::default(),
+        }
     }
 }
 
 impl<E: GameEntity> EntityStoreCombination<E::GameState> for SingleTypeEntityStore<E> {
     fn gather_entities(&mut self, state: &E::GameState) -> bool {
         let mut receiver = GeneralEntityReceiver::new(self);
-        receiver.receive(E::get_entities(state));        
+        receiver.receive(E::get_entities(state));
         receiver.finish()
     }
 
     fn step_animations(&mut self, delta_ms: f64) {
         self.animated_entities.retain(|key| {
-            if let Some(b) = self.entities.get_mut(key) {
+            if let Some(b) = self.entities.get_mut(*key as usize) {
                 b.step_animate(delta_ms)
             } else {
                 false
@@ -56,7 +60,6 @@ impl<E: GameEntity> EntityStoreCombination<E::GameState> for SingleTypeEntitySto
 
 #[cfg(feature = "leptos")]
 impl<A: LeptosGameArtifact, E: GameEntity<Artifact = A>> SingleTypeEntityStore<E> {
-    
     pub fn render(
         signal: leptos::prelude::ArcRwSignal<Self>,
         sender: impl CommandSender<<E::Artifact as GameArtifact>::Command>,
@@ -67,14 +70,16 @@ impl<A: LeptosGameArtifact, E: GameEntity<Artifact = A>> SingleTypeEntityStore<E
                 move || {
                     let read_guard = leptos::prelude::Read::read(&signal);
                     //read_guard.trigger.track();
-                    read_guard.entities.keys().copied().collect::<Vec<_>>()
+                    let len = read_guard.entities.len();
+                    0..len
                 }
             },
             key: |&k| k,
             children: move |k| {
-                let read_guard: leptos::prelude::guards::ReadGuard<_, _> = leptos::prelude::Read::read(&signal);
+                let read_guard: leptos::prelude::guards::ReadGuard<_, _> =
+                    leptos::prelude::Read::read(&signal);
 
-                let entity = read_guard.entities.get(&k).unwrap();
+                let entity = read_guard.entities.get(k).unwrap();
                 //log!("Rendering child");
 
                 entity.artifact.clone().render(sender.clone())
@@ -86,8 +91,8 @@ impl<A: LeptosGameArtifact, E: GameEntity<Artifact = A>> SingleTypeEntityStore<E
 impl<E: GameEntity> SingleTypeEntityStore<E> {
     pub fn new() -> Self {
         Self {
-            entities: BTreeMap::new(),
-            animated_entities: vec![],
+            entities: Vec::new(),
+            animated_entities: BitSetVec::EMPTY,
         }
     }
 }
