@@ -25,7 +25,7 @@ fn game_component() -> impl IntoView {
     let state = Match3Game::new_random(123);
 
     let (sender, receiver) = mpsc::channel::<Match3Command>();
-    let stores = Stores::default();
+    let stores = Stores::new(&state);
     let machine = GameMachine::new(state, stores.clone(), receiver);
 
     machine.run_game();
@@ -45,7 +45,7 @@ const SCALE: f32 = 80.0;
 const TOP_OFFSET: f32 = 120.0;
 const SQUARE_SIZE: f32 = SCALE * 0.9;
 const RECT_OFFSET: f32 = SQUARE_SIZE * 0.5;
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Match3Game {
     pub score: u64,
     pub moves_left: u64,
@@ -237,13 +237,13 @@ pub struct ScoreTextEntity {
 impl GameEntity for ScoreTextEntity {
     type Artifact = TextArtifact;
     type Key = ();
-    type GameState = Match3Game;
+    type StateSegment = Match3Game;
 
     fn key(&self) -> Self::Key {
         ()
     }
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
         [Self {
             score: game_state.score,
         }]
@@ -279,9 +279,9 @@ pub struct MovesLeftEntity {
 impl GameEntity for MovesLeftEntity {
     type Artifact = TextArtifact;
     type Key = ();
-    type GameState = Match3Game;
+    type StateSegment = Match3Game;
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
         [Self {
             moves: game_state.moves_left,
         }]
@@ -339,9 +339,9 @@ impl GameEntityKey for TileKey {}
 impl GameEntity for Match3TileEntity {
     type Artifact = TileArtifact;
     type Key = TileKey;
-    type GameState = Match3Game;
+    type StateSegment = Match3Game;
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
         let selected_tile = game_state.selected_tile;
         game_state.grid.enumerate().flat_map(move |(tile, gem)| {
             if let Some(Gem {

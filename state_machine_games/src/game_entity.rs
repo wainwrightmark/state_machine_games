@@ -4,12 +4,12 @@ use crate::prelude::*;
 pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
     type Artifact: GameArtifact;
     type Key: GameEntityKey;
-    type GameState: GameState;
+    type StateSegment: PartialEq + Clone + Send + Sync + 'static + Sized;
 
     fn key(&self) -> Self::Key;
 
     //todo give the game state the opportunity to promise that the entities are sorted
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self>;
+    fn get_entities(segment: &Self::StateSegment) -> impl Iterator<Item = Self>;
 
     //todo reuse the same vec for all the animations
 

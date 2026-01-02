@@ -37,6 +37,12 @@ impl<GS: GameState, S: EntityStoreCombination<GS>> EntityStoreCombination<GS> fo
             x.step_animations(delta_ms);
         })
     }
+
+    fn new(state: &GS) -> Self {
+        use leptos::prelude::ArcRwSignal;
+
+        ArcRwSignal::new(S::new(state))
+    }
 }
 
 impl<GS: GameState, Stores: EntityStoreCombination<GS>, Receivers: CommandReceiver<GS>>
@@ -114,13 +120,9 @@ impl<GS: GameState, Stores: EntityStoreCombination<GS>, Receivers: CommandReceiv
 #[cfg(test)]
 mod tests {
     use std::sync::mpsc;
+    use crate::prelude::*;
 
-    use crate::prelude::{
-        AnimationList,  GameArtifact, GameCommand, GameEntity, GameMachine,
-        GameState, MutationResult, SingleTypeEntityStore,
-    };
-
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     struct MyGameState(Vec<u32>);
 
     impl GameState for MyGameState {
@@ -152,12 +154,12 @@ mod tests {
     impl GameEntity for MyEntity {
         type Artifact = MyArtifact;
         type Key = u32;
-        type GameState = MyGameState;
+        type StateSegment = MyGameState;
         fn key(&self) -> Self::Key {
             self.0
         }
 
-        fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+        fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
             game_state.0.iter().copied().map(|x| Self(x, x.to_string()))
         }
 
@@ -183,7 +185,7 @@ mod tests {
     #[test]
     pub fn test_game_machine() {
         let state = MyGameState(vec![1, 2, 3]);
-        let store: SingleTypeEntityStore<MyEntity> = SingleTypeEntityStore::new();
+        let store: SingleTypeEntityStore<MyEntity> = SingleTypeEntityStore::new(&state);
         let (sender, receiver) = mpsc::channel::<MyCommand>();
 
         let mut machine = GameMachine::new(state, store, receiver);

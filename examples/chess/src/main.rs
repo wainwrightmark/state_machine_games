@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 
 use glam::Vec2;
-use leptos::prelude::*;
+use leptos::{logging::log, prelude::*};
 use state_machine_games::prelude::*;
 use strum::{EnumIter, IntoEnumIterator};
 use timecat::prelude::*;
@@ -16,37 +16,6 @@ fn main() {
     wasm_logger::init(wasm_logger::Config::default());
     console_error_panic_hook::set_once();
     mount_to_body(|| game_component());
-    // // Initialize a chess board with the default starting position.
-    // let mut board = Board::default();
-
-    // //bo
-
-    // //ValidOrNullMove::new(source, dest, promotion)
-
-    // // Apply moves in standard algebraic notation.
-    // board.push_san("e4").expect("Failed to make move: e4");
-    // board.push_san("e5").expect("Failed to make move: e5");
-
-    // // Evaluate the current board position using the inbuilt_nnue feature.
-    // let evaluation = board.evaluate();
-    // println!("Current Evaluation: {}\n", evaluation);
-
-    // // Initialize the engine with the current board state.
-    // let mut engine = Engine::from_board(board);
-
-    // // Configure the engine to search for the best move up to a depth of 10 plies.
-    // let response = engine.search_depth_verbose(10);
-    // let best_move = response.get_best_move().expect("No best move found");
-
-    // //board.get_piece_at(square)
-
-    // // Output the best move found by the engine.
-    // println!(
-    //     "\nBest Move: {}",
-    //     best_move
-    //         .san(engine.get_board())
-    //         .expect("Failed to generate SAN")
-    // );
 }
 
 fn game_component() -> impl IntoView {
@@ -57,7 +26,7 @@ fn game_component() -> impl IntoView {
 
     let (click_sender, click_receiver) = mpsc::channel::<ClickSquareCommand>();
     let (button_sender, button_receiver) = mpsc::channel::<ChessButtonCommand>();
-    let stores = Stores::default();
+    let stores = Stores::new(&state);
     let machine = GameMachine::new(state, stores.clone(), (click_receiver, button_receiver));
 
     machine.run_game();
@@ -85,14 +54,13 @@ impl GameEntityKey for ButtonEntity {}
 impl GameEntity for ButtonEntity {
     type Artifact = ButtonArtifact;
     type Key = Self;
-
-    type GameState = ChessState;
+    type StateSegment = ();
 
     fn key(&self) -> Self::Key {
         *self
     }
 
-    fn get_entities(_game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+    fn get_entities(_: &()) -> impl Iterator<Item = Self> {
         ButtonEntity::iter()
     }
 
@@ -277,19 +245,18 @@ pub struct ChessSquareEntity {
 impl GameEntity for ChessSquareEntity {
     type Artifact = ChessSquareArtifact;
     type Key = u8;
-    type GameState = ChessState;
+    type StateSegment = Option<Square>;
 
     fn key(&self) -> Self::Key {
         self.square.to_int()
     }
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
-        let selected_square = game_state.selected_square;
+    fn get_entities(selected_square: &Option<Square>) -> impl Iterator<Item = Self> {        
         let entities = (0..64)
             .map(|i| unsafe { Square::from_int(i) })
             .map(move |square| Self {
                 square,
-                selected: Some(square) == selected_square,
+                selected: Some(square) == selected_square.clone(),
             });
 
         entities
@@ -350,6 +317,8 @@ impl LeptosGameArtifact for ChessPiece {
     fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = square_to_position(self.square, true);
 
+        log!("Piece {} x: {x} y: {y}", self.piece);
+
         view! {
             <text x=x y=y font-size={40} style="pointer-events: none;user-select: none;font-family: monospace;dominant-baseline: central;text-anchor: middle;">
                 {piece_to_char(&self.piece)}
@@ -361,16 +330,15 @@ impl LeptosGameArtifact for ChessPiece {
 impl GameEntity for ChessPiece {
     type Artifact = Self;
     type Key = Self;
-    type GameState = ChessState;
+    type StateSegment = ChessPosition;
 
     fn key(&self) -> Self::Key {
         *self
     }
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
-        let entities = game_state.board.occupied().flat_map(|square| {
-            game_state
-                .board
+    fn get_entities(board: &ChessPosition) -> impl Iterator<Item = Self> {
+        let entities = board.occupied().flat_map(|square| {
+            board
                 .get_piece_at(square)
                 .map(|piece| ChessPiece { square, piece })
         });
@@ -424,7 +392,7 @@ pub fn piece_to_char(piece: &Piece) -> char {
         (White, King) => '♔',
     }
 }
-
+#[derive(Debug)]
 pub struct ChessState {
     pub board: Board,
     pub selected_square: Option<Square>,
@@ -433,5 +401,28 @@ pub struct ChessState {
 impl GameState for ChessState {
     fn maybe_transition(&mut self) -> state_machine_games::prelude::MutationResult {
         MutationResult::NO_CHANGE
+    }
+}
+
+
+impl HasSegment<Option<Square>> for ChessState{
+    fn get_segment(&self) -> Option<Square> {
+        self.selected_square
+    }
+
+    fn segment_eq(&self, s: &Option<Square>) -> bool {
+        self.selected_square.eq(s)
+    }
+}
+
+impl HasSegment<ChessPosition> for ChessState{
+    fn get_segment(&self) -> ChessPosition {
+        let position = self.board.get_position().clone();
+        log!("POSITION\n{}", position.to_string());
+        position
+    }
+
+    fn segment_eq(&self, s: &ChessPosition) -> bool {
+        self.board.get_position().eq(s)
     }
 }

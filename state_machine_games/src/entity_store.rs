@@ -10,6 +10,8 @@ pub trait EntityStoreCombination<GS: GameState>: Send + Sync + 'static {
     //Step all animations in this store
     //This should never change the structure of the store
     fn step_animations(&mut self, delta_ms: f64);
+
+    fn new(state: &GS) -> Self;
 }
 
 #[impl_for_tuples(1, 8)]
@@ -23,27 +25,30 @@ impl<GS: GameState> EntityStoreCombination<GS> for Tuple {
     fn step_animations(&mut self, delta_ms: f64) {
         for_tuples! (#(self.Tuple.step_animations(delta_ms);) *)
     }
+
+    fn new(state: &GS) -> Self {
+        (for_tuples! (#(Tuple::new(state) ), *))
+    }
 }
 
 pub struct SingleTypeEntityStore<E: GameEntity> {
     pub entities: Vec<StoredEntity<E>>,
     ///indexes to entities in entities
     pub animated_entities: BitSetVec,
+    pub segment: E::StateSegment,
 }
 
-impl<E: GameEntity> Default for SingleTypeEntityStore<E> {
-    fn default() -> Self {
-        Self {
-            entities: Default::default(),
-            animated_entities: Default::default(),
+impl<E: GameEntity, GS: GameState + HasSegment<E::StateSegment>> EntityStoreCombination<GS>
+    for SingleTypeEntityStore<E>
+{
+    fn gather_entities(&mut self, state: &GS) -> bool {
+        if state.segment_eq(&self.segment) {
+            return false;
         }
-    }
-}
+        self.segment = state.get_segment();
 
-impl<E: GameEntity> EntityStoreCombination<E::GameState> for SingleTypeEntityStore<E> {
-    fn gather_entities(&mut self, state: &E::GameState) -> bool {
         let mut receiver = GeneralEntityReceiver::new(self);
-        receiver.receive(E::get_entities(state));
+        receiver.receive();
         receiver.finish()
     }
 
@@ -55,6 +60,20 @@ impl<E: GameEntity> EntityStoreCombination<E::GameState> for SingleTypeEntitySto
                 false
             }
         });
+    }
+
+    fn new(state: &GS) -> Self {
+        let mut s = Self {
+            entities: Vec::new(),
+            animated_entities: BitSetVec::EMPTY,
+            segment: state.get_segment(),
+        };
+
+        let mut receiver = GeneralEntityReceiver::new(&mut s);
+        receiver.receive();
+        receiver.finish();
+
+        s
     }
 }
 
@@ -85,15 +104,6 @@ impl<A: LeptosGameArtifact, E: GameEntity<Artifact = A>> SingleTypeEntityStore<E
                 entity.artifact.clone().render(sender.clone())
             },
         })
-    }
-}
-
-impl<E: GameEntity> SingleTypeEntityStore<E> {
-    pub fn new() -> Self {
-        Self {
-            entities: Vec::new(),
-            animated_entities: BitSetVec::EMPTY,
-        }
     }
 }
 

@@ -3,12 +3,12 @@ use const_sized_bit_set::prelude::*;
 use std::collections::HashSet;
 
 pub trait EntityReceiver<E: GameEntity> {
-    fn receive(&mut self, entities: impl Iterator<Item = E>);
+    fn receive(&mut self);
 }
 
 pub struct GeneralEntityReceiver<'s, E: GameEntity> {
     store: &'s mut SingleTypeEntityStore<E>,
-    remaining_keys: HashSet<E::Key>,
+    remaining_keys: HashSet<E::Key>, //todo use a vec
     changed: bool,
 }
 
@@ -60,7 +60,8 @@ impl<'s, E: GameEntity> GeneralEntityReceiver<'s, E> {
 }
 
 impl<'s, E: GameEntity> EntityReceiver<E> for GeneralEntityReceiver<'s, E> {
-    fn receive(&mut self, entities: impl Iterator<Item = E>) {
+    fn receive(&mut self) {
+        let entities= E::get_entities(&self.store.segment);
         for entity in entities {
             let key = entity.key();
 

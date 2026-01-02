@@ -24,7 +24,7 @@ fn game_component() -> impl IntoView {
     };
 
     let (sender, receiver) = mpsc::channel::<CounterCommand>();
-    let stores = Stores::default();
+    let stores: Stores = Stores::new(&state);
     let machine = GameMachine::new(state, stores.clone(), receiver);
 
     machine.run_game();
@@ -37,6 +37,7 @@ fn game_component() -> impl IntoView {
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct CounterGameState {
     pub n: usize,
     pub rng: TinyRng,
@@ -95,12 +96,12 @@ impl Circle {
     }
 }
 
-impl GameEntity for Circle {
-    type GameState = CounterGameState;
+impl GameEntity for Circle {    
     type Artifact = CircleArtifact;
     type Key = Key;
+    type StateSegment = CounterGameState;
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
         let mut arr: Vec<_> = (0u32..game_state.n as u32).collect();
 
         let mut rng = game_state.rng.clone();
@@ -175,7 +176,7 @@ pub struct SquareButton {
 }
 
 impl GameEntity for SquareButton {
-    type GameState = CounterGameState;
+    type StateSegment = CounterGameState;
     type Artifact = SquareButtonArtifact;
     type Key = Key;
 
@@ -183,7 +184,7 @@ impl GameEntity for SquareButton {
         Key::SquareButton
     }
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
         [SquareButton { n: game_state.n }].into_iter()
     }
 
