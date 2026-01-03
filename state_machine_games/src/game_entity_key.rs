@@ -12,3 +12,4 @@ impl GameEntityKey for u8 {}
 impl GameEntityKey for u16 {}
 impl GameEntityKey for u32 {}
 impl GameEntityKey for u64 {}
+impl GameEntityKey for usize {}

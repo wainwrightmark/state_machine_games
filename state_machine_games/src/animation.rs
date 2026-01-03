@@ -61,6 +61,22 @@ pub trait ApproachValue: Send + Sync + 'static {
     ) -> bool;
 }
 
+#[cfg(feature = "bevy_color")]
+impl ApproachValue for bevy_color::Srgba{
+    fn approach(
+        value: &mut Self,
+        target_value: &Self,
+        velocity_units_per_ms: f64,
+        delta_ms: f64,
+    ) -> bool {
+        use bevy_color::ColorToComponents;
+        let v4 = value.to_vec4();
+        let v4 = v4.move_towards(target_value.to_vec4(), (velocity_units_per_ms * delta_ms) as f32);
+        *value = bevy_color::Srgba::from_vec4(v4);
+        value == target_value
+    }
+}
+
 impl ApproachValue for Vec2 {
     fn approach(
         value: &mut Self,

@@ -1,4 +1,4 @@
-use std::{cmp::Reverse, sync::mpsc};
+use std::sync::mpsc;
 
 use geometrid::{prelude::TileMap, vector::Vector};
 use leptos::prelude::*;
@@ -179,11 +179,10 @@ pub struct TextArtifact {
 
 impl GameArtifact for TextArtifact {
     type Command = ();
-    
 }
 
-impl LeptosGameArtifact for TextArtifact{
-    fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
+impl LeptosGameArtifact for TextArtifact {
+    fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         view! {
             <text x=self.x y=self.y font-size=self.font_size style="user-select: none;">
                 {self.text}
@@ -208,12 +207,10 @@ state_machine_games::define_signal_lens!(TileArtifactScaleLens, TileArtifact, f3
 
 impl GameArtifact for TileArtifact {
     type Command = Match3Command;
-
-    
 }
 
-impl LeptosGameArtifact for TileArtifact{
-fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
+impl LeptosGameArtifact for TileArtifact {
+    fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
         view! {
             <rect x={self.x} y={self.y}
             width={SQUARE_SIZE}
@@ -264,7 +261,7 @@ impl GameEntity for ScoreTextEntity {
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        former_entity_state: EntityState,
+        _former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
         artifact.text.set(format!("Score: {}", self.score));
         vec![]
@@ -306,7 +303,7 @@ impl GameEntity for MovesLeftEntity {
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        former_entity_state: EntityState,
+        _former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
         artifact.text.set(format!("Moves: {}", self.moves));
         vec![]
@@ -371,7 +368,7 @@ impl GameEntity for Match3TileEntity {
         vec![
             animate_towards::<TileArtifactScaleLens>(0.0, 1.0 / 1000.0),
             animate_towards::<TileArtifactXLens>(Self::get_x(self.tile.x()), SCALE as f64 / 1000.0),
-            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64  / 1000.0),
+            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64 / 1000.0),
         ]
     }
 
@@ -387,7 +384,7 @@ impl GameEntity for Match3TileEntity {
 
         let animations = vec![
             animate_towards::<TileArtifactScaleLens>(1.0, 1.0 / 1000.0),
-            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64  / 100.0),
+            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64 / 100.0),
         ];
 
         (artifact, animations)
@@ -402,8 +399,8 @@ impl GameEntity for Match3TileEntity {
         artifact.tile.set(self.tile);
         //change x,y,selected,scale
         vec![
-            animate_towards::<TileArtifactXLens>(Self::get_x(self.tile.x()), SCALE as f64  / 1000.0),
-            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE  as f64 / 1000.0),
+            animate_towards::<TileArtifactXLens>(Self::get_x(self.tile.x()), SCALE as f64 / 1000.0),
+            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64 / 1000.0),
         ]
     }
 }

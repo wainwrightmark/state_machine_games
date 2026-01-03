@@ -1,14 +1,22 @@
 pub mod chosen_state;
+pub mod colors;
 pub mod found_words_state;
 pub mod grid_input;
+pub mod layout;
+pub mod layout_util;
 pub mod puzzle;
+pub mod util;
 
-use std::sync::mpsc;
-
+use crate::colors::CLASSIC_COLOR_SCHEME;
+use crate::found_words_state::Completion;
+use crate::layout::*;
+use bevy_color::Srgba;
 use itertools::Itertools;
+use leptos::ev::MouseEvent;
 use leptos::prelude::*;
+use state_machine_games::define_signal_lens;
 use state_machine_games::prelude::*;
-use state_machine_games::{define_signal_lens, prelude::*};
+use std::sync::mpsc;
 use ws_core::{ArrayVec, Character, LevelTrait, Tile, Tile4x4, Ustr};
 
 use crate::{chosen_state::ChosenState, found_words_state::FoundWordsState, puzzle::Puzzle};
@@ -18,7 +26,7 @@ type Stores = (
     ArcRwSignal<SingleTypeEntityStore<TileRectEntity>>,
     ArcRwSignal<SingleTypeEntityStore<WordLineSectionEntity>>,
     ArcRwSignal<SingleTypeEntityStore<TileTextEntity>>,
-    ArcRwSignal<SingleTypeEntityStore<NextButtonArtifact>>,
+    ArcRwSignal<SingleTypeEntityStore<LozengeEntity>>,
 );
 
 pub fn main() {
@@ -40,29 +48,35 @@ fn game_component() -> impl IntoView {
     let state = QuizSaladGameState::new(puzzle);
 
     let (click_sender, click_receiver) = mpsc::channel::<QuizSaladCommand>();
-    let (button_sender, button_receiver) = mpsc::channel::<NextButtonArtifact>();
-    let stores = Stores::default();
-    let machine = GameMachine::new(state, stores.clone(), (click_receiver, button_receiver));
+    //let (button_sender, button_receiver) = mpsc::channel::<NextButtonArtifact>();
+    let stores = Stores::new(&state);
+    let machine = GameMachine::new(state, stores.clone(), click_receiver);
 
     machine.run_game();
 
+    let cs1 = click_sender.clone();
+    let cs2 = click_sender.clone();
+
     view! {
-        <svg viewBox="0 0 1052.0 1080.0"  style="max-width: 800px;  margin-inline: auto; ">
+        <div style="height: 100vh; width: 100vw; overflow: hidden;">
+            <svg viewBox=format!("0 0 {GAME_WIDTH} {GAME_HEIGHT}") style="max-width: 100%; max-height: 100%; user-select:none; position:fixed; margin:auto; inset: 0px;">
 
-        {move || SingleTypeEntityStore::render(stores.1.clone(), click_sender.clone())}
-        {move || SingleTypeEntityStore::render(stores.2.clone(), ())}
-        {move || SingleTypeEntityStore::render(stores.3.clone(), ())}
-        {move || SingleTypeEntityStore::render(stores.0.clone(), ())}
+            {move || SingleTypeEntityStore::render(stores.1.clone(), cs1.clone())}
+            {move || SingleTypeEntityStore::render(stores.2.clone(), ())}
+            {move || SingleTypeEntityStore::render(stores.3.clone(), ())}
+            {move || SingleTypeEntityStore::render(stores.0.clone(), ())}
+            {move || SingleTypeEntityStore::render(stores.4.clone(), cs2.clone())}
 
-        </svg>
-        <div>
-            {move || SingleTypeEntityStore::render(stores.4.clone(), button_sender.clone())}
+            </svg>
+            // <div>
+            //     {move || SingleTypeEntityStore::render(stores.4.clone(), button_sender.clone())}
+            // </div>
         </div>
 
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct QuizSaladGameState {
     pub puzzle: Puzzle,
     pub current_clue: usize,
@@ -95,6 +109,8 @@ pub struct WordLineArtifact {
 
 //define_signal_lens!(WordLineArtifactV1Lens, WordLineArtifact, Vec2, v1);
 define_signal_lens!(WordLineArtifactV2Lens, WordLineArtifact, Vec2, v2);
+
+define_signal_lens!(LozengeArtifactFillLens, LozengeArtifact, Srgba, fill);
 // define_signal_lens!(
 //     WordLineArtifactSegmentIndexLens,
 //     WordLineArtifact,
@@ -114,26 +130,7 @@ impl GameArtifact for WordLineArtifact {
 
 impl LeptosGameArtifact for WordLineArtifact {
     fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
-        // let v1 = tile_position(*t1, true);
-        // let v2 = tile_position(*t2, true);
-        // // let length = v1.distance(v2);
-        // let Vec2 { x: x1, y: y1 } = v1;
-        // let Vec2 { x: x2, y: y2 } = v2;
-        // let color = wordline_color(*segment_index as usize);
-
-        // let stroke_width = if meta.is_dead() {
-        //     0.0
-        // } else {
-        //     PATH_STROKE_WIDTH
-        // };
-        // let is_new = meta.is_new();
-
-        // let (x_from, y_from) = if is_new { (x1, y1) } else { (x2, y2) };
-
-        // let x2_animated = animate_value(start_time, current_time, x_from, x2, 500.0, Lerp32);
-        // let y2_animated = animate_value(start_time, current_time, y_from, y2, 500.0, Lerp32);
-
-        //todo nice line disappear
+        //todo nice line disappear - dependent on reason for disappear
         //todo line pulsing if close to the answer
 
         view! {
@@ -143,31 +140,12 @@ impl LeptosGameArtifact for WordLineArtifact {
              x2={move || self.v2.get().x}
              y2={move || self.v2.get().y}
              visibility="visible"
-             stroke={ wordline_color(self.segment_index as usize)}
+             stroke={colors::CLASSIC_COLOR_SCHEME.wordline_color(self.segment_index as usize).to_hex()}
              stroke-linecap="round"
              stroke-width={move ||{self.stroke_width_ratio.get() * PATH_STROKE_WIDTH}}
              pointer-events="none" >
-                // {animate_x2_y2}
-                // {animate_stroke_width}
             </line>
         }
-
-        // QuizGameEntity::WordLineSingleCircle { tile } => {
-        //         let Vec2 { x: x1, y: y1 } = tile_position(*tile, true);
-
-        //         let color = wordline_color(0);
-        //         view!{
-        //             <circle cx={x1} cy={y1} fill={color} r={PATH_STROKE_WIDTH * 0.5} pointer-events="none"/>
-        //         }.into_any()
-        //     }
-        //     QuizGameEntity::WordLineSegment {
-        //         index: _,
-        //         t1,
-        //         t2,
-        //         segment_index,
-        //     } => {
-
-        //     }
     }
 }
 
@@ -197,7 +175,7 @@ impl GameEntityKey for WordLineSectionEntity {}
 impl GameEntity for WordLineSectionEntity {
     type Artifact = WordLineArtifact;
     type Key = WordLineSectionKey;
-    type GameState = QuizSaladGameState;
+    type StateSegment = QuizSaladGameState;
 
     fn key(&self) -> Self::Key {
         match self {
@@ -212,7 +190,7 @@ impl GameEntity for WordLineSectionEntity {
         }
     }
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
         let circle = if game_state.chosen_state.solution.len() == 1 {
             Some(WordLineSectionEntity::Circle {
                 tile: game_state.chosen_state.solution[0],
@@ -231,7 +209,10 @@ impl GameEntity for WordLineSectionEntity {
             .tuple_windows()
             .enumerate()
             .map(move |(index, (t1, t2))| {
-                let relative_point = Some(tile_position(*t1, true) - tile_position(*t2, true));
+                let relative_point = Some(
+                    tile_position(*t1, PositionOrigin::Center)
+                        - tile_position(*t2, PositionOrigin::Center),
+                );
                 let segment_index = segment_index1;
                 if Some(relative_point) != last_relative_point {
                     last_relative_point = Some(relative_point);
@@ -265,8 +246,8 @@ impl GameEntity for WordLineSectionEntity {
         match self {
             WordLineSectionEntity::Circle { tile } => {
                 si = 0;
-                v1 = tile_position(*tile, true);
-                v2 = tile_position(*tile, true);
+                v1 = tile_position(*tile, PositionOrigin::Center);
+                v2 = tile_position(*tile, PositionOrigin::Center);
                 initial_width_ratio = 0.0;
             }
             WordLineSectionEntity::LineSegment {
@@ -276,8 +257,8 @@ impl GameEntity for WordLineSectionEntity {
                 ..
             } => {
                 si = *segment_index;
-                v1 = tile_position(*t1, true);
-                v2 = tile_position(*t2, true);
+                v1 = tile_position(*t1, PositionOrigin::Center);
+                v2 = tile_position(*t2, PositionOrigin::Center);
                 initial_width_ratio = 1.0;
             }
         }
@@ -301,16 +282,16 @@ impl GameEntity for WordLineSectionEntity {
         artifact: &mut Self::Artifact,
         former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
-        let v1: Vec2; //= tile_position(self.v1, true);
-        let v2: Vec2; //= tile_position(self.v2, true);
+        let v1: Vec2;
+        let v2: Vec2;
         let si: u8;
         let initial_width_ratio: f32;
 
         match self {
             WordLineSectionEntity::Circle { tile } => {
                 si = 0;
-                v1 = tile_position(*tile, true);
-                v2 = tile_position(*tile, true);
+                v1 = tile_position(*tile, PositionOrigin::Center);
+                v2 = tile_position(*tile, PositionOrigin::Center);
                 initial_width_ratio = 0.0;
             }
             WordLineSectionEntity::LineSegment {
@@ -320,8 +301,8 @@ impl GameEntity for WordLineSectionEntity {
                 ..
             } => {
                 si = *segment_index;
-                v1 = tile_position(*t1, true);
-                v2 = tile_position(*t2, true);
+                v1 = tile_position(*t1, PositionOrigin::Center);
+                v2 = tile_position(*t2, PositionOrigin::Center);
                 initial_width_ratio = 1.0;
             }
         }
@@ -369,133 +350,100 @@ impl GameState for QuizSaladGameState {
     }
 }
 
-const SCALE: f32 = 258.0;
-const TOP_OFFSET: f32 = 10.0;
-const LEFT_OFFSET: f32 = 10.0;
-
-pub fn tile_position(tile: Tile4x4, from_centre: bool) -> Vec2 {
-    let rect_size = SCALE * 0.9;
-
-    let mut pos = Vec2 {
-        x: tile.x() as f32,
-        y: tile.y() as f32,
-    };
-
-    if from_centre {
-        pos = pos + Vec2::splat(0.45);
-    }
-
-    let x = LEFT_OFFSET + (pos.x * SCALE) + ((SCALE - rect_size) * 0.5);
-    let y = TOP_OFFSET + (pos.y * SCALE) + ((SCALE - rect_size) * 0.5);
-
-    Vec2 { x, y }
-}
-
-// pub fn location_to_tile(location: Location) -> Option<Tile4x4>{
-//     let x = location.x - LEFT_OFFSET;
-//     let y = location.y - TOP_OFFSET;
-
-//     let x_index = x / SCALE;
-//     let y_index = y / SCALE;
-
-//     let x2 = x_index.floor() as u8;
-//     let y2 = y_index.floor() as u8;
-
-//     let tile = Tile4x4::try_new(x2, y2);
-
-//     //log!("Event: {x} {y} Tile {tile:?}");
-
-//     tile
-// }
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum QuizSaladCommand {
     TileClicked(Tile4x4),
+    LozengeClicked(usize),
 }
 
 impl GameCommand<QuizSaladGameState> for QuizSaladCommand {
     fn apply_command(&self, game_state: &mut QuizSaladGameState) -> MutationResult {
-        let QuizSaladCommand::TileClicked(clicked_tile) = *self;
-        if game_state.found_words.unneeded_tiles.get_bit(&clicked_tile) {
-            game_state.chosen_state = ChosenState::default();
-            return MutationResult::CHANGED_NO_TRANSITION;
-        }
+        match self {
+            QuizSaladCommand::TileClicked(clicked_tile) => {
+                let clicked_tile = *clicked_tile;
+                if game_state.found_words.unneeded_tiles.get_bit(&clicked_tile) {
+                    game_state.chosen_state = ChosenState::default();
+                    return MutationResult::CHANGED_NO_TRANSITION;
+                }
 
-        let current_solution = game_state.chosen_state.current_solution();
+                let current_solution = game_state.chosen_state.current_solution();
 
-        let Some(last_tile) = current_solution.last().copied() else {
-            game_state.chosen_state = ChosenState {
-                solution: ArrayVec::from_iter([clicked_tile]),
-            };
-            return MutationResult::CHANGED_NO_TRANSITION;
-        };
+                let Some(last_tile) = current_solution.last().copied() else {
+                    game_state.chosen_state = ChosenState {
+                        solution: ArrayVec::from_iter([clicked_tile]),
+                    };
+                    return MutationResult::CHANGED_NO_TRANSITION;
+                };
 
-        if clicked_tile == last_tile {
-            let mut new_solution = current_solution.clone();
-            new_solution.pop();
-            game_state.chosen_state = ChosenState {
-                solution: new_solution,
-            };
-            return MutationResult::CHANGED_NO_TRANSITION;
-        }
+                if clicked_tile == last_tile {
+                    let mut new_solution = current_solution.clone();
+                    new_solution.pop();
+                    game_state.chosen_state = ChosenState {
+                        solution: new_solution,
+                    };
+                    return MutationResult::CHANGED_NO_TRANSITION;
+                }
 
-        if let Some(position) = current_solution.iter().position(|&x| x == clicked_tile) {
-            let mut new_solution = current_solution.clone();
-            new_solution.truncate(position + 1);
-            game_state.chosen_state = ChosenState {
-                solution: new_solution,
-            };
+                if let Some(position) = current_solution.iter().position(|&x| x == clicked_tile) {
+                    let mut new_solution = current_solution.clone();
+                    new_solution.truncate(position + 1);
+                    game_state.chosen_state = ChosenState {
+                        solution: new_solution,
+                    };
 
-            return MutationResult::CHANGED_NO_TRANSITION;
-        }
+                    return MutationResult::CHANGED_NO_TRANSITION;
+                }
 
-        if clicked_tile.is_adjacent_to(&last_tile) {
-            let mut new_solution = current_solution.clone();
-            new_solution.push(clicked_tile);
-            game_state.chosen_state = ChosenState {
-                solution: new_solution,
-            };
-            if let Some(solution_index) = game_state
-                .puzzle
-                .check_solution(&game_state.chosen_state.solution)
-            {
-                let c_index = game_state
-                    .found_words
-                    .word_completions
-                    .iter()
-                    .filter(|x| x.is_complete())
-                    .count() as u8;
+                if clicked_tile.is_adjacent_to(&last_tile) {
+                    let mut new_solution = current_solution.clone();
+                    new_solution.push(clicked_tile);
+                    game_state.chosen_state = ChosenState {
+                        solution: new_solution,
+                    };
+                    if let Some(solution_index) = game_state
+                        .puzzle
+                        .check_solution(&game_state.chosen_state.solution)
+                    {
+                        let c_index = game_state
+                            .found_words
+                            .word_completions
+                            .iter()
+                            .filter(|x| x.is_complete())
+                            .count() as u8;
 
-                if let Some(completion) = game_state
-                    .found_words
-                    .word_completions
-                    .get_mut(solution_index)
-                {
-                    if !completion.is_complete() {
-                        *completion = found_words_state::Completion::Complete { index: c_index };
-                        game_state.word_just_found = true;
-                        return MutationResult::changed_with_transition(500.0);
+                        if let Some(completion) = game_state
+                            .found_words
+                            .word_completions
+                            .get_mut(solution_index)
+                        {
+                            if !completion.is_complete() {
+                                *completion =
+                                    found_words_state::Completion::Complete { index: c_index };
+                                game_state.word_just_found = true;
+                                return MutationResult::changed_with_transition(500.0);
+                            }
+                        }
                     }
+
+                    return MutationResult::CHANGED_NO_TRANSITION;
+                } else {
+                    game_state.chosen_state = ChosenState::default();
+
+                    return MutationResult::CHANGED_NO_TRANSITION;
                 }
             }
-
-            return MutationResult::CHANGED_NO_TRANSITION;
-        } else {
-            game_state.chosen_state = ChosenState::default();
-
-            return MutationResult::CHANGED_NO_TRANSITION;
+            QuizSaladCommand::LozengeClicked(index) => {
+                game_state.current_clue = *index;
+                return MutationResult::CHANGED_NO_TRANSITION;
+            }
         }
     }
 }
 
-const FONT_SIZE: f32 = SCALE * 0.5;
-const RECT_SIZE: f32 = SCALE * 0.9;
-const PATH_STROKE_WIDTH: f32 = SCALE * 0.5;
-const RADIUS: f32 = RECT_SIZE * 0.05;
-const FILL_COLOR: &'static str = "#97FCFF";
-const CLUE_FONT_SIZE: f32 = 40.0;
-const FONT_FAMILY: &'static str = "Montserrat";
-const SELECTED_TEXT_COLOR: &'static str = "#FFFFFF";
-const UNSELECTED_TEXT_COLOR: &'static str = "#202251";
+//const FILL_COLOR: &'static str = "#97FCFF";
+
+//const SELECTED_TEXT_COLOR: &'static str = "#FFFFFF";
+//const UNSELECTED_TEXT_COLOR: &'static str = "#202251";
 
 #[derive(Debug, Clone)]
 pub struct ClueArtifact {
@@ -507,15 +455,44 @@ impl GameArtifact for ClueArtifact {
 }
 impl LeptosGameArtifact for ClueArtifact {
     fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
-        view! {
-            <text x=0 y=20
-            font-size=CLUE_FONT_SIZE
-            font-weight="600"
-            font-family={FONT_FAMILY}
-            dominant-baseline="central"
-            style="text-align: left; text-anchor: left;">{
-                move ||self.text.get().to_string()
-            }</text>
+        move || match util::split_two_line_ustr(self.text.get(), 30) {
+            itertools::Either::Left(a) => {
+                leptos::either::Either::Left(
+                view! {
+                    <text x=320 y=950
+                    font-size={CLUE_FONT_SIZE}
+                    font-weight="600"
+                    font-family={FONT_FAMILY}
+                    dominant-baseline="central"
+                    fill={CLASSIC_COLOR_SCHEME.clue_text.to_hex()}
+                    style="text-align: center; text-anchor: middle;">{
+                        a.to_string()
+                    }</text>
+                })
+            }
+            itertools::Either::Right((a, b)) => {
+                leptos::either::Either::Right(
+                view! {
+                    <text x=320 y=930
+                    font-size={CLUE_FONT_SIZE}
+                    font-weight="600"
+                    font-family={FONT_FAMILY}
+                    dominant-baseline="central"
+                    fill={CLASSIC_COLOR_SCHEME.clue_text.to_hex()}
+                    style="text-align: center; text-anchor: middle;">{
+                        a.to_string()
+                    }</text>
+                    <text x=320 y=970
+                    font-size={CLUE_FONT_SIZE}
+                    font-weight="600"
+                    font-family={FONT_FAMILY}
+                    dominant-baseline="central"
+                    fill={CLASSIC_COLOR_SCHEME.clue_text.to_hex()}
+                    style="text-align: center; text-anchor: middle;">{
+                        b.to_string()
+                    }</text>
+                })
+            }
         }
     }
 }
@@ -528,13 +505,13 @@ pub struct ClueEntity {
 impl GameEntity for ClueEntity {
     type Artifact = ClueArtifact;
     type Key = ();
-    type GameState = QuizSaladGameState;
+    type StateSegment = QuizSaladGameState;
 
     fn key(&self) -> Self::Key {
         ()
     }
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
         let text = game_state
             .puzzle
             .words
@@ -572,6 +549,7 @@ pub struct TileRectArtifact {
 
 define_signal_lens!(TileRectArtifactScaleLens, TileRectArtifact, f32, scale);
 define_signal_lens!(TileTextArtifactScaleLens, TileTextArtifact, f32, scale);
+define_signal_lens!(TileTextArtifactFillLens, TileTextArtifact, Srgba, fill);
 
 impl GameArtifact for TileRectArtifact {
     type Command = QuizSaladCommand;
@@ -579,15 +557,20 @@ impl GameArtifact for TileRectArtifact {
 
 impl LeptosGameArtifact for TileRectArtifact {
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
-        let Vec2 { x, y } = tile_position(self.tile, false);
+        let Vec2 { x, y } = tile_position(self.tile, PositionOrigin::TopLeft);
 
         let tile = self.tile;
 
-        //let style = format!("transform: scale({scale}) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;");
+        let style = move || {
+            format!(
+                "transform: scale({}) ; transform-box: content-box; transform-origin: center center;",
+                self.scale.get()
+            )
+        };
 
         view! {
-            <rect width={move || RECT_SIZE * self.scale.get()} height={move|| RECT_SIZE * self.scale.get()} x={x} y={y} rx={RADIUS} ry={RADIUS} fill={FILL_COLOR}
-
+            <rect width={TILE_SIZE} height={TILE_SIZE} x={x} y={y} rx={TILE_RADIUS} ry={TILE_RADIUS} fill={colors::CLASSIC_COLOR_SCHEME.tile.to_hex()}
+            style=style
             on:click={move|_|{
                 sender.send_command(QuizSaladCommand::TileClicked(tile));
             }}
@@ -606,14 +589,14 @@ pub struct TileRectEntity {
 impl GameEntity for TileRectEntity {
     type Artifact = TileRectArtifact;
     type Key = u8;
-    type GameState = QuizSaladGameState;
+    type StateSegment = FoundWordsState;
 
     fn key(&self) -> Self::Key {
         self.tile.inner()
     }
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
-        let unneeded_tiles = game_state.found_words.unneeded_tiles;
+    fn get_entities(found_words: &Self::StateSegment) -> impl Iterator<Item = Self> {
+        let unneeded_tiles = found_words.unneeded_tiles;
         Tile::iter_by_row().map(move |tile| TileRectEntity {
             tile,
             unneeded: unneeded_tiles.get_bit(&tile),
@@ -632,8 +615,8 @@ impl GameEntity for TileRectEntity {
 
     fn on_update(
         &self,
-        artifact: &mut Self::Artifact,
-        former_entity_state: EntityState,
+        _artifact: &mut Self::Artifact,
+        _former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
         vec![animate_towards::<TileRectArtifactScaleLens>(
             if self.unneeded { 0.0 } else { 1.0 },
@@ -642,11 +625,22 @@ impl GameEntity for TileRectEntity {
     }
 }
 
+impl HasSegment<FoundWordsState> for QuizSaladGameState {
+    fn get_segment(&self) -> FoundWordsState {
+        self.found_words.clone()
+    }
+
+    fn segment_eq(&self, s: &FoundWordsState) -> bool {
+        self.found_words.eq(s)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct TileTextArtifact {
     pub tile: Tile4x4,
     pub character: Character,
-    pub selected: RwSignal<bool>,
+    pub fill: RwSignal<Srgba>,
+    //pub selected: RwSignal<bool>,
     pub scale: RwSignal<f32>,
 }
 
@@ -656,24 +650,35 @@ impl GameArtifact for TileTextArtifact {
 
 impl LeptosGameArtifact for TileTextArtifact {
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
-        let Vec2 { x, y } = tile_position(self.tile, true);
-        let color = move || {
-            if self.selected.get() {
-                SELECTED_TEXT_COLOR
-            } else {
-                UNSELECTED_TEXT_COLOR
-            }
-        };
+        let Vec2 { x, y } = tile_position(self.tile, PositionOrigin::Center);
+        // let color = move || {
+        //     if self.selected.get() {
+        //         SELECTED_TEXT_COLOR
+        //     } else {
+        //         UNSELECTED_TEXT_COLOR
+        //     }
+        // };
 
         let style = move || {
             format!(
-                "transform: scale({}) ; transform-box: content-box; transform-origin: center center; transition: transform 1s;",
+                "transform: scale({}) ; transform-box: content-box; transform-origin: center center;",
                 self.scale.get()
             )
         };
+        let fill = move || self.fill.get().to_hex();
 
         view! {
-            <text x={x} y={y} style=style dominant-baseline="central" text-anchor="middle" fill={color} font-size={FONT_SIZE} font-family={FONT_FAMILY} font-weight={600} pointer-events="none">{self.character.as_char()} </text>
+            <text x={x} y={y}
+            style=style
+            dominant-baseline="central"
+            text-anchor="middle"
+            fill={fill}
+            font-size={FONT_SIZE}
+            font-family={FONT_FAMILY}
+            font-weight={600}
+            pointer-events="none">
+                {self.character.as_char()}
+            </text>
 
         }
     }
@@ -687,17 +692,27 @@ pub struct TileTextEntity {
     unneeded: bool,
 }
 
+impl TileTextEntity {
+    pub const fn fill(&self) -> Srgba {
+        if self.selected {
+            CLASSIC_COLOR_SCHEME.tile_letter_selected
+        } else {
+            CLASSIC_COLOR_SCHEME.tile_letter_unselected
+        }
+    }
+}
+
 impl GameEntity for TileTextEntity {
     type Artifact = TileTextArtifact;
     type Key = u8;
 
-    type GameState = QuizSaladGameState;
+    type StateSegment = QuizSaladGameState;
 
     fn key(&self) -> Self::Key {
         self.tile.inner()
     }
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
         let solution = game_state.chosen_state.solution.clone();
         let unneeded_tiles = game_state.found_words.unneeded_tiles;
         game_state
@@ -721,7 +736,7 @@ impl GameEntity for TileTextEntity {
                 tile: self.tile,
                 character: self.character,
                 scale: RwSignal::new(if self.unneeded { 0.0 } else { 1.0 }),
-                selected: RwSignal::new(self.selected),
+                fill: RwSignal::new(self.fill()),
             },
             vec![],
         )
@@ -732,88 +747,131 @@ impl GameEntity for TileTextEntity {
         artifact: &mut Self::Artifact,
         former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
-        artifact.selected.set(self.selected);
-        vec![animate_towards::<TileTextArtifactScaleLens>(
-            if self.unneeded { 0.0 } else { 1.0 },
-            1.0 / 1000.0,
-        )]
+        vec![
+            animate_towards::<TileTextArtifactScaleLens>(
+                if self.unneeded { 0.0 } else { 1.0 },
+                1.0 / 1000.0,
+            ),
+            animate_towards::<TileTextArtifactFillLens>(self.fill(), 1.0 / 1000.0),
+        ]
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct NextButtonArtifact;
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum LozengeSelection {
+    None,
+    Selected,
+    Finished,
+}
 
-impl GameCommand<QuizSaladGameState> for NextButtonArtifact {
-    fn apply_command(&self, game_state: &mut QuizSaladGameState) -> MutationResult {
-        leptos::logging::log!("ABC {}", game_state.current_clue);
-        let num_clues = game_state.puzzle.words.len();
-        game_state.current_clue = (0..num_clues)
-            .cycle()
-            .skip(game_state.current_clue + 1)
-            .take(num_clues)
-            .filter(|index| !game_state.found_words.get_completion(*index).is_complete())
-            .next()
-            .unwrap_or_default();
-
-        leptos::logging::log!("DEF {}", game_state.current_clue);
-
-        MutationResult::CHANGED_NO_TRANSITION
+impl LozengeSelection {
+    pub const fn color(&self) -> Srgba {
+        match self {
+            LozengeSelection::None => CLASSIC_COLOR_SCHEME.lozenge_normal,
+            LozengeSelection::Selected => CLASSIC_COLOR_SCHEME.lozenge_selected,
+            LozengeSelection::Finished => CLASSIC_COLOR_SCHEME.lozenge_completed,
+        }
     }
-}
 
-impl GameArtifact for NextButtonArtifact {
-    type Command = NextButtonArtifact;
-}
-
-impl LeptosGameArtifact for NextButtonArtifact {
-    fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
-        view! {
-            <button on:click=move|_|sender.send_command(NextButtonArtifact)>
-                "Next"
-            </button>
+    pub const fn new(completion: &Completion, selected: bool) -> Self {
+        if selected {
+            return Self::Selected;
+        } else if completion.is_complete() {
+            return Self::Finished;
+        } else {
+            return Self::None;
         }
     }
 }
 
-impl GameEntity for NextButtonArtifact {
-    type Artifact = Self;
-    type Key = ();
-    type GameState = QuizSaladGameState;
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct LozengeEntity {
+    pub index: usize,
+    pub lozenge_count: usize,
+    pub selected: LozengeSelection,
+}
+
+impl LozengeEntity {
+    pub const fn position(&self) -> Vec2 {
+        layout::lozenge_position(self.index, self.lozenge_count, PositionOrigin::TopLeft)
+    }
+}
+
+impl GameEntity for LozengeEntity {
+    type Artifact = LozengeArtifact;
+    type Key = usize;
+    type StateSegment = QuizSaladGameState;
 
     fn key(&self) -> Self::Key {
-        ()
+        self.index
     }
 
-    fn get_entities(game_state: &Self::GameState) -> impl Iterator<Item = Self> {
-        [Self].into_iter()
+    fn get_entities(segment: &Self::StateSegment) -> impl Iterator<Item = Self> {
+        let lozenge_count = segment.found_words.word_completions.len();
+        segment
+            .found_words
+            .word_completions
+            .iter()
+            .enumerate()
+            .map(move |(index, completion)| LozengeEntity {
+                index,
+                lozenge_count,
+                selected: LozengeSelection::new(completion, index == segment.current_clue),
+            })
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        (Self, vec![])
+        let position = self.position();
+
+        (
+            LozengeArtifact {
+                index: self.index,
+                x: position.x,
+                y: position.y,
+                fill: RwSignal::new(self.selected.color()),
+            },
+            AnimationList::new(),
+        )
     }
 
     fn on_update(
         &self,
-        artifact: &mut Self::Artifact,
-        former_entity_state: EntityState,
+        _artifact: &mut Self::Artifact,
+        _former_entity_state: EntityState,
     ) -> AnimationList<Self::Artifact> {
-        vec![]
+        let animations = vec![animate_towards::<LozengeArtifactFillLens>(
+            self.selected.color(),
+            1.0 / 1000.0,
+        )];
+
+        animations
     }
 }
 
-fn wordline_color(index: usize) -> &'static str {
-    match index % 12 {
-        0 => "#006AFF",
-        1 => "#0015FF",
-        2 => "#4000FF",
-        3 => "#9500FF",
-        4 => "#EA00FF",
-        5 => "#FF00BF",
-        6 => "#FF006A",
-        7 => "#FF0015",
-        8 => "#FF4000",
-        9 => "#FF9D00",
-        10 => "#E8AE00",
-        11 | _ => "#C9B900",
+#[derive(Debug, Clone, PartialEq)]
+pub struct LozengeArtifact {
+    pub index: usize,
+    pub x: f32,
+    pub y: f32,
+    pub fill: RwSignal<bevy_color::Srgba>,
+}
+
+impl GameArtifact for LozengeArtifact {
+    type Command = QuizSaladCommand;
+}
+
+impl LeptosGameArtifact for LozengeArtifact {
+    fn render(
+        self,
+        sender: impl state_machine_games::prelude::CommandSender<Self::Command>,
+    ) -> impl IntoView {
+        let Self { index, x, y, fill } = self;
+        let on_click = move |_: MouseEvent| {
+            sender.send_command(QuizSaladCommand::LozengeClicked(index));
+        };
+        view! {
+            <rect x={x} y={y} width={LOZENGE_WIDTH} height={LOZENGE_HEIGHT} fill={move || fill.get().to_hex()} rx={LOZENGE_RADIUS} ry={LOZENGE_RADIUS} on:click=on_click>
+            </rect>
+        }
     }
 }

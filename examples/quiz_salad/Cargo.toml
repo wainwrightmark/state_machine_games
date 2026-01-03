@@ -6,7 +6,7 @@ edition = "2024"
 
 
 [dependencies]
-state_machine_games = {path = "../../state_machine_games", features = ["leptos"]}
+state_machine_games = {path = "../../state_machine_games", features = ["leptos", "bevy_color"]}
 geometrid = "0.10"
 wasm-logger = "0.2.0"
 console_error_panic_hook = "0.1.7"
@@ -17,11 +17,11 @@ strum = { version = "0.27", features = ["derive"] }
 itertools = {version = "0.14"}
 ws_core = {path = 'C:\Source\rust\word_salad\ws_core'}
 anyhow = "1"
-
+bevy_color = "0.17"
 
 leptos = { version = "0.8", features = ["csr"] }
-leptos-use = {version = "0.16"}
-const_sized_bit_set = "0.3.0"
+leptos-use = {version = "0.17"}
+const_sized_bit_set = "0.5.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }

@@ -88,20 +88,30 @@ impl<A: LeptosGameArtifact, E: GameEntity<Artifact = A>> SingleTypeEntityStore<E
                 let signal = signal.clone();
                 move || {
                     let read_guard = leptos::prelude::Read::read(&signal);
-                    //read_guard.trigger.track();
-                    let len = read_guard.entities.len();
-                    0..len
+                    read_guard
+                        .entities
+                        .iter()
+                        .map(|x| x.entity.key())
+                        .collect::<Vec<_>>()
                 }
             },
-            key: |&k| k,
+            key: |k| k.clone(),
             children: move |k| {
                 let read_guard: leptos::prelude::guards::ReadGuard<_, _> =
                     leptos::prelude::Read::read(&signal);
 
-                let entity = read_guard.entities.get(k).unwrap();
                 //log!("Rendering child");
+                let entities = &read_guard.entities;
 
-                entity.artifact.clone().render(sender.clone())
+                match entities.binary_search_by_key(&k, |x| x.entity.key()) {
+                    Ok(index) => match entities.get(index) {
+                        Some(stored_entity) => {
+                            Some(stored_entity.artifact.clone().render(sender.clone()))
+                        }
+                        None => None,
+                    },
+                    Err(_) => None,
+                }
             },
         })
     }
