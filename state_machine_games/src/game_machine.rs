@@ -176,6 +176,7 @@ mod tests {
             &self,
             artifact: &mut Self::Artifact,
             _former_entity_state: crate::prelude::EntityState,
+            _previous_animations: AnimationList<Self::Artifact>
         ) -> crate::prelude::AnimationList<Self::Artifact> {
             artifact.0 = self.1.clone();
             AnimationList::new()

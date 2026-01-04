@@ -64,10 +64,6 @@ impl GameEntity for ButtonEntity {
         ButtonEntity::iter()
     }
 
-    fn on_death(&self, _artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
-        vec![]
-    }
-
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         let artifact = match self {
             ButtonEntity::PlayBestMove => ButtonArtifact::PlayBestMove,
@@ -80,6 +76,7 @@ impl GameEntity for ButtonEntity {
         &self,
         _artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>
     ) -> AnimationList<Self::Artifact> {
         vec![]
     }
@@ -251,7 +248,7 @@ impl GameEntity for ChessSquareEntity {
         self.square.to_int()
     }
 
-    fn get_entities(selected_square: &Option<Square>) -> impl Iterator<Item = Self> {        
+    fn get_entities(selected_square: &Option<Square>) -> impl Iterator<Item = Self> {
         let entities = (0..64)
             .map(|i| unsafe { Square::from_int(i) })
             .map(move |square| Self {
@@ -260,10 +257,6 @@ impl GameEntity for ChessSquareEntity {
             });
 
         entities
-    }
-
-    fn on_death(&self, _artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
-        vec![]
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
@@ -280,6 +273,7 @@ impl GameEntity for ChessSquareEntity {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>
     ) -> AnimationList<Self::Artifact> {
         artifact.selected.set(self.selected);
         vec![]
@@ -345,10 +339,6 @@ impl GameEntity for ChessPiece {
         entities
     }
 
-    fn on_death(&self, _artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
-        vec![]
-    }
-
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         (*self, vec![])
     }
@@ -357,6 +347,7 @@ impl GameEntity for ChessPiece {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>
     ) -> AnimationList<Self::Artifact> {
         *artifact = *self;
         vec![]
@@ -404,8 +395,7 @@ impl GameState for ChessState {
     }
 }
 
-
-impl HasSegment<Option<Square>> for ChessState{
+impl HasSegment<Option<Square>> for ChessState {
     fn get_segment(&self) -> Option<Square> {
         self.selected_square
     }
@@ -415,7 +405,7 @@ impl HasSegment<Option<Square>> for ChessState{
     }
 }
 
-impl HasSegment<ChessPosition> for ChessState{
+impl HasSegment<ChessPosition> for ChessState {
     fn get_segment(&self) -> ChessPosition {
         let position = self.board.get_position().clone();
         log!("POSITION\n{}", position.to_string());

@@ -13,6 +13,7 @@ use crate::layout::*;
 use bevy_color::Srgba;
 use itertools::Itertools;
 use leptos::ev::MouseEvent;
+use leptos::logging::log;
 use leptos::prelude::*;
 use state_machine_games::define_signal_lens;
 use state_machine_games::prelude::*;
@@ -27,6 +28,7 @@ type Stores = (
     ArcRwSignal<SingleTypeEntityStore<WordLineSectionEntity>>,
     ArcRwSignal<SingleTypeEntityStore<TileTextEntity>>,
     ArcRwSignal<SingleTypeEntityStore<LozengeEntity>>,
+    ArcRwSignal<SingleTypeEntityStore<AnimatedTextEntity>>,
 );
 
 pub fn main() {
@@ -66,6 +68,7 @@ fn game_component() -> impl IntoView {
             {move || SingleTypeEntityStore::render(stores.3.clone(), ())}
             {move || SingleTypeEntityStore::render(stores.0.clone(), ())}
             {move || SingleTypeEntityStore::render(stores.4.clone(), cs2.clone())}
+            {move || SingleTypeEntityStore::render(stores.5.clone(), ())}
 
             </svg>
             // <div>
@@ -230,7 +233,11 @@ impl GameEntity for WordLineSectionEntity {
         return circle.into_iter().chain(line);
     }
 
-    fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
+    fn on_death(
+        &self,
+        artifact: &mut Self::Artifact,
+        _previous_animations: AnimationList<Self::Artifact>,
+    ) -> AnimationList<Self::Artifact> {
         vec![animate_towards::<WordLineArtifactStrokeWidthRatioLens>(
             0.0,
             1.0 / 1000.0,
@@ -281,6 +288,7 @@ impl GameEntity for WordLineSectionEntity {
         &self,
         artifact: &mut Self::Artifact,
         former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         let v1: Vec2;
         let v2: Vec2;
@@ -456,43 +464,37 @@ impl GameArtifact for ClueArtifact {
 impl LeptosGameArtifact for ClueArtifact {
     fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         move || match util::split_two_line_ustr(self.text.get(), 30) {
-            itertools::Either::Left(a) => {
-                leptos::either::Either::Left(
-                view! {
-                    <text x=320 y=950
-                    font-size={CLUE_FONT_SIZE}
-                    font-weight="600"
-                    font-family={FONT_FAMILY}
-                    dominant-baseline="central"
-                    fill={CLASSIC_COLOR_SCHEME.clue_text.to_hex()}
-                    style="text-align: center; text-anchor: middle;">{
-                        a.to_string()
-                    }</text>
-                })
-            }
-            itertools::Either::Right((a, b)) => {
-                leptos::either::Either::Right(
-                view! {
-                    <text x=320 y=930
-                    font-size={CLUE_FONT_SIZE}
-                    font-weight="600"
-                    font-family={FONT_FAMILY}
-                    dominant-baseline="central"
-                    fill={CLASSIC_COLOR_SCHEME.clue_text.to_hex()}
-                    style="text-align: center; text-anchor: middle;">{
-                        a.to_string()
-                    }</text>
-                    <text x=320 y=970
-                    font-size={CLUE_FONT_SIZE}
-                    font-weight="600"
-                    font-family={FONT_FAMILY}
-                    dominant-baseline="central"
-                    fill={CLASSIC_COLOR_SCHEME.clue_text.to_hex()}
-                    style="text-align: center; text-anchor: middle;">{
-                        b.to_string()
-                    }</text>
-                })
-            }
+            itertools::Either::Left(a) => leptos::either::Either::Left(view! {
+                <text x=320 y=950
+                font-size={CLUE_FONT_SIZE}
+                font-weight="600"
+                font-family={FONT_FAMILY}
+                dominant-baseline="central"
+                fill={CLASSIC_COLOR_SCHEME.clue_text.to_hex()}
+                style="text-align: center; text-anchor: middle;">{
+                    a.to_string()
+                }</text>
+            }),
+            itertools::Either::Right((a, b)) => leptos::either::Either::Right(view! {
+                <text x=320 y=930
+                font-size={CLUE_FONT_SIZE}
+                font-weight="600"
+                font-family={FONT_FAMILY}
+                dominant-baseline="central"
+                fill={CLASSIC_COLOR_SCHEME.clue_text.to_hex()}
+                style="text-align: center; text-anchor: middle;">{
+                    a.to_string()
+                }</text>
+                <text x=320 y=970
+                font-size={CLUE_FONT_SIZE}
+                font-weight="600"
+                font-family={FONT_FAMILY}
+                dominant-baseline="central"
+                fill={CLASSIC_COLOR_SCHEME.clue_text.to_hex()}
+                style="text-align: center; text-anchor: middle;">{
+                    b.to_string()
+                }</text>
+            }),
         }
     }
 }
@@ -535,6 +537,7 @@ impl GameEntity for ClueEntity {
         &self,
         artifact: &mut Self::Artifact,
         former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         artifact.text.set(self.text);
         vec![]
@@ -617,6 +620,7 @@ impl GameEntity for TileRectEntity {
         &self,
         _artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         vec![animate_towards::<TileRectArtifactScaleLens>(
             if self.unneeded { 0.0 } else { 1.0 },
@@ -673,7 +677,7 @@ impl LeptosGameArtifact for TileTextArtifact {
             dominant-baseline="central"
             text-anchor="middle"
             fill={fill}
-            font-size={FONT_SIZE}
+            font-size={TILE_LETTER_FONT_SIZE}
             font-family={FONT_FAMILY}
             font-weight={600}
             pointer-events="none">
@@ -746,6 +750,7 @@ impl GameEntity for TileTextEntity {
         &self,
         artifact: &mut Self::Artifact,
         former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         vec![
             animate_towards::<TileTextArtifactScaleLens>(
@@ -838,6 +843,7 @@ impl GameEntity for LozengeEntity {
         &self,
         _artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         let animations = vec![animate_towards::<LozengeArtifactFillLens>(
             self.selected.color(),
@@ -872,6 +878,130 @@ impl LeptosGameArtifact for LozengeArtifact {
         view! {
             <rect x={x} y={y} width={LOZENGE_WIDTH} height={LOZENGE_HEIGHT} fill={move || fill.get().to_hex()} rx={LOZENGE_RADIUS} ry={LOZENGE_RADIUS} on:click=on_click>
             </rect>
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct AnimatedTextEntity {
+    pub word_index: usize,
+    pub lozenge_count: usize,
+    pub tile: Tile4x4,
+    pub text: Ustr,
+}
+
+impl GameEntity for AnimatedTextEntity {
+    type Artifact = AnimatedTextArtifact;
+    type Key = usize;
+    type StateSegment = QuizSaladGameState;
+
+    fn key(&self) -> Self::Key {
+        self.word_index
+    }
+
+    fn get_entities(segment: &Self::StateSegment) -> impl Iterator<Item = Self> {
+        if !segment.word_just_found {
+            return None.into_iter();
+        }
+
+        let tile = segment
+            .chosen_state
+            .solution
+            .last()
+            .copied()
+            .unwrap_or_default();
+
+        let Some((word_index, word)) = segment
+            .found_words
+            .most_recently_completed_word(&segment.puzzle)
+        else {
+            return None.into_iter();
+        };
+        let lozenge_count = segment.found_words.word_completions.len();
+        let entity = AnimatedTextEntity {
+            word_index,
+            lozenge_count,
+            tile,
+            text: word.text,
+        };
+        Some(entity).into_iter()
+    }
+
+    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+        let position = tile_position(self.tile, PositionOrigin::Center);
+
+        let artifact = Self::Artifact {
+            text: self.text,
+            position: RwSignal::new(position),
+            scale: RwSignal::new(1.0),
+            color: CLASSIC_COLOR_SCHEME.animated_word,
+        };
+
+        let duration_ms = 2000.0f64;
+        let target_position = lozenge_position(self.word_index, self.lozenge_count, PositionOrigin::Center);
+
+        let distance = position.distance(target_position) as f64;
+
+        //log!("Position {position:?} target position {target_position} distance {distance}");
+
+        let animations = vec![
+            animate_towards::<AnimatedTextArtifactPositionLens>(target_position, (distance / duration_ms).abs()),
+            animate_towards::<AnimatedTextArtifactScaleLens>(0.5, 1.0 / duration_ms),
+        ];
+
+        (artifact, animations)
+    }
+
+    fn on_update(
+        &self,
+        artifact: &mut Self::Artifact,
+        former_entity_state: EntityState,
+        previous_animations: AnimationList<Self::Artifact>,
+    ) -> AnimationList<Self::Artifact> {
+        previous_animations
+    }
+
+    fn on_death(
+        &self,
+        _artifact: &mut Self::Artifact,
+        previous_animations: AnimationList<Self::Artifact>,
+    ) -> AnimationList<Self::Artifact> {
+        previous_animations
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AnimatedTextArtifact {
+    pub text: Ustr,
+    pub position: RwSignal<Vec2>,    
+    pub scale: RwSignal<f32>,
+    pub color: Srgba,
+}
+
+define_signal_lens!(AnimatedTextArtifactPositionLens,  AnimatedTextArtifact, Vec2, position);
+define_signal_lens!(AnimatedTextArtifactScaleLens,  AnimatedTextArtifact, f32, scale);
+
+impl GameArtifact for AnimatedTextArtifact {
+    type Command = ();
+}
+
+
+impl LeptosGameArtifact for AnimatedTextArtifact{
+    fn render(self, sender: impl state_machine_games::prelude::CommandSender<Self::Command>) -> impl IntoView {
+        view! {
+            
+            <text x={move|| self.position.get().x} y={move|| self.position.get().y}
+                font-size={ANIMATED_WORD_FONT_SIZE}
+                font-weight="600"
+                font-family={FONT_FAMILY}
+                dominant-baseline="central"
+                fill={self.color.to_hex()}
+                transform-origin="center"
+                transform={move || format!("scale({})", self.scale.get()) }
+                style="text-align: center; text-anchor: middle; transform-box: fill-box;">{
+                    {self.text.to_string()}
+                }</text>
+            
         }
     }
 }

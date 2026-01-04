@@ -140,7 +140,8 @@ impl<E: GameEntity> StoredEntity<E> {
         if prev.state == EntityState::Alive && prev.entity == new_entity {
             //do nothing
         } else {
-            prev.animations = new_entity.on_update(&mut prev.artifact, prev.state);
+            let previous_animations = std::mem::take(&mut prev.animations);
+            prev.animations = new_entity.on_update(&mut prev.artifact, prev.state, previous_animations);
             prev.entity = new_entity;
             prev.state = EntityState::Alive;
         }
@@ -164,7 +165,8 @@ impl<E: GameEntity> StoredEntity<E> {
     pub(crate) fn kill(&mut self) -> bool {
         match self.state {
             EntityState::Alive => {
-                self.animations = self.entity.on_death(&mut self.artifact);
+                let previous_animations = std::mem::take(&mut self.animations);
+                self.animations = self.entity.on_death(&mut self.artifact, previous_animations);
                 self.state = EntityState::Dead;
             }
             EntityState::Dead => {}

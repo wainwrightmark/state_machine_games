@@ -1,6 +1,5 @@
 use crate::prelude::*;
 
-//todo split state into components and track each individually
 pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
     type Artifact: GameArtifact;
     type Key: GameEntityKey;
@@ -16,7 +15,11 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
     #[allow(unused)]
     /// animations to run when this entity dies
     /// the entity will not be deleted until all animations have finished
-    fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
+    fn on_death(
+        &self,
+        artifact: &mut Self::Artifact,
+        previous_animations: AnimationList<Self::Artifact>,
+    ) -> AnimationList<Self::Artifact> {
         vec![]
     }
 
@@ -27,5 +30,6 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
         &self,
         artifact: &mut Self::Artifact,
         former_entity_state: EntityState,
+        previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact>;
 }

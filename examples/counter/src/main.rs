@@ -120,10 +120,6 @@ impl GameEntity for Circle {
         Key::Circle(self.k)
     }
 
-    fn on_death(&self, _artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
-        vec![]
-    }
-
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         let Vec2 { x, y } = self.position();
         (
@@ -140,6 +136,7 @@ impl GameEntity for Circle {
         &self,
         _artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>
     ) -> AnimationList<Self::Artifact> {
         let Vec2 { x, y } = self.position();
 
@@ -188,10 +185,6 @@ impl GameEntity for SquareButton {
         [SquareButton { n: game_state.n }].into_iter()
     }
 
-    fn on_death(&self, _artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
-        vec![]
-    }
-
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         (
             SquareButtonArtifact {
@@ -208,6 +201,7 @@ impl GameEntity for SquareButton {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>
     ) -> AnimationList<Self::Artifact> {
         artifact.text.set(self.n.to_string());
 

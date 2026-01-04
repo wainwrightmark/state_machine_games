@@ -262,6 +262,7 @@ impl GameEntity for ScoreTextEntity {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>
     ) -> AnimationList<Self::Artifact> {
         artifact.text.set(format!("Score: {}", self.score));
         vec![]
@@ -304,6 +305,7 @@ impl GameEntity for MovesLeftEntity {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>
     ) -> AnimationList<Self::Artifact> {
         artifact.text.set(format!("Moves: {}", self.moves));
         vec![]
@@ -362,7 +364,7 @@ impl GameEntity for Match3TileEntity {
         TileKey(self.index)
     }
 
-    fn on_death(&self, artifact: &mut Self::Artifact) -> AnimationList<Self::Artifact> {
+    fn on_death(&self, artifact: &mut Self::Artifact, _previous_animations: AnimationList<Self::Artifact>) -> AnimationList<Self::Artifact> {
         artifact.selected.set(self.selected);
         artifact.tile.set(self.tile);
         vec![
@@ -394,6 +396,7 @@ impl GameEntity for Match3TileEntity {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
+        _previous_animations: AnimationList<Self::Artifact>
     ) -> AnimationList<Self::Artifact> {
         artifact.selected.set(self.selected);
         artifact.tile.set(self.tile);

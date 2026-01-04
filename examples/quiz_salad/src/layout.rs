@@ -21,9 +21,10 @@ pub const CLUE_FONT_SIZE: f32 = 40.0;
 pub const FONT_FAMILY: &'static str = "Montserrat";
 
 
-const SCALE: f32 = 160.0;
-pub const FONT_SIZE: f32 = SCALE * 0.5;
-pub const PATH_STROKE_WIDTH: f32 = SCALE * 0.6;
+pub const TILE_LETTER_FONT_SIZE: f32 = 80.0;
+pub const PATH_STROKE_WIDTH: f32 = 96.0;
+
+pub const ANIMATED_WORD_FONT_SIZE: f32 = 40.0;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PositionOrigin {
@@ -61,8 +62,8 @@ pub const fn lozenge_position(index: usize, lozenge_count: usize, origin: Positi
     let mut y = GAME_HEIGHT - LOZENGE_HEIGHT - 20.0; //todo reposition
 
     if matches!(origin, PositionOrigin::Center) {
-        x = x - (LOZENGE_WIDTH * 0.5);
-        y = y - (LOZENGE_HEIGHT * 0.5);
+        x = x + (LOZENGE_WIDTH * 0.5);
+        y = y + (LOZENGE_HEIGHT * 0.5);
     }
 
     Vec2 { x, y }

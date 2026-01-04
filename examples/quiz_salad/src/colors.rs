@@ -26,6 +26,8 @@ pub struct ColorScheme {
     pub wordline_9: Srgba,
     pub wordline_10: Srgba,
     pub wordline_11: Srgba,
+
+    pub animated_word: Srgba
 }
 
 impl ColorScheme {
@@ -68,6 +70,8 @@ pub const CLASSIC_COLOR_SCHEME: ColorScheme = ColorScheme {
     wordline_9: rgb_hex(0xFF9D00),          // #FF9D00
     wordline_10: rgb_hex(0xE8AE00),         // #E8AE00
     wordline_11: rgb_hex(0xC9B900),         // #C9B900
+
+    animated_word: rgb_hex(0x27bf4d),       // #27bf4dff
 };
 
 const fn rgb_hex(mut number: u32) -> Srgba {

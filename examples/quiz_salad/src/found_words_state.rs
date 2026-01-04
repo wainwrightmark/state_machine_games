@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 use strum::EnumIs;
 use ws_core::prelude::*;
 
-use crate::chosen_state::ChosenState;
-
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct FoundWordsState {
     pub unneeded_tiles: GridSet4x4,
@@ -14,9 +12,7 @@ pub struct FoundWordsState {
     pub hints_used: usize,
 }
 
-
 impl FoundWordsState {
-
     fn update_unneeded_tiles(&mut self, level: &DesignedLevel4x4) {
         self.unneeded_tiles = level.calculate_unneeded_tiles(self.unneeded_tiles, |index| {
             self.word_completions
@@ -199,11 +195,11 @@ impl FoundWordsState {
         0
     }
 
-    pub fn most_recently_completed_word<'a>(
+    pub fn most_recently_completed_word<'a, L: LevelTrait<4, 16>>(
         &self,
-        level: &'a DesignedLevel4x4,
-    ) -> Option<&'a DisplayWord4x4> {
-        if let Some((position, _)) = self
+        level: &'a L,
+    ) -> Option<(usize, &'a L::Word)> {
+        let (position, _) = self
             .word_completions
             .iter()
             .enumerate()
@@ -212,12 +208,11 @@ impl FoundWordsState {
                 Completion::ManualHinted(_) => None,
                 Completion::Complete { index } => Some((position, index)),
             })
-            .max_by_key(|(_position, index)| *index)
-        {
-            level.words.get(position)
-        } else {
-            None
-        }
+            .max_by_key(|(_position, index)| *index)?;
+
+        let word = level.words().get(position)?;
+
+        Some((position, word))
     }
 
     pub fn ensure_valid(&mut self, level: &DesignedLevel4x4) {
@@ -273,7 +268,7 @@ impl FoundWordsState {
         result
     }
 
-    pub fn new_from_level(level: &impl LevelTrait<4,16>) -> Self {
+    pub fn new_from_level(level: &impl LevelTrait<4, 16>) -> Self {
         Self {
             unneeded_tiles: GridSet4x4::EMPTY,
             word_completions: vec![Completion::Unstarted; level.words().len()],
@@ -281,7 +276,7 @@ impl FoundWordsState {
         }
     }
 
-    pub fn new_level_complete(level: &impl LevelTrait<4,16>, hints_used: usize) -> Self {
+    pub fn new_level_complete(level: &impl LevelTrait<4, 16>, hints_used: usize) -> Self {
         Self {
             unneeded_tiles: GridSet4x4::ALL,
             word_completions: vec![Completion::Complete { index: 0 }; level.words().len()],
@@ -290,7 +285,7 @@ impl FoundWordsState {
     }
 
     /// Grid with unneeded characters blanked
-    fn adjusted_grid(&self, level: &impl LevelTrait<4,16>) -> Grid4x4 {
+    fn adjusted_grid(&self, level: &impl LevelTrait<4, 16>) -> Grid4x4 {
         let mut grid = level.grid();
 
         for tile in self.unneeded_tiles.iter_true_tiles() {
