@@ -13,6 +13,7 @@ use crate::layout::*;
 use bevy_color::Srgba;
 use itertools::Itertools;
 use leptos::ev::MouseEvent;
+#[allow(unused_imports)]
 use leptos::logging::log;
 use leptos::prelude::*;
 use state_machine_games::define_signal_lens;
@@ -564,16 +565,24 @@ impl LeptosGameArtifact for TileRectArtifact {
 
         let tile = self.tile;
 
-        let style = move || {
-            format!(
-                "transform: scale({}) ; transform-box: content-box; transform-origin: center center;",
-                self.scale.get()
-            )
-        };
+        // let style = move || {
+        //     format!(
+        //         "transform-box: content-box; transform-origin: center center;",
+        //         self.scale.get()
+        //     )
+        // };
 
         view! {
-            <rect width={TILE_SIZE} height={TILE_SIZE} x={x} y={y} rx={TILE_RADIUS} ry={TILE_RADIUS} fill={colors::CLASSIC_COLOR_SCHEME.tile.to_hex()}
-            style=style
+            <rect 
+            width={TILE_SIZE} 
+            height={TILE_SIZE} 
+            x={x} 
+            y={y} 
+            rx={TILE_RADIUS} 
+            ry={TILE_RADIUS} 
+            fill={colors::CLASSIC_COLOR_SCHEME.tile.to_hex()}
+            transform={move || format!("scale({})", self.scale.get())}
+            style="transform-box: content-box; transform-origin: center center;"
             on:click={move|_|{
                 sender.send_command(QuizSaladCommand::TileClicked(tile));
             }}
@@ -665,8 +674,8 @@ impl LeptosGameArtifact for TileTextArtifact {
 
         let style = move || {
             format!(
-                "transform: scale({}) ; transform-box: content-box; transform-origin: center center;",
-                self.scale.get()
+                "transform-box: content-box; transform-origin: center;",
+                
             )
         };
         let fill = move || self.fill.get().to_hex();
@@ -680,6 +689,7 @@ impl LeptosGameArtifact for TileTextArtifact {
             font-size={TILE_LETTER_FONT_SIZE}
             font-family={FONT_FAMILY}
             font-weight={600}
+            transform={move ||format!("scale({})", self.scale.get())}
             pointer-events="none">
                 {self.character.as_char()}
             </text>
