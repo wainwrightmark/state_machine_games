@@ -52,7 +52,7 @@ impl WordTrait<4, 16> for PuzzleWord {
         &self.characters
     }
 
-    fn quiz_question(&self)-> Option<Ustr> {
+    fn quiz_question(&self) -> Option<Ustr> {
         self.clue
     }
 }
@@ -111,15 +111,13 @@ impl std::str::FromStr for PuzzleWord {
 }
 
 impl Puzzle {
-
     /// Check if this is a valid solution
     /// If so, return the index of the word
-    pub fn check_solution(&self, solution: &Solution4x4)-> Option<usize>{
-        let tiles: CharsArray<16> = ArrayVec::from_iter(
-                solution.iter().map(|&tile| self.grid[tile])
-        );
+    pub fn check_solution(&self, solution: &Solution4x4) -> Option<usize> {
+        let tiles: CharsArray<16> =
+            ArrayVec::from_iter(solution.iter().map(|&tile| self.grid[tile]));
 
-        let word = self.words.iter().position(|x|  x.characters == tiles);
+        let word = self.words.iter().position(|x| x.characters == tiles);
 
         word
     }
@@ -143,6 +141,40 @@ impl Puzzle {
         let unencoded = format!("{grid}\t{title}[{category}]\t{words}");
 
         unencoded
+    }
+
+    pub fn try_from_encoded(data: &str) -> Option<Self> {
+        use base64::Engine;
+
+        let data = match base64::engine::general_purpose::URL_SAFE.decode(&data) {
+            Ok(d) => d,
+            Err(err) => {
+                if matches!(err, base64::DecodeError::InvalidPadding) {
+                    match base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(data) {
+                        Ok(d) => d,
+                        Err(err) => {
+                            leptos::logging::error!("{err}");
+                            return None;
+                        }
+                    }
+                } else {
+                    leptos::logging::error!("{err}");
+                    return None;
+                }
+            }
+        };
+
+        let data = String::from_utf8(data).ok()?;
+
+        leptos::logging::log!("Data: {data}");
+
+        match Self::from_tsv_line(data.trim()) {
+            Ok(data) => Some(data),
+            Err(err) => {
+                leptos::logging::error!("{err}");
+                None
+            }
+        }
     }
 
     pub fn from_tsv_line(line: &str) -> Result<Self, anyhow::Error> {

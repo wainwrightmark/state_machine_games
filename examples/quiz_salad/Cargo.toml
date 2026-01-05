@@ -18,8 +18,9 @@ itertools = {version = "0.14"}
 ws_core = {path = 'C:\Source\rust\word_salad\ws_core'}
 anyhow = "1"
 bevy_color = "0.17"
-
+base64 = "0.22"
 leptos = { version = "0.8", features = ["csr"] }
+leptos_router = { version = "0.8" }
 leptos-use = {version = "0.17"}
 const_sized_bit_set = "0.5.0"
 

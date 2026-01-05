@@ -16,6 +16,10 @@ use leptos::ev::MouseEvent;
 #[allow(unused_imports)]
 use leptos::logging::log;
 use leptos::prelude::*;
+use leptos_router::components::Route;
+use leptos_router::components::Router;
+use leptos_router::components::Routes;
+use leptos_router::params::Params;
 use state_machine_games::define_signal_lens;
 use state_machine_games::prelude::*;
 use std::sync::mpsc;
@@ -38,15 +42,52 @@ pub fn main() {
     mount_to_body(app);
 }
 
+#[derive(Params, PartialEq)]
+struct GameParams {
+    encoded: Option<String>,
+}
+//spellchecker:disable-next-line
+const DEFAULT_PUZZLE: &'static str = "LYCAWAURSGPIHOND	Super Salad 10	Song[A word that might follow 'bird' or 'love']	Capri[An Italian island]	Lycra[A synthetic fibre]	Pugwash[A cartoon captain]	Lagos[A Nigerian city]	Dinosaur[A way to describe an out of touch person] 	Posh[One of the Spice Girls]	Dingo[An Australian animal]	Cupid[A romantic messenger]	Pugh[A famous florence]";
+
 pub fn app() -> impl IntoView {
-    mount_to_body(|| game_component());
+    view! {
+        <Router>
+            <Routes fallback=|| game_component_no_path()>
+                  <Route path=leptos_router::path!("/game/:encoded") view={move ||game_component_with_path()}/>
+            </Routes>
+        </Router>
+    }
 }
 
-fn game_component() -> impl IntoView {
-    let puzzle = Puzzle::from_tsv_line(
-        "LYCAWAURSGPIHOND	Super Salad 10	Song[A word that might follow 'bird' or 'love']	Capri[An Italian island]	Lycra[A synthetic fibre]	Pugwash[A cartoon captain]	Lagos[A Nigerian city]	Dinosaur[A way to describe an out of touch person] 	Posh[One of the Spice Girls]	Dingo[An Australian animal]	Cupid[A romantic messenger]	Pugh[A famous florence]",
-    )
-    .unwrap();
+fn game_component_no_path() -> impl IntoView {
+    let puzzle = Memo::new(move |_| Puzzle::from_tsv_line(DEFAULT_PUZZLE).unwrap());
+    game_component(puzzle)
+}
+
+fn game_component_with_path() -> impl IntoView {
+    let params = leptos_router::hooks::use_params::<GameParams>();
+
+    let puzzle = Memo::new(move |_| {
+        let puzzle = params
+            .read()
+            .as_ref()
+            .ok()
+            .and_then(|params| params.encoded.clone())
+            .and_then(|x| Puzzle::try_from_encoded(&x));
+
+        puzzle.unwrap_or_else(|| Puzzle::from_tsv_line(DEFAULT_PUZZLE).unwrap())
+    });
+
+    game_component(puzzle)
+}
+
+fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
+    // Effect::new(||{
+    //     let puzzle = puzzle_memo.get();
+    // });
+    let puzzle = puzzle_memo.get_untracked();
+
+    
 
     let state = QuizSaladGameState::new(puzzle);
 
@@ -573,13 +614,13 @@ impl LeptosGameArtifact for TileRectArtifact {
         // };
 
         view! {
-            <rect 
-            width={TILE_SIZE} 
-            height={TILE_SIZE} 
-            x={x} 
-            y={y} 
-            rx={TILE_RADIUS} 
-            ry={TILE_RADIUS} 
+            <rect
+            width={TILE_SIZE}
+            height={TILE_SIZE}
+            x={x}
+            y={y}
+            rx={TILE_RADIUS}
+            ry={TILE_RADIUS}
             fill={colors::CLASSIC_COLOR_SCHEME.tile.to_hex()}
             transform={move || format!("scale({})", self.scale.get())}
             style="transform-box: content-box; transform-origin: center center;"
@@ -672,12 +713,7 @@ impl LeptosGameArtifact for TileTextArtifact {
         //     }
         // };
 
-        let style = move || {
-            format!(
-                "transform-box: content-box; transform-origin: center;",
-                
-            )
-        };
+        let style = move || format!("transform-box: content-box; transform-origin: center;",);
         let fill = move || self.fill.get().to_hex();
 
         view! {
@@ -948,14 +984,18 @@ impl GameEntity for AnimatedTextEntity {
         };
 
         let duration_ms = 2000.0f64;
-        let target_position = lozenge_position(self.word_index, self.lozenge_count, PositionOrigin::Center);
+        let target_position =
+            lozenge_position(self.word_index, self.lozenge_count, PositionOrigin::Center);
 
         let distance = position.distance(target_position) as f64;
 
         //log!("Position {position:?} target position {target_position} distance {distance}");
 
         let animations = vec![
-            animate_towards::<AnimatedTextArtifactPositionLens>(target_position, (distance / duration_ms).abs()),
+            animate_towards::<AnimatedTextArtifactPositionLens>(
+                target_position,
+                (distance / duration_ms).abs(),
+            ),
             animate_towards::<AnimatedTextArtifactScaleLens>(0.5, 1.0 / duration_ms),
         ];
 
@@ -983,23 +1023,35 @@ impl GameEntity for AnimatedTextEntity {
 #[derive(Debug, Clone)]
 pub struct AnimatedTextArtifact {
     pub text: Ustr,
-    pub position: RwSignal<Vec2>,    
+    pub position: RwSignal<Vec2>,
     pub scale: RwSignal<f32>,
     pub color: Srgba,
 }
 
-define_signal_lens!(AnimatedTextArtifactPositionLens,  AnimatedTextArtifact, Vec2, position);
-define_signal_lens!(AnimatedTextArtifactScaleLens,  AnimatedTextArtifact, f32, scale);
+define_signal_lens!(
+    AnimatedTextArtifactPositionLens,
+    AnimatedTextArtifact,
+    Vec2,
+    position
+);
+define_signal_lens!(
+    AnimatedTextArtifactScaleLens,
+    AnimatedTextArtifact,
+    f32,
+    scale
+);
 
 impl GameArtifact for AnimatedTextArtifact {
     type Command = ();
 }
 
-
-impl LeptosGameArtifact for AnimatedTextArtifact{
-    fn render(self, sender: impl state_machine_games::prelude::CommandSender<Self::Command>) -> impl IntoView {
+impl LeptosGameArtifact for AnimatedTextArtifact {
+    fn render(
+        self,
+        sender: impl state_machine_games::prelude::CommandSender<Self::Command>,
+    ) -> impl IntoView {
         view! {
-            
+
             <text x={move|| self.position.get().x} y={move|| self.position.get().y}
                 font-size={ANIMATED_WORD_FONT_SIZE}
                 font-weight="600"
@@ -1011,7 +1063,7 @@ impl LeptosGameArtifact for AnimatedTextArtifact{
                 style="text-align: center; text-anchor: middle; transform-box: fill-box;">{
                     {self.text.to_string()}
                 }</text>
-            
+
         }
     }
 }
