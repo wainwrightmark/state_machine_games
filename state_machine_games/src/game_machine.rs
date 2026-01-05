@@ -1,25 +1,21 @@
+use std::sync::mpsc;
+
 use crate::prelude::*;
 
-pub fn run_game<
-    GS: GameState,
-    Stores: EntityStoreCombination<GS>,
-    Receivers: CommandReceiver<GS>,
->() {
-}
+pub fn run_game<GS: GameState, Stores: EntityStoreCombination<GS>>() {}
 
-pub struct GameMachine<
-    GS: GameState,
-    Stores: EntityStoreCombination<GS>,
-    Receivers: CommandReceiver<GS>,
-> {
+pub struct GameMachine<GS: GameState, Stores: EntityStoreCombination<GS>> {
     state: GS,
     stores: Stores,
-    receivers: Receivers,
     ms_until_transition: Option<f64>,
+    sender: mpsc::Sender<GS::Command>,
+    receiver: mpsc::Receiver<GS::Command>,
 }
 
 #[cfg(feature = "leptos")]
-impl<GS: GameState, S: EntityStoreCombination<GS>> EntityStoreCombination<GS> for leptos::prelude::ArcRwSignal<S> {
+impl<GS: GameState, S: EntityStoreCombination<GS>> EntityStoreCombination<GS>
+    for leptos::prelude::ArcRwSignal<S>
+{
     fn gather_entities(&mut self, state: &GS) -> bool {
         use leptos::prelude::Update;
 
@@ -45,17 +41,18 @@ impl<GS: GameState, S: EntityStoreCombination<GS>> EntityStoreCombination<GS> fo
     }
 }
 
-impl<GS: GameState, Stores: EntityStoreCombination<GS>, Receivers: CommandReceiver<GS>>
-    GameMachine<GS, Stores, Receivers>
-{
-    pub fn new(state: GS, mut stores: Stores, receivers: Receivers) -> Self {
+impl<GS: GameState, Stores: EntityStoreCombination<GS>> GameMachine<GS, Stores> {
+    pub fn new(state: GS, mut stores: Stores) -> Self {
         stores.gather_entities(&state);
+
+        let (sender, receiver) = mpsc::channel();
 
         Self {
             state,
             stores,
-            receivers,
             ms_until_transition: Some(0.0),
+            sender,
+            receiver,
         }
     }
     #[cfg(feature = "leptos")]
@@ -101,7 +98,10 @@ impl<GS: GameState, Stores: EntityStoreCombination<GS>, Receivers: CommandReceiv
 
         let mut entities_changed_by_commands = false;
 
-        while let Some(mr) = self.receivers.try_apply_command(&mut self.state) {
+        while let Some((cmd, mr)) = self.receiver.try_recv().ok().map(|cmd| {
+            let mr = self.state.apply_command(&cmd);
+            (cmd, mr)
+        }) {
             entities_changed_by_commands |= mr.changed;
 
             match (self.ms_until_transition, mr.transition_callback_in_ms) {
@@ -115,19 +115,28 @@ impl<GS: GameState, Stores: EntityStoreCombination<GS>, Receivers: CommandReceiv
             self.stores.gather_entities(&self.state);
         }
     }
+
+    pub fn command_sender(&self) -> mpsc::Sender<GS::Command> {
+        self.sender.clone()
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::mpsc;
     use crate::prelude::*;
 
     #[derive(Debug, PartialEq, Clone)]
     struct MyGameState(Vec<u32>);
 
     impl GameState for MyGameState {
+        type Command = MyCommand;
         fn maybe_transition(&mut self) -> crate::prelude::MutationResult {
             MutationResult::NO_CHANGE
+        }
+
+        fn apply_command(&mut self, command: &Self::Command) -> MutationResult {
+            self.0 = command.0.clone();
+            MutationResult::CHANGED_NO_TRANSITION
         }
     }
 
@@ -140,12 +149,7 @@ mod tests {
     #[derive(Debug, Clone)]
     struct MyCommand(Vec<u32>);
 
-    impl GameCommand<MyGameState> for MyCommand {
-        fn apply_command(&self, game_state: &mut MyGameState) -> MutationResult {
-            game_state.0 = self.0.clone();
-            MutationResult::CHANGED_NO_TRANSITION
-        }
-    }
+    impl GameCommand for MyCommand {}
 
     impl GameArtifact for MyArtifact {
         type Command = MyCommand;
@@ -176,7 +180,7 @@ mod tests {
             &self,
             artifact: &mut Self::Artifact,
             _former_entity_state: crate::prelude::EntityState,
-            _previous_animations: AnimationList<Self::Artifact>
+            _previous_animations: AnimationList<Self::Artifact>,
         ) -> crate::prelude::AnimationList<Self::Artifact> {
             artifact.0 = self.1.clone();
             AnimationList::new()
@@ -187,9 +191,9 @@ mod tests {
     pub fn test_game_machine() {
         let state = MyGameState(vec![1, 2, 3]);
         let store: SingleTypeEntityStore<MyEntity> = SingleTypeEntityStore::new(&state);
-        let (sender, receiver) = mpsc::channel::<MyCommand>();
 
-        let mut machine = GameMachine::new(state, store, receiver);
+        let mut machine = GameMachine::new(state, store);
+        let sender = machine.sender.clone();
 
         fn assert_entities(store: &SingleTypeEntityStore<MyEntity>, expected: &str) {
             let mut actual = String::new();

@@ -1,5 +1,3 @@
-use std::sync::mpsc;
-
 use glam::Vec2;
 use leptos::{logging::log, prelude::*};
 use state_machine_games::prelude::*;
@@ -24,20 +22,20 @@ fn game_component() -> impl IntoView {
         selected_square: None,
     };
 
-    let (click_sender, click_receiver) = mpsc::channel::<ClickSquareCommand>();
-    let (button_sender, button_receiver) = mpsc::channel::<ChessButtonCommand>();
     let stores = Stores::new(&state);
-    let machine = GameMachine::new(state, stores.clone(), (click_receiver, button_receiver));
+    let machine = GameMachine::new(state, stores.clone());
+    let command_sender1 = machine.command_sender();
+    let command_sender2 = machine.command_sender();
 
     machine.run_game();
 
     view! {
         <svg viewBox="0 0 320.0 320.0"  style="max-width: 800px;  margin-inline: auto; ">
-        {move || SingleTypeEntityStore::render(stores.0.clone(), click_sender.clone())}
+        {move || SingleTypeEntityStore::render(stores.0.clone(), command_sender1.clone())}
         {move || SingleTypeEntityStore::render(stores.1.clone(), ())}
         </svg>
         <div>
-            {move || SingleTypeEntityStore::render(stores.2.clone(), button_sender.clone())}
+            {move || SingleTypeEntityStore::render(stores.2.clone(), command_sender2.clone())}
         </div>
 
     }
@@ -76,7 +74,7 @@ impl GameEntity for ButtonEntity {
         &self,
         _artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
-        _previous_animations: AnimationList<Self::Artifact>
+        _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         vec![]
     }
@@ -89,14 +87,14 @@ pub enum ButtonArtifact {
 }
 
 impl GameArtifact for ButtonArtifact {
-    type Command = ChessButtonCommand;
+    type Command = ChessCommand;
 }
 
 impl LeptosGameArtifact for ButtonArtifact {
     fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let command = match self {
-            ButtonArtifact::PlayBestMove => ChessButtonCommand::PlayBestMove,
-            ButtonArtifact::Restart => ChessButtonCommand::Restart,
+            ButtonArtifact::PlayBestMove => ChessCommand::PlayBestMove,
+            ButtonArtifact::Restart => ChessCommand::Restart,
         };
         let name = match self {
             ButtonArtifact::PlayBestMove => "Play Best Move",
@@ -112,83 +110,15 @@ impl LeptosGameArtifact for ButtonArtifact {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum ChessButtonCommand {
+pub enum ChessCommand {
     PlayBestMove,
     Restart,
+    ClickSquare(Square),
 }
+
+impl GameCommand for ChessCommand {}
 
 const DEPTH: i8 = 5;
-
-impl GameCommand<ChessState> for ChessButtonCommand {
-    fn apply_command(&self, games_state: &mut ChessState) -> MutationResult {
-        games_state.selected_square = None;
-        match self {
-            ChessButtonCommand::PlayBestMove => {
-                let mut engine = Engine::from_board(games_state.board.clone());
-
-                // Configure the engine to search for the best move up to a depth of 5 plies.
-                let response = engine.search_depth_verbose(DEPTH);
-                if let Some(best_move) = response.get_best_move() {
-                    match games_state.board.push(best_move) {
-                        Ok(()) => MutationResult::CHANGED_NO_TRANSITION,
-                        Err(err) => {
-                            leptos::logging::error!("{err}");
-                            MutationResult::NO_CHANGE
-                        }
-                    }
-                } else {
-                    MutationResult::NO_CHANGE
-                }
-            }
-            ChessButtonCommand::Restart => {
-                games_state.board = Board::default();
-                MutationResult::CHANGED_NO_TRANSITION
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ClickSquareCommand {
-    pub square: Square,
-}
-
-impl GameCommand<ChessState> for ClickSquareCommand {
-    fn apply_command(&self, games_state: &mut ChessState) -> MutationResult {
-        match games_state.selected_square {
-            Some(selected_square) => {
-                if selected_square == self.square {
-                    games_state.selected_square = None;
-                } else {
-                    games_state.selected_square = None;
-                    match Move::new(selected_square, self.square, None) {
-                        Ok(m) => match games_state.board.push(m) {
-                            Ok(()) => {}
-                            Err(err) => {
-                                leptos::logging::log!("Error pushing move: {err}");
-                            }
-                        },
-                        Err(err) => {
-                            leptos::logging::log!("Error creating move: {err}");
-                        }
-                    }
-                }
-            }
-            None => {
-                if games_state
-                    .board
-                    .get_piece_at(self.square)
-                    .is_some_and(|p| p.get_color() == games_state.board.turn())
-                {
-                    games_state.selected_square = Some(self.square);
-                } else {
-                    return MutationResult::NO_CHANGE;
-                }
-            }
-        }
-        MutationResult::CHANGED_NO_TRANSITION
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ChessSquareArtifact {
@@ -212,7 +142,7 @@ pub struct ChessSquareArtifact {
 // }
 
 impl GameArtifact for ChessSquareArtifact {
-    type Command = ClickSquareCommand;
+    type Command = ChessCommand;
 }
 
 impl LeptosGameArtifact for ChessSquareArtifact {
@@ -226,7 +156,7 @@ impl LeptosGameArtifact for ChessSquareArtifact {
         let stroke_width = move || if self.selected.get() { 5 } else { 0 };
         view! {
             <rect x=x y=y width=SQUARE_SIZE height=SQUARE_SIZE fill={fill} stroke = {"#000000"} stroke-width={stroke_width}
-                on:click= move|_|{sender.send_command(ClickSquareCommand { square: self.square });}
+                on:click= move|_|{sender.send_command(ChessCommand::ClickSquare(self.square) );}
              />
 
         }
@@ -273,7 +203,7 @@ impl GameEntity for ChessSquareEntity {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
-        _previous_animations: AnimationList<Self::Artifact>
+        _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         artifact.selected.set(self.selected);
         vec![]
@@ -347,7 +277,7 @@ impl GameEntity for ChessPiece {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
-        _previous_animations: AnimationList<Self::Artifact>
+        _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         *artifact = *self;
         vec![]
@@ -390,8 +320,69 @@ pub struct ChessState {
 }
 
 impl GameState for ChessState {
+    type Command = ChessCommand;
     fn maybe_transition(&mut self) -> state_machine_games::prelude::MutationResult {
         MutationResult::NO_CHANGE
+    }
+
+    fn apply_command(&mut self, command: &Self::Command) -> MutationResult {
+        match command.clone() {
+            ChessCommand::PlayBestMove => {
+                let mut engine = Engine::from_board(self.board.clone());
+
+                // Configure the engine to search for the best move up to a depth of 5 plies.
+                let response = engine.search_depth_verbose(DEPTH);
+                if let Some(best_move) = response.get_best_move() {
+                    match self.board.push(best_move) {
+                        Ok(()) => MutationResult::CHANGED_NO_TRANSITION,
+                        Err(err) => {
+                            leptos::logging::error!("{err}");
+                            MutationResult::NO_CHANGE
+                        }
+                    }
+                } else {
+                    MutationResult::NO_CHANGE
+                }
+            }
+            ChessCommand::Restart => {
+                self.board = Board::default();
+                MutationResult::CHANGED_NO_TRANSITION
+            }
+            ChessCommand::ClickSquare(square) => {
+                match self.selected_square {
+                    Some(selected_square) => {
+                        if selected_square == square {
+                            self.selected_square = None;
+                        } else {
+                            self.selected_square = None;
+                            match Move::new(selected_square, square, None) {
+                                Ok(m) => match self.board.push(m) {
+                                    Ok(()) => {}
+                                    Err(err) => {
+                                        leptos::logging::log!("Error pushing move: {err}");
+                                    }
+                                },
+                                Err(err) => {
+                                    leptos::logging::log!("Error creating move: {err}");
+                                }
+                            }
+                        }
+                    }
+                    None => {
+                        if self
+                            .board
+                            .get_piece_at(square)
+                            .is_some_and(|p| p.get_color() == self.board.turn())
+                        {
+                            self.selected_square = Some(square);
+                        } else {
+                            return MutationResult::NO_CHANGE;
+                        }
+                    }
+                }
+                MutationResult::CHANGED_NO_TRANSITION
+            }
+        }
     }
 }
 

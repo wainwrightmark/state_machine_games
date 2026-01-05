@@ -23,9 +23,10 @@ fn game_component() -> impl IntoView {
         rng: TinyRng::seed_from_u64(123),
     };
 
-    let (sender, receiver) = mpsc::channel::<CounterCommand>();
+    
     let stores: Stores = Stores::new(&state);
-    let machine = GameMachine::new(state, stores.clone(), receiver);
+    let machine = GameMachine::new(state, stores.clone());
+    let sender = machine.command_sender().clone();
 
     machine.run_game();
 
@@ -44,8 +45,19 @@ pub struct CounterGameState {
 }
 
 impl GameState for CounterGameState {
+    type Command = CounterCommand;
     fn maybe_transition(&mut self) -> MutationResult {
         MutationResult::NO_CHANGE
+    }
+
+    fn apply_command(&mut self, command: &Self::Command) -> MutationResult {
+        match command {
+            CounterCommand::IncrementCount(n) => {
+                self.n += n;
+                let _ = self.rng.next_u64();
+                MutationResult::CHANGED_NO_TRANSITION
+            }
+        }
     }
 }
 
@@ -54,17 +66,8 @@ pub enum CounterCommand {
     IncrementCount(usize),
 }
 
-impl GameCommand<CounterGameState> for CounterCommand {
-    fn apply_command(&self, games_state: &mut CounterGameState) -> MutationResult {
-        match self {
-            CounterCommand::IncrementCount(n) => {
-                games_state.n += n;
-                let _ = games_state.rng.next_u64();
-                MutationResult::CHANGED_NO_TRANSITION
-            }
-        }
-    }
-}
+impl GameCommand for CounterCommand{}
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Key {
