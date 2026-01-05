@@ -1,5 +1,5 @@
-- [ ] leptos routing - custom level
-- [ ] save state
+- [x] leptos routing - custom level
+- [ ] save state - state change watcher
 - [ ] Better system for effects (e.g. animated words)
 - [ ] Better touch controls
 - [ ] Better word line

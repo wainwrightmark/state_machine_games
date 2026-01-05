@@ -2,9 +2,9 @@ use std::sync::mpsc;
 
 use crate::prelude::*;
 
-pub fn run_game<GS: GameState, Stores: EntityStoreCombination<GS>>() {}
+pub fn run_game<GS: GameState, Stores: ChangeWatcher<GS>>() {}
 
-pub struct GameMachine<GS: GameState, Stores: EntityStoreCombination<GS>> {
+pub struct GameMachine<GS: GameState, Stores: ChangeWatcher<GS>> {
     state: GS,
     stores: Stores,
     ms_until_transition: Option<f64>,
@@ -13,14 +13,12 @@ pub struct GameMachine<GS: GameState, Stores: EntityStoreCombination<GS>> {
 }
 
 #[cfg(feature = "leptos")]
-impl<GS: GameState, S: EntityStoreCombination<GS>> EntityStoreCombination<GS>
-    for leptos::prelude::ArcRwSignal<S>
-{
-    fn gather_entities(&mut self, state: &GS) -> bool {
+impl<GS: GameState, S: ChangeWatcher<GS>> ChangeWatcher<GS> for leptos::prelude::ArcRwSignal<S> {
+    fn on_state_change(&mut self, state: &GS, reason: &StateChangeReason<GS>) -> bool {
         use leptos::prelude::Update;
 
         self.try_maybe_update(|x| {
-            let changed = x.gather_entities(state);
+            let changed = x.on_state_change(state, reason);
             (changed, changed)
         })
         .unwrap_or_default()
@@ -41,9 +39,9 @@ impl<GS: GameState, S: EntityStoreCombination<GS>> EntityStoreCombination<GS>
     }
 }
 
-impl<GS: GameState, Stores: EntityStoreCombination<GS>> GameMachine<GS, Stores> {
+impl<GS: GameState, Stores: ChangeWatcher<GS>> GameMachine<GS, Stores> {
     pub fn new(state: GS, mut stores: Stores) -> Self {
-        stores.gather_entities(&state);
+        stores.on_state_change(&state, &StateChangeReason::InitialState);
 
         let (sender, receiver) = mpsc::channel();
 
@@ -82,7 +80,8 @@ impl<GS: GameState, Stores: EntityStoreCombination<GS>> GameMachine<GS, Stores> 
             self.ms_until_transition = mr.transition_callback_in_ms;
 
             if mr.changed {
-                self.stores.gather_entities(&self.state);
+                self.stores
+                    .on_state_change(&self.state, &StateChangeReason::Transition);
             }
         }
 
@@ -96,23 +95,20 @@ impl<GS: GameState, Stores: EntityStoreCombination<GS>> GameMachine<GS, Stores> 
             self.stores.step_animations(remaining_ms);
         }
 
-        let mut entities_changed_by_commands = false;
-
         while let Some((cmd, mr)) = self.receiver.try_recv().ok().map(|cmd| {
             let mr = self.state.apply_command(&cmd);
             (cmd, mr)
         }) {
-            entities_changed_by_commands |= mr.changed;
+            if mr.changed {
+                self.stores
+                    .on_state_change(&self.state, &StateChangeReason::Command(cmd));
+            }
 
             match (self.ms_until_transition, mr.transition_callback_in_ms) {
                 (_, None) => {}
                 (None, Some(_)) => self.ms_until_transition = mr.transition_callback_in_ms,
                 (Some(a), Some(b)) => self.ms_until_transition = Some(a.min(b)),
             }
-        }
-
-        if entities_changed_by_commands {
-            self.stores.gather_entities(&self.state);
         }
     }
 

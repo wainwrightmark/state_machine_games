@@ -2,10 +2,17 @@ use crate::prelude::*;
 use const_sized_bit_set::prelude::*;
 use impl_trait_for_tuples::impl_for_tuples;
 
-pub trait EntityStoreCombination<GS: GameState>: Send + Sync + 'static {
+#[derive(Debug)]
+pub enum StateChangeReason<GS: GameState>{
+    InitialState,
+    Transition,
+    Command(GS::Command)
+}
+
+pub trait ChangeWatcher<GS: GameState>: Send + Sync + 'static {
     //Regather entities from the state
     //Returns `true` if at least one entity has been added or removed
-    fn gather_entities(&mut self, state: &GS) -> bool;
+    fn on_state_change(&mut self, state: &GS, reason: &StateChangeReason<GS>)-> bool;
 
     //Step all animations in this store
     //This should never change the structure of the store
@@ -15,11 +22,11 @@ pub trait EntityStoreCombination<GS: GameState>: Send + Sync + 'static {
 }
 
 #[impl_for_tuples(1, 8)]
-impl<GS: GameState> EntityStoreCombination<GS> for Tuple {
-    for_tuples!( where #( Tuple: EntityStoreCombination<GS> )* );
+impl<GS: GameState> ChangeWatcher<GS> for Tuple {
+    for_tuples!( where #( Tuple: ChangeWatcher<GS> )* );
 
-    fn gather_entities(&mut self, state: &GS) -> bool {
-        for_tuples! (#(self.Tuple.gather_entities(state))| *)
+    fn on_state_change(&mut self, state: &GS, reason: &StateChangeReason<GS>)-> bool {
+        for_tuples! (#(self.Tuple.on_state_change(state, reason))| *)
     }
 
     fn step_animations(&mut self, delta_ms: f64) {
@@ -38,10 +45,10 @@ pub struct SingleTypeEntityStore<E: GameEntity> {
     pub segment: E::StateSegment,
 }
 
-impl<E: GameEntity, GS: GameState + HasSegment<E::StateSegment>> EntityStoreCombination<GS>
+impl<E: GameEntity, GS: GameState + HasSegment<E::StateSegment>> ChangeWatcher<GS>
     for SingleTypeEntityStore<E>
 {
-    fn gather_entities(&mut self, state: &GS) -> bool {
+    fn on_state_change(&mut self, state: &GS, _reason: &StateChangeReason<GS>) -> bool {
         if state.segment_eq(&self.segment) {
             return false;
         }
