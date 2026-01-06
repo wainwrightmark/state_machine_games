@@ -6,4 +6,4 @@
 - [ ] Implement phases - end screen
 - [ ] Timer
 - [ ] Background color
-- [ ] Split into multiple files
+- [x] Split into multiple files
