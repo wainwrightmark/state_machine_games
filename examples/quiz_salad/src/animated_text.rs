@@ -114,12 +114,14 @@ define_signal_lens!(
 );
 
 impl GameArtifact for AnimatedTextArtifact {
-    type Command = ();
+    
 }
 
 impl LeptosGameArtifact for AnimatedTextArtifact {
+    type Command = ();
     fn render(
         self,
+        _: (),
         sender: impl state_machine_games::prelude::CommandSender<Self::Command>,
     ) -> impl IntoView {
         view! {

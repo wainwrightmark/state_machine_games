@@ -30,8 +30,8 @@ fn game_component() -> impl IntoView {
 
     view! {
         <svg viewBox="0 0 800.0 800.0"  style="max-width: 800px;  margin-inline: auto; ">
-        {move || SingleTypeEntityStore::render(stores.0.clone(), sender.clone())}
-        {move || SingleTypeEntityStore::render(stores.1.clone(), ())}
+        {move || SingleTypeEntityStore::render(stores.0.clone(), (), sender.clone())}
+        {move || SingleTypeEntityStore::render(stores.1.clone(), (), ())}
         </svg>
     }
 }
@@ -157,12 +157,11 @@ pub struct CircleArtifact {
 define_signal_lens!(CircleXLens, CircleArtifact, f32, x);
 define_signal_lens!(CircleYLens, CircleArtifact, f32, y);
 
-impl GameArtifact for CircleArtifact {
-    type Command = ();
-}
+impl GameArtifact for CircleArtifact {}
 
 impl LeptosGameArtifact for CircleArtifact {
-    fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    type Command = ();
+    fn render(self, _: (), _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         view! {<circle cx=self.x cy=self.y r=self.size fill="#1111EE" />}
     }
 }
@@ -223,11 +222,12 @@ pub struct SquareButtonArtifact {
 }
 
 impl GameArtifact for SquareButtonArtifact {
-    type Command = CounterCommand;
+    
 }
 
 impl LeptosGameArtifact for SquareButtonArtifact {
-    fn render(self, sender: impl CommandSender<Self::Command>) -> impl leptos::IntoView {
+    type Command = CounterCommand;
+    fn render(self, _: (), sender: impl CommandSender<Self::Command>) -> impl leptos::IntoView {
         view! {
             <rect x={move||{self.x - (self.size.get() * 0.5)} } y={move ||{self.y - (self.size.get() *0.5)}} rx={move || self.size.get() * 0.2} ry={move|| self.size.get() * 0.2}  width=self.size height=self.size fill="#EE1111" on:click=move |_| sender.send_command(CounterCommand::IncrementCount(1)) />
             <text font-size={move || format!("{}px", self.size.get() * 0.5)}  x=self.x y=self.y  style="pointer-events: none;user-select: none;font-family: monospace;dominant-baseline: central;text-anchor: middle;">

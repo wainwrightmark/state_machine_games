@@ -31,11 +31,11 @@ fn game_component() -> impl IntoView {
 
     view! {
         <svg viewBox="0 0 320.0 320.0"  style="max-width: 800px;  margin-inline: auto; ">
-        {move || SingleTypeEntityStore::render(stores.0.clone(), command_sender1.clone())}
-        {move || SingleTypeEntityStore::render(stores.1.clone(), ())}
+        {move || SingleTypeEntityStore::render(stores.0.clone(), (), command_sender1.clone())}
+        {move || SingleTypeEntityStore::render(stores.1.clone(), (), ())}
         </svg>
         <div>
-            {move || SingleTypeEntityStore::render(stores.2.clone(), command_sender2.clone())}
+            {move || SingleTypeEntityStore::render(stores.2.clone(),(), command_sender2.clone())}
         </div>
 
     }
@@ -86,12 +86,11 @@ pub enum ButtonArtifact {
     Restart,
 }
 
-impl GameArtifact for ButtonArtifact {
-    type Command = ChessCommand;
-}
+impl GameArtifact for ButtonArtifact {}
 
 impl LeptosGameArtifact for ButtonArtifact {
-    fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    type Command = ChessCommand;
+    fn render(self, _: (), sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let command = match self {
             ButtonArtifact::PlayBestMove => ChessCommand::PlayBestMove,
             ButtonArtifact::Restart => ChessCommand::Restart,
@@ -201,12 +200,11 @@ pub struct ChessSquareArtifact {
 //     }
 // }
 
-impl GameArtifact for ChessSquareArtifact {
-    type Command = ChessCommand;
-}
+impl GameArtifact for ChessSquareArtifact {}
 
 impl LeptosGameArtifact for ChessSquareArtifact {
-    fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    type Command = ChessCommand;
+    fn render(self, _: (), sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = square_to_position(self.square, false);
         let fill = if self.square.get_rank().to_int() % 2 == self.square.get_file().to_int() % 2 {
             "#739552"
@@ -293,12 +291,11 @@ impl PartialOrd for ChessPiece {
 
 impl GameEntityKey for ChessPiece {}
 
-impl GameArtifact for ChessPiece {
-    type Command = ();
-}
+impl GameArtifact for ChessPiece {}
 
 impl LeptosGameArtifact for ChessPiece {
-    fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    type Command = ();
+    fn render(self, _: (), _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = square_to_position(self.square, true);
 
         log!("Piece {} x: {x} y: {y}", self.piece);

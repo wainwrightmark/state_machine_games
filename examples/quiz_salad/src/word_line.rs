@@ -19,11 +19,12 @@ define_signal_lens!(
 );
 
 impl GameArtifact for WordLineArtifact {
-    type Command = ();
+    
 }
 
 impl LeptosGameArtifact for WordLineArtifact {
-    fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    type Command = ();
+    fn render(self,_: (), _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         //todo nice line disappear - dependent on reason for disappear
         //todo line pulsing if close to the answer
 

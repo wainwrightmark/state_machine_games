@@ -103,12 +103,13 @@ pub struct LozengeArtifact {
 }
 
 impl GameArtifact for LozengeArtifact {
-    type Command = QuizSaladCommand;
+    
 }
 
 impl LeptosGameArtifact for LozengeArtifact {
+    type Command = QuizSaladCommand;
     fn render(
-        self,
+        self,_: (),
         sender: impl state_machine_games::prelude::CommandSender<Self::Command>,
     ) -> impl IntoView {
         let Self { index, x, y, fill } = self;

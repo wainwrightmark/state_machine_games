@@ -3,16 +3,16 @@ use const_sized_bit_set::prelude::*;
 use impl_trait_for_tuples::impl_for_tuples;
 
 #[derive(Debug)]
-pub enum StateChangeReason<GS: GameState>{
+pub enum StateChangeReason<GS: GameState> {
     InitialState,
     Transition,
-    Command(GS::Command)
+    Command(GS::Command),
 }
 
 pub trait ChangeWatcher<GS: GameState>: Send + Sync + 'static {
     //Regather entities from the state
     //Returns `true` if at least one entity has been added or removed
-    fn on_state_change(&mut self, state: &GS, reason: &StateChangeReason<GS>)-> bool;
+    fn on_state_change(&mut self, state: &GS, reason: &StateChangeReason<GS>) -> bool;
 
     //Step all animations in this store
     //This should never change the structure of the store
@@ -25,7 +25,7 @@ pub trait ChangeWatcher<GS: GameState>: Send + Sync + 'static {
 impl<GS: GameState> ChangeWatcher<GS> for Tuple {
     for_tuples!( where #( Tuple: ChangeWatcher<GS> )* );
 
-    fn on_state_change(&mut self, state: &GS, reason: &StateChangeReason<GS>)-> bool {
+    fn on_state_change(&mut self, state: &GS, reason: &StateChangeReason<GS>) -> bool {
         for_tuples! (#(self.Tuple.on_state_change(state, reason))| *)
     }
 
@@ -85,10 +85,25 @@ impl<E: GameEntity, GS: GameState + HasSegment<E::StateSegment>> ChangeWatcher<G
 }
 
 #[cfg(feature = "leptos")]
-impl<A: LeptosGameArtifact, E: GameEntity<Artifact = A>> SingleTypeEntityStore<E> {
-    pub fn render(
+pub trait LeptosRenderable<Argument: Clone + Send + Sync + 'static, Command: Send + 'static>: Sized {
+    fn render(
         signal: leptos::prelude::ArcRwSignal<Self>,
-        sender: impl CommandSender<<E::Artifact as GameArtifact>::Command>,
+        argument: Argument,
+        sender: impl CommandSender<Command>,
+    ) -> impl leptos::IntoView;
+}
+
+#[cfg(feature = "leptos")]
+impl<
+    Argument: Clone + Send + Sync + 'static,
+    A: LeptosGameArtifact<Argument>,
+    E: GameEntity<Artifact = A>,
+> LeptosRenderable<Argument, A::Command> for SingleTypeEntityStore<E>
+{
+    fn render(
+        signal: leptos::prelude::ArcRwSignal<Self>,
+        argument: Argument,
+        sender: impl CommandSender<A::Command>,
     ) -> impl leptos::IntoView {
         leptos::control_flow::For(leptos::prelude::ForProps {
             each: {
@@ -112,9 +127,12 @@ impl<A: LeptosGameArtifact, E: GameEntity<Artifact = A>> SingleTypeEntityStore<E
 
                 match entities.binary_search_by_key(&k, |x| x.entity.key()) {
                     Ok(index) => match entities.get(index) {
-                        Some(stored_entity) => {
-                            Some(stored_entity.artifact.clone().render(sender.clone()))
-                        }
+                        Some(stored_entity) => Some(
+                            stored_entity
+                                .artifact
+                                .clone()
+                                .render(argument.clone(), sender.clone()),
+                        ),
                         None => None,
                     },
                     Err(_) => None,
@@ -148,7 +166,8 @@ impl<E: GameEntity> StoredEntity<E> {
             //do nothing
         } else {
             let previous_animations = std::mem::take(&mut prev.animations);
-            prev.animations = new_entity.on_update(&mut prev.artifact, prev.state, previous_animations);
+            prev.animations =
+                new_entity.on_update(&mut prev.artifact, prev.state, previous_animations);
             prev.entity = new_entity;
             prev.state = EntityState::Alive;
         }
@@ -173,7 +192,9 @@ impl<E: GameEntity> StoredEntity<E> {
         match self.state {
             EntityState::Alive => {
                 let previous_animations = std::mem::take(&mut self.animations);
-                self.animations = self.entity.on_death(&mut self.artifact, previous_animations);
+                self.animations = self
+                    .entity
+                    .on_death(&mut self.artifact, previous_animations);
                 self.state = EntityState::Dead;
             }
             EntityState::Dead => {}

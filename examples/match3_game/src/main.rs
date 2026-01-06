@@ -30,9 +30,9 @@ fn game_component() -> impl IntoView {
 
     view! {
         <svg viewBox="0 0 800.0 800.0"  style="max-width: 800px;  margin-inline: auto; ">
-        {move || SingleTypeEntityStore::render(stores.0.clone(), ())}
-        {move || SingleTypeEntityStore::render(stores.1.clone(), ())}
-        {move || SingleTypeEntityStore::render(stores.2.clone(), sender.clone())}
+        {move || SingleTypeEntityStore::render(stores.0.clone(),(), ())}
+        {move || SingleTypeEntityStore::render(stores.1.clone(),(), ())}
+        {move || SingleTypeEntityStore::render(stores.2.clone(),(), sender.clone())}
         </svg>
 
     }
@@ -175,12 +175,11 @@ pub struct TextArtifact {
     pub text: RwSignal<String>,
 }
 
-impl GameArtifact for TextArtifact {
-    type Command = ();
-}
+impl GameArtifact for TextArtifact {}
 
 impl LeptosGameArtifact for TextArtifact {
-    fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    type Command = ();
+    fn render(self, _: (), _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         view! {
             <text x=self.x y=self.y font-size=self.font_size style="user-select: none;">
                 {self.text}
@@ -203,12 +202,11 @@ state_machine_games::define_signal_lens!(TileArtifactXLens, TileArtifact, f32, x
 state_machine_games::define_signal_lens!(TileArtifactYLens, TileArtifact, f32, y);
 state_machine_games::define_signal_lens!(TileArtifactScaleLens, TileArtifact, f32, scale);
 
-impl GameArtifact for TileArtifact {
-    type Command = Match3Command;
-}
+impl GameArtifact for TileArtifact {}
 
 impl LeptosGameArtifact for TileArtifact {
-    fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    type Command = Match3Command;
+    fn render(self, _: (), sender: impl CommandSender<Self::Command>) -> impl IntoView {
         view! {
             <rect x={self.x} y={self.y}
             width={SQUARE_SIZE}

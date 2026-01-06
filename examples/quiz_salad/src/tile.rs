@@ -1,34 +1,59 @@
-use crate::*;
+use crate::{quiz_salad_command::{QuizSaladCommand, TileClickedCommand}, *};
 
 #[derive(Debug, Clone)]
-pub struct TileTextArtifact {
+pub struct TileArtifact {
     pub tile: Tile4x4,
     pub character: Character,
-    pub fill: RwSignal<Srgba>,
+    pub text_fill: RwSignal<Srgba>,
     //pub selected: RwSignal<bool>,
     pub scale: RwSignal<f32>,
 }
 
-impl GameArtifact for TileTextArtifact {
-    type Command = ();
+impl GameArtifact for TileArtifact {}
+
+define_signal_lens!(TileTextArtifactScaleLens, TileArtifact, f32, scale);
+define_signal_lens!(TileTextArtifactFillLens, TileArtifact, Srgba, text_fill);
+
+#[derive(Clone)]
+pub struct RenderTileFill;
+
+impl LeptosGameArtifact<RenderTileFill> for TileArtifact {
+    type Command = QuizSaladCommand;
+    fn render(self, _: RenderTileFill, sender: impl CommandSender<Self::Command>) -> impl IntoView {
+        let Vec2 { x, y } = tile_position(self.tile, PositionOrigin::TopLeft);
+
+        let tile = self.tile;
+
+        view! {
+            <rect
+            width={TILE_SIZE}
+            height={TILE_SIZE}
+            x={x}
+            y={y}
+            rx={TILE_RADIUS}
+            ry={TILE_RADIUS}
+            fill={colors::CLASSIC_COLOR_SCHEME.tile.to_hex()}
+            transform={move || format!("scale({})", self.scale.get())}
+            style="transform-box: content-box; transform-origin: center center;"
+            on:click={move|_|{
+                sender.send_command(QuizSaladCommand::TileClicked(TileClickedCommand(tile)));
+            }}
+            >  </rect>
+
+        }
+    }
 }
 
-define_signal_lens!(TileTextArtifactScaleLens, TileTextArtifact, f32, scale);
-define_signal_lens!(TileTextArtifactFillLens, TileTextArtifact, Srgba, fill);
+#[derive(Clone)]
+pub struct RenderTileText;
 
-impl LeptosGameArtifact for TileTextArtifact {
-    fn render(self, sender: impl CommandSender<Self::Command>) -> impl IntoView {
+impl LeptosGameArtifact<RenderTileText> for TileArtifact {
+    type Command = ();
+    fn render(self, _: RenderTileText, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = tile_position(self.tile, PositionOrigin::Center);
-        // let color = move || {
-        //     if self.selected.get() {
-        //         SELECTED_TEXT_COLOR
-        //     } else {
-        //         UNSELECTED_TEXT_COLOR
-        //     }
-        // };
 
         let style = move || format!("transform-box: content-box; transform-origin: center;",);
-        let fill = move || self.fill.get().to_hex();
+        let fill = move || self.text_fill.get().to_hex();
 
         view! {
             <text x={x} y={y}
@@ -49,14 +74,14 @@ impl LeptosGameArtifact for TileTextArtifact {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct TileTextEntity {
+pub struct TileEntity {
     tile: Tile4x4,
     character: Character,
     selected: bool,
     unneeded: bool,
 }
 
-impl TileTextEntity {
+impl TileEntity {
     pub const fn fill(&self) -> Srgba {
         if self.selected {
             CLASSIC_COLOR_SCHEME.tile_letter_selected
@@ -66,8 +91,8 @@ impl TileTextEntity {
     }
 }
 
-impl GameEntity for TileTextEntity {
-    type Artifact = TileTextArtifact;
+impl GameEntity for TileEntity {
+    type Artifact = TileArtifact;
     type Key = u8;
 
     type StateSegment = QuizSaladGameState;
@@ -100,7 +125,7 @@ impl GameEntity for TileTextEntity {
                 tile: self.tile,
                 character: self.character,
                 scale: RwSignal::new(if self.unneeded { 0.0 } else { 1.0 }),
-                fill: RwSignal::new(self.fill()),
+                text_fill: RwSignal::new(self.fill()),
             },
             vec![],
         )

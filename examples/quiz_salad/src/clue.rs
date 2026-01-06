@@ -5,11 +5,10 @@ pub struct ClueArtifact {
     pub text: RwSignal<Ustr>,
 }
 
-impl GameArtifact for ClueArtifact {
-    type Command = ();
-}
+impl GameArtifact for ClueArtifact {}
 impl LeptosGameArtifact for ClueArtifact {
-    fn render(self, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    type Command = ();
+    fn render(self, _: (), _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         move || match util::split_two_line_ustr(self.text.get(), 30) {
             itertools::Either::Left(a) => leptos::either::Either::Left(view! {
                 <text x=320 y=950

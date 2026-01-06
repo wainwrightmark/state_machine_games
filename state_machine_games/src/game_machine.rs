@@ -129,8 +129,6 @@ mod tests {
         fn maybe_transition(&mut self) -> crate::prelude::MutationResult {
             MutationResult::NO_CHANGE
         }
-
-        
     }
 
     #[derive(Debug, PartialEq)]
@@ -149,9 +147,7 @@ mod tests {
         }
     }
 
-    impl GameArtifact for MyArtifact {
-        type Command = MyCommand;
-    }
+    impl GameArtifact for MyArtifact {}
 
     impl GameEntity for MyEntity {
         type Artifact = MyArtifact;
