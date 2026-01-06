@@ -1,4 +1,4 @@
-use crate::{quiz_salad_command::QuizSaladCommand, *};
+use crate::{quiz_salad_command::{QuizSaladCommand, TileClickedCommand}, *};
 
 #[derive(Debug, Clone)]
 pub struct TileRectArtifact {
@@ -38,7 +38,7 @@ impl LeptosGameArtifact for TileRectArtifact {
             transform={move || format!("scale({})", self.scale.get())}
             style="transform-box: content-box; transform-origin: center center;"
             on:click={move|_|{
-                sender.send_command(QuizSaladCommand::TileClicked(tile));
+                sender.send_command(QuizSaladCommand::TileClicked(TileClickedCommand(tile)));
             }}
             >  </rect>
 

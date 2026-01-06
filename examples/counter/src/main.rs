@@ -1,5 +1,4 @@
 use core::f32;
-use std::sync::mpsc;
 
 use glam::Vec2;
 use leptos::prelude::*;
@@ -23,7 +22,6 @@ fn game_component() -> impl IntoView {
         rng: TinyRng::seed_from_u64(123),
     };
 
-    
     let stores: Stores = Stores::new(&state);
     let machine = GameMachine::new(state, stores.clone());
     let sender = machine.command_sender().clone();
@@ -49,16 +47,6 @@ impl GameState for CounterGameState {
     fn maybe_transition(&mut self) -> MutationResult {
         MutationResult::NO_CHANGE
     }
-
-    fn apply_command(&mut self, command: &Self::Command) -> MutationResult {
-        match command {
-            CounterCommand::IncrementCount(n) => {
-                self.n += n;
-                let _ = self.rng.next_u64();
-                MutationResult::CHANGED_NO_TRANSITION
-            }
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -66,8 +54,17 @@ pub enum CounterCommand {
     IncrementCount(usize),
 }
 
-impl GameCommand for CounterCommand{}
-
+impl GameCommand<CounterGameState> for CounterCommand {
+    fn apply_command(&self, game_state: &mut CounterGameState) -> MutationResult {
+        match self {
+            CounterCommand::IncrementCount(n) => {
+                game_state.n += n;
+                let _ = game_state.rng.next_u64();
+                MutationResult::CHANGED_NO_TRANSITION
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Key {
@@ -99,7 +96,7 @@ impl Circle {
     }
 }
 
-impl GameEntity for Circle {    
+impl GameEntity for Circle {
     type Artifact = CircleArtifact;
     type Key = Key;
     type StateSegment = CounterGameState;
@@ -139,7 +136,7 @@ impl GameEntity for Circle {
         &self,
         _artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
-        _previous_animations: AnimationList<Self::Artifact>
+        _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         let Vec2 { x, y } = self.position();
 
@@ -204,7 +201,7 @@ impl GameEntity for SquareButton {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
-        _previous_animations: AnimationList<Self::Artifact>
+        _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         artifact.text.set(self.n.to_string());
 

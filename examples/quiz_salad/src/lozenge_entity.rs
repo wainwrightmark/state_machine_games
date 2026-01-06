@@ -1,4 +1,4 @@
-use crate::{quiz_salad_command::QuizSaladCommand, *};
+use crate::{quiz_salad_command::{LozengeClickedCommand, QuizSaladCommand}, *};
 
 define_signal_lens!(LozengeArtifactFillLens, LozengeArtifact, Srgba, fill);
 
@@ -113,7 +113,7 @@ impl LeptosGameArtifact for LozengeArtifact {
     ) -> impl IntoView {
         let Self { index, x, y, fill } = self;
         let on_click = move |_: MouseEvent| {
-            sender.send_command(QuizSaladCommand::LozengeClicked(index));
+            sender.send_command(QuizSaladCommand::LozengeClicked(LozengeClickedCommand(index)));
         };
         view! {
             <rect x={x} y={y} width={LOZENGE_WIDTH} height={LOZENGE_HEIGHT} fill={move || fill.get().to_hex()} rx={LOZENGE_RADIUS} ry={LOZENGE_RADIUS} on:click=on_click>

@@ -96,7 +96,7 @@ impl<GS: GameState, Stores: ChangeWatcher<GS>> GameMachine<GS, Stores> {
         }
 
         while let Some((cmd, mr)) = self.receiver.try_recv().ok().map(|cmd| {
-            let mr = self.state.apply_command(&cmd);
+            let mr = cmd.apply_command(&mut self.state);
             (cmd, mr)
         }) {
             if mr.changed {
@@ -130,10 +130,7 @@ mod tests {
             MutationResult::NO_CHANGE
         }
 
-        fn apply_command(&mut self, command: &Self::Command) -> MutationResult {
-            self.0 = command.0.clone();
-            MutationResult::CHANGED_NO_TRANSITION
-        }
+        
     }
 
     #[derive(Debug, PartialEq)]
@@ -145,7 +142,12 @@ mod tests {
     #[derive(Debug, Clone)]
     struct MyCommand(Vec<u32>);
 
-    impl GameCommand for MyCommand {}
+    impl GameCommand<MyGameState> for MyCommand {
+        fn apply_command(&self, state: &mut MyGameState) -> MutationResult {
+            state.0 = self.0.clone();
+            MutationResult::CHANGED_NO_TRANSITION
+        }
+    }
 
     impl GameArtifact for MyArtifact {
         type Command = MyCommand;

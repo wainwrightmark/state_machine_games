@@ -1,9 +1,7 @@
 use crate::prelude::*;
 
-pub trait GameState: Send + Sync + 'static {
-    type Command: GameCommand;
-
-    fn apply_command(&mut self, command: &Self::Command) -> MutationResult;
+pub trait GameState: Send + Sync + 'static + Sized {
+    type Command: GameCommand<Self>;
 
     fn maybe_transition(&mut self) -> MutationResult;
 }

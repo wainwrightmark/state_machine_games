@@ -1,8 +1,9 @@
-pub trait GameCommand: Send + 'static {}
+use crate::prelude::MutationResult;
 
-// pub trait GameCommand<GS> : Send + 'static {
-//     fn apply_command(&self, game_state: &mut GS) -> MutationResult;
-// }
+
+pub trait GameCommand<GS> : Send + 'static {
+    fn apply_command(&self, game_state: &mut GS) -> MutationResult;
+}
 
 // impl<GS: GameState> GameCommand<GS> for () {
 //     fn apply_command(&self, _game_state: &mut GS) -> MutationResult {

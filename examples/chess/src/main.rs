@@ -116,7 +116,67 @@ pub enum ChessCommand {
     ClickSquare(Square),
 }
 
-impl GameCommand for ChessCommand {}
+impl GameCommand<ChessState> for ChessCommand {
+    fn apply_command(&self, game_state: &mut ChessState) -> MutationResult {
+        match self.clone() {
+            ChessCommand::PlayBestMove => {
+                let mut engine = Engine::from_board(game_state.board.clone());
+
+                // Configure the engine to search for the best move up to a depth of 5 plies.
+                let response = engine.search_depth_verbose(DEPTH);
+                if let Some(best_move) = response.get_best_move() {
+                    match game_state.board.push(best_move) {
+                        Ok(()) => MutationResult::CHANGED_NO_TRANSITION,
+                        Err(err) => {
+                            leptos::logging::error!("{err}");
+                            MutationResult::NO_CHANGE
+                        }
+                    }
+                } else {
+                    MutationResult::NO_CHANGE
+                }
+            }
+            ChessCommand::Restart => {
+                game_state.board = Board::default();
+                MutationResult::CHANGED_NO_TRANSITION
+            }
+            ChessCommand::ClickSquare(square) => {
+                match game_state.selected_square {
+                    Some(selected_square) => {
+                        if selected_square == square {
+                            game_state.selected_square = None;
+                        } else {
+                            game_state.selected_square = None;
+                            match Move::new(selected_square, square, None) {
+                                Ok(m) => match game_state.board.push(m) {
+                                    Ok(()) => {}
+                                    Err(err) => {
+                                        leptos::logging::log!("Error pushing move: {err}");
+                                    }
+                                },
+                                Err(err) => {
+                                    leptos::logging::log!("Error creating move: {err}");
+                                }
+                            }
+                        }
+                    }
+                    None => {
+                        if game_state
+                            .board
+                            .get_piece_at(square)
+                            .is_some_and(|p| p.get_color() == game_state.board.turn())
+                        {
+                            game_state.selected_square = Some(square);
+                        } else {
+                            return MutationResult::NO_CHANGE;
+                        }
+                    }
+                }
+                MutationResult::CHANGED_NO_TRANSITION
+            }
+        }
+    }
+}
 
 const DEPTH: i8 = 5;
 
@@ -323,66 +383,6 @@ impl GameState for ChessState {
     type Command = ChessCommand;
     fn maybe_transition(&mut self) -> state_machine_games::prelude::MutationResult {
         MutationResult::NO_CHANGE
-    }
-
-    fn apply_command(&mut self, command: &Self::Command) -> MutationResult {
-        match command.clone() {
-            ChessCommand::PlayBestMove => {
-                let mut engine = Engine::from_board(self.board.clone());
-
-                // Configure the engine to search for the best move up to a depth of 5 plies.
-                let response = engine.search_depth_verbose(DEPTH);
-                if let Some(best_move) = response.get_best_move() {
-                    match self.board.push(best_move) {
-                        Ok(()) => MutationResult::CHANGED_NO_TRANSITION,
-                        Err(err) => {
-                            leptos::logging::error!("{err}");
-                            MutationResult::NO_CHANGE
-                        }
-                    }
-                } else {
-                    MutationResult::NO_CHANGE
-                }
-            }
-            ChessCommand::Restart => {
-                self.board = Board::default();
-                MutationResult::CHANGED_NO_TRANSITION
-            }
-            ChessCommand::ClickSquare(square) => {
-                match self.selected_square {
-                    Some(selected_square) => {
-                        if selected_square == square {
-                            self.selected_square = None;
-                        } else {
-                            self.selected_square = None;
-                            match Move::new(selected_square, square, None) {
-                                Ok(m) => match self.board.push(m) {
-                                    Ok(()) => {}
-                                    Err(err) => {
-                                        leptos::logging::log!("Error pushing move: {err}");
-                                    }
-                                },
-                                Err(err) => {
-                                    leptos::logging::log!("Error creating move: {err}");
-                                }
-                            }
-                        }
-                    }
-                    None => {
-                        if self
-                            .board
-                            .get_piece_at(square)
-                            .is_some_and(|p| p.get_color() == self.board.turn())
-                        {
-                            self.selected_square = Some(square);
-                        } else {
-                            return MutationResult::NO_CHANGE;
-                        }
-                    }
-                }
-                MutationResult::CHANGED_NO_TRANSITION
-            }
-        }
     }
 }
 

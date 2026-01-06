@@ -125,7 +125,47 @@ pub enum Match3Command {
     TileClicked(Match3Tile),
 }
 
-impl GameCommand for Match3Command {}
+impl GameCommand<Match3Game> for Match3Command {
+    fn apply_command(&self, game_state: &mut Match3Game) -> MutationResult {
+        if game_state.grid.iter().any(|x| x.is_none()) {
+            return MutationResult::NO_CHANGE;
+        }
+
+        let Match3Command::TileClicked(tile) = *self;
+
+        //log::info!("Tile Clicked {tile}");
+
+        match game_state.selected_tile {
+            Some(former_selected_tile) => {
+                if former_selected_tile == tile {
+                    //Unselect the tile
+                    game_state.selected_tile = None;
+                } else if former_selected_tile.is_contiguous_with(&tile) {
+                    //swap the tiles
+
+                    if let Some(new_moves_left) = game_state.moves_left.checked_sub(1) {
+                        game_state.grid.swap(tile, former_selected_tile);
+                        game_state.moves_left = new_moves_left;
+                        game_state.selected_tile = None;
+                    }
+
+                    //TODO match 3 logic
+                } else {
+                    game_state.selected_tile = Some(tile);
+                }
+            }
+            None => {
+                game_state.selected_tile = Some(tile);
+            }
+        }
+        let transition_callback_in_ms = if true { Some(1000.0) } else { None };
+
+        MutationResult {
+            changed: true,
+            transition_callback_in_ms,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct TextArtifact {
@@ -372,46 +412,6 @@ impl GameEntity for Match3TileEntity {
 
 impl GameState for Match3Game {
     type Command = Match3Command;
-
-    fn apply_command(&mut self, command: &Self::Command) -> MutationResult {
-        if self.grid.iter().any(|x| x.is_none()) {
-            return MutationResult::NO_CHANGE;
-        }
-
-        let Match3Command::TileClicked(tile) = *command;
-
-        //log::info!("Tile Clicked {tile}");
-
-        match self.selected_tile {
-            Some(former_selected_tile) => {
-                if former_selected_tile == tile {
-                    //Unselect the tile
-                    self.selected_tile = None;
-                } else if former_selected_tile.is_contiguous_with(&tile) {
-                    //swap the tiles
-
-                    if let Some(new_moves_left) = self.moves_left.checked_sub(1) {
-                        self.grid.swap(tile, former_selected_tile);
-                        self.moves_left = new_moves_left;
-                        self.selected_tile = None;
-                    }
-
-                    //TODO match 3 logic
-                } else {
-                    self.selected_tile = Some(tile);
-                }
-            }
-            None => {
-                self.selected_tile = Some(tile);
-            }
-        }
-        let transition_callback_in_ms = if true { Some(1000.0) } else { None };
-
-        MutationResult {
-            changed: true,
-            transition_callback_in_ms,
-        }
-    }
 
     fn maybe_transition(&mut self) -> MutationResult {
         let mut changed = false;
