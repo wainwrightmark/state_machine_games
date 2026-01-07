@@ -11,7 +11,7 @@ pub struct ColorScheme {
     pub clue_text: Srgba,
 
     pub lozenge_normal: Srgba,
-    pub lozenge_selected: Srgba,
+    pub lozenge_selection_stroke: Srgba,
     pub lozenge_completed: Srgba,
 
     pub wordline_0: Srgba,
@@ -56,7 +56,7 @@ pub const CLASSIC_COLOR_SCHEME: ColorScheme = ColorScheme {
     tile_letter_selected: rgb_hex(0xf5f5f5),       // #f5f5f5ff
     clue_text: rgb_hex(0x676c71),         // #676c71ff
     lozenge_normal: rgb_hex(0xebebeb),    // #ebebebff
-    lozenge_selected: rgb_hex(0x006aff),  // #006affff
+    lozenge_selection_stroke: rgb_hex(0x676c71),         // #676c71ff
     lozenge_completed: rgb_hex(0x27bf4d), // #27bf4dff
     wordline_0: rgb_hex(0x006AFF),          // #006AFF
     wordline_1: rgb_hex(0x0015FF),          // #0015FF

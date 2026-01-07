@@ -4,6 +4,12 @@ use crate::{
 };
 
 define_signal_lens!(LozengeArtifactFillLens, LozengeArtifact, Srgba, fill);
+define_signal_lens!(
+    LozengeArtifactStrokeWidthLens,
+    LozengeArtifact,
+    f32,
+    stroke_width
+);
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LozengeSelection {
@@ -13,14 +19,6 @@ pub enum LozengeSelection {
 }
 
 impl LozengeSelection {
-    pub const fn color(&self) -> Srgba {
-        match self {
-            LozengeSelection::None => CLASSIC_COLOR_SCHEME.lozenge_normal,
-            LozengeSelection::Selected => CLASSIC_COLOR_SCHEME.lozenge_selected,
-            LozengeSelection::Finished => CLASSIC_COLOR_SCHEME.lozenge_completed,
-        }
-    }
-
     pub const fn new(completion: &Completion, selected: bool) -> Self {
         if selected {
             return Self::Selected;
@@ -36,12 +34,25 @@ impl LozengeSelection {
 pub struct LozengeEntity {
     pub index: usize,
     pub lozenge_count: usize,
-    pub selected: LozengeSelection,
+    pub selected: bool,
+    pub completed: bool,
 }
 
 impl LozengeEntity {
     pub const fn position(&self) -> Vec2 {
         layout::lozenge_position(self.index, self.lozenge_count, PositionOrigin::TopLeft)
+    }
+
+    pub const fn stroke_width(&self) -> f32 {
+        if self.selected { 10.0 } else { 0.0 }
+    }
+
+    pub const fn fill(&self) -> Srgba {
+        if self.completed {
+            CLASSIC_COLOR_SCHEME.lozenge_completed
+        } else {
+            CLASSIC_COLOR_SCHEME.lozenge_normal
+        }
     }
 }
 
@@ -64,7 +75,8 @@ impl GameEntity for LozengeEntity {
             .map(move |(index, completion)| LozengeEntity {
                 index,
                 lozenge_count,
-                selected: LozengeSelection::new(completion, index == segment.current_clue),
+                selected: index == segment.current_clue,
+                completed: completion.is_complete(),
             })
     }
 
@@ -73,9 +85,9 @@ impl GameEntity for LozengeEntity {
 
         LozengeArtifact {
             index: self.index,
-            x: position.x,
-            y: position.y,
-            fill: RwSignal::new(self.selected.color()),
+            position: position,
+            stroke_width: RwSignal::new(self.stroke_width()),
+            fill: RwSignal::new(self.fill()),
         }
         .with_animations([])
     }
@@ -86,19 +98,19 @@ impl GameEntity for LozengeEntity {
         _former_entity_state: EntityState,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
-        artifact.update_animations([animate_towards::<LozengeArtifactFillLens>(
-            self.selected.color(),
-            1.0 / 1000.0,
-        ).to_stage()])
+        artifact.update_animations([
+            animate_towards::<LozengeArtifactFillLens>(self.fill(), 1.0 / 1000.0).to_stage(),
+            animate_towards::<LozengeArtifactStrokeWidthLens>(self.stroke_width(), 20.0 / 1000.0).to_stage(),
+        ])
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct LozengeArtifact {
     pub index: usize,
-    pub x: f32,
-    pub y: f32,
+    pub position: Vec2,
     pub fill: RwSignal<bevy_color::Srgba>,
+    pub stroke_width: RwSignal<f32>,
 }
 
 impl GameArtifact for LozengeArtifact {}
@@ -110,14 +122,26 @@ impl LeptosGameArtifact for LozengeArtifact {
         _: (),
         sender: impl state_machine_games::prelude::CommandSender<Self::Command>,
     ) -> impl IntoView {
-        let Self { index, x, y, fill } = self;
+        let Self {
+            index,
+            position: Vec2 { x, y },
+            fill,
+            stroke_width,
+        } = self;
         let on_click = move |_: MouseEvent| {
             sender.send_command(QuizSaladCommand::LozengeClicked(LozengeClickedCommand(
                 index,
             )));
         };
         view! {
-            <rect x={x} y={y} width={LOZENGE_WIDTH} height={LOZENGE_HEIGHT} fill={move || fill.get().to_hex()} rx={LOZENGE_RADIUS} ry={LOZENGE_RADIUS} on:click=on_click>
+            <rect x={x} y={y}
+            width={LOZENGE_WIDTH}
+            height={LOZENGE_HEIGHT}
+            stroke-width={stroke_width}
+            stroke={CLASSIC_COLOR_SCHEME.lozenge_selection_stroke.to_hex()}
+            fill={move || fill.get().to_hex()}
+            rx={LOZENGE_RADIUS}
+            ry={LOZENGE_RADIUS} on:click=on_click>
             </rect>
         }
     }
