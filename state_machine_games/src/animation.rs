@@ -94,28 +94,34 @@ impl<T: GameArtifact> Clone for AnimationStage<T> {
 // }
 
 #[derive(Debug, Clone)]
-pub struct AnimateWait{
-    duration_remaining: f64
+pub struct AnimateWait {
+    duration_ms_remaining: f64,
 }
 
-impl<TArtifact: GameArtifact> Animation<TArtifact> for AnimateWait{
-    fn step(&self, _object: &mut TArtifact, delta_ms: f64) -> AnimateResult {
-        self.duration_remaining -= delta_ms;
-        if self.duration_remaining <= 0.0{
-            self.duration_remaining = 0.0;
+impl<TArtifact: GameArtifact> Animation<TArtifact> for AnimateWait {
+    fn step(&mut self, _object: &mut TArtifact, delta_ms: f64) -> AnimateResult {
+        self.duration_ms_remaining -= delta_ms;
+        if self.duration_ms_remaining <= 0.0 {
+            self.duration_ms_remaining = 0.0;
             AnimateResult::FinishStep
-        }else{
+        } else {
             AnimateResult::Continue
         }
     }
 
     fn is_finished(&self, _target: &TArtifact) -> bool {
-        self.duration_remaining <= 0.0
+        self.duration_ms_remaining <= 0.0
     }
 
     fn box_clone(&self) -> Box<dyn Animation<TArtifact>> {
         let c: AnimateWait = self.clone();
         Box::new(c)
+    }
+}
+
+pub fn animate_wait(duration_ms: f64) -> AnimateWait {
+    AnimateWait {
+        duration_ms_remaining: duration_ms,
     }
 }
 
@@ -193,7 +199,7 @@ impl<TArtifact: GameArtifact> AnimationStage<TArtifact> {
 }
 
 pub trait Animation<TArtifact: GameArtifact>: Send + Sync + 'static {
-    fn step(&self, object: &mut TArtifact, delta_ms: f64) -> AnimateResult;
+    fn step(&mut self, object: &mut TArtifact, delta_ms: f64) -> AnimateResult;
 
     fn is_finished(&self, target: &TArtifact) -> bool;
 
@@ -335,7 +341,7 @@ impl<
     Lens: GetValueLens + SetValueLens<Object = T, Value = V>,
 > Animation<T> for AnimateSetValue<T, V, Lens>
 {
-    fn step(&self, object: &mut T, _delta_ms: f64) -> AnimateResult {
+    fn step(&mut self, object: &mut T, _delta_ms: f64) -> AnimateResult {
         Lens::set(object, self.target_value.clone());
         AnimateResult::FinishStep
     }
@@ -379,7 +385,7 @@ impl<
     Lens: GetValueLens + UpdateLens<Object = T, Value = V>,
 > Animation<T> for AnimateMoveTowards<T, V, Lens>
 {
-    fn step(&self, object: &mut T, delta_ms: f64) -> AnimateResult {
+    fn step(&mut self, object: &mut T, delta_ms: f64) -> AnimateResult {
         let mut result: AnimateResult = AnimateResult::FinishStep;
         Lens::update(object, |current_value| {
             if V::approach(

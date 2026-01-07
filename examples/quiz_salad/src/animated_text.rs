@@ -69,8 +69,10 @@ impl GameEntity for AnimatedTextEntity {
                 (distance / duration_ms).abs(),
             )
             .to_stage(),
-            animate_set_value::<AnimatedTextArtifactScaleLens>(0.0).to_stage().precede_with(
-            animate_towards::<AnimatedTextArtifactScaleLens>(0.5, 0.5 / duration_ms)),
+            animate_set_value::<AnimatedTextArtifactScaleLens>(0.0).to_stage()
+            .precede_with(animate_wait(1000.0))
+            .precede_with(
+            animate_towards::<AnimatedTextArtifactScaleLens>(0.5, 1.0 / duration_ms)),
         ];
 
         artifact.with_animations(animations)
