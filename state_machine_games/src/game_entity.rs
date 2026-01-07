@@ -20,7 +20,7 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
         artifact: &mut Self::Artifact,
         previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
-        vec![]
+        AnimationList::EMPTY
     }
 
     /// what to do when this entity is new

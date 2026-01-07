@@ -121,50 +121,48 @@ impl GameEntity for Circle {
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        let Vec2 { x, y } = self.position();
-        (
-            CircleArtifact {
-                size: 10.0,
-                x: RwSignal::new(x),
-                y: RwSignal::new(y),
-            },
-            vec![],
-        )
+        let position = self.position();
+        let artifact = CircleArtifact {
+            size: RwSignal::new(0.0),
+            position: RwSignal::new(position),
+        };
+
+        let size = animate_towards::<CircleSizeLens>(10.0, 0.05);
+
+        artifact.with_animations([size.to_stage()])
     }
 
     fn on_update(
         &self,
-        _artifact: &mut Self::Artifact,
+        artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
-        let Vec2 { x, y } = self.position();
-
-        let x = animate_towards::<CircleXLens>(x, 0.1);
-        let y = animate_towards::<CircleYLens>(y, 0.1);
-
-        vec![x, y]
+        let position = animate_towards::<CirclePositionLens>(self.position(), 0.1).to_stage();
+        let size = animate_towards::<CircleSizeLens>(10.0, 0.05).to_stage();
+        artifact.update_animations([position, size])
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct CircleArtifact {
-    pub x: RwSignal<f32>,
-    pub y: RwSignal<f32>,
-    pub size: f32,
+    pub position: RwSignal<Vec2>,
+    pub size: RwSignal<f32>,
 }
 
-define_signal_lens!(CircleXLens, CircleArtifact, f32, x);
-define_signal_lens!(CircleYLens, CircleArtifact, f32, y);
+define_signal_lens!(CirclePositionLens, CircleArtifact, Vec2, position);
+define_signal_lens!(CircleSizeLens, CircleArtifact, f32, size);
 
 impl GameArtifact for CircleArtifact {}
 
 impl LeptosGameArtifact for CircleArtifact {
     type Command = ();
     fn render(self, _: (), _sender: impl CommandSender<Self::Command>) -> impl IntoView {
-        view! {<circle cx=self.x cy=self.y r=self.size fill="#1111EE" />}
+        view! {<circle cx={move ||self.position.get().x} cy={move ||self.position.get().y} r=self.size fill="#1111EE" style="pointer-events:none;" />}
     }
 }
+
+pub const SQUARE_POSITION: Vec2 = Vec2 { x: 400.0, y: 400.0 };
 
 #[derive(Debug, PartialEq)]
 pub struct SquareButton {
@@ -188,11 +186,11 @@ impl GameEntity for SquareButton {
         (
             SquareButtonArtifact {
                 text: RwSignal::new(self.n.to_string()),
-                x: 400.0,
-                y: 400.0,
+                x: SQUARE_POSITION.x,
+                y: SQUARE_POSITION.y,
                 size: RwSignal::new(self.n as f32 * 10.0),
             },
-            vec![],
+            AnimationList::EMPTY,
         )
     }
 
@@ -204,9 +202,9 @@ impl GameEntity for SquareButton {
     ) -> AnimationList<Self::Artifact> {
         artifact.text.set(self.n.to_string());
 
-        let size_animation = animate_towards::<TextBoxArtifactSizeLens>(self.n as f32 * 10.0, 0.01);
-
-        vec![size_animation]
+        let size_animation =
+            animate_towards::<TextBoxArtifactSizeLens>(self.n as f32 * 10.0, 0.01).to_stage();
+        artifact.update_animations([size_animation])
     }
 }
 
@@ -221,9 +219,7 @@ pub struct SquareButtonArtifact {
     pub size: RwSignal<f32>,
 }
 
-impl GameArtifact for SquareButtonArtifact {
-    
-}
+impl GameArtifact for SquareButtonArtifact {}
 
 impl LeptosGameArtifact for SquareButtonArtifact {
     type Command = CounterCommand;

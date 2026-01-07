@@ -167,7 +167,7 @@ mod tests {
             Self::Artifact,
             crate::prelude::AnimationList<Self::Artifact>,
         ) {
-            (MyArtifact(self.1.clone()), AnimationList::new())
+            (MyArtifact(self.1.clone()), AnimationList::EMPTY)
         }
 
         fn on_update(
@@ -177,7 +177,7 @@ mod tests {
             _previous_animations: AnimationList<Self::Artifact>,
         ) -> crate::prelude::AnimationList<Self::Artifact> {
             artifact.0 = self.1.clone();
-            AnimationList::new()
+            AnimationList::EMPTY
         }
     }
 

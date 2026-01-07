@@ -1,4 +1,7 @@
-use crate::{quiz_salad_command::{QuizSaladCommand, TileClickedCommand}, *};
+use crate::{
+    quiz_salad_command::{QuizSaladCommand, TileClickedCommand},
+    *,
+};
 
 #[derive(Debug, Clone)]
 pub struct TileArtifact {
@@ -49,7 +52,11 @@ pub struct RenderTileText;
 
 impl LeptosGameArtifact<RenderTileText> for TileArtifact {
     type Command = ();
-    fn render(self, _: RenderTileText, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    fn render(
+        self,
+        _: RenderTileText,
+        _sender: impl CommandSender<Self::Command>,
+    ) -> impl IntoView {
         let Vec2 { x, y } = tile_position(self.tile, PositionOrigin::Center);
 
         let style = move || format!("transform-box: content-box; transform-origin: center;",);
@@ -120,29 +127,28 @@ impl GameEntity for TileEntity {
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        (
-            Self::Artifact {
-                tile: self.tile,
-                character: self.character,
-                scale: RwSignal::new(if self.unneeded { 0.0 } else { 1.0 }),
-                text_fill: RwSignal::new(self.fill()),
-            },
-            vec![],
-        )
+        Self::Artifact {
+            tile: self.tile,
+            character: self.character,
+            scale: RwSignal::new(if self.unneeded { 0.0 } else { 1.0 }),
+            text_fill: RwSignal::new(self.fill()),
+        }
+        .with_animations([])
     }
 
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        former_entity_state: EntityState,
+        _former_entity_state: EntityState,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
-        vec![
+        artifact.update_animations([
             animate_towards::<TileTextArtifactScaleLens>(
                 if self.unneeded { 0.0 } else { 1.0 },
                 1.0 / 1000.0,
-            ),
-            animate_towards::<TileTextArtifactFillLens>(self.fill(), 1.0 / 1000.0),
-        ]
+            )
+            .to_stage(),
+            animate_towards::<TileTextArtifactFillLens>(self.fill(), 1.0 / 1000.0).to_stage(),
+        ])
     }
 }

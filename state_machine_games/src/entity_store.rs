@@ -178,10 +178,10 @@ impl<E: GameEntity> StoredEntity<E> {
     }
 
     pub(crate) fn step_animate(&mut self, delta_ms: f64) -> bool {
-        self.animations.retain_mut(|animation| {
+        self.animations.inner.retain_mut(|animation| {
             match animation.step(&mut self.artifact, delta_ms) {
                 AnimateResult::Continue => true,
-                AnimateResult::DeleteAnimation => false,
+                AnimateResult::FinishStep => false,
             }
         });
 

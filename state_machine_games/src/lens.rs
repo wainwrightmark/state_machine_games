@@ -256,6 +256,18 @@ macro_rules! define_signal_lens {
                 object.$p.update(f);
             }
         }
+
+        impl $crate::lens::GetValueLens for $L {
+            fn get_value(object: &Self::Object)-> Self::Value{
+                object.$p.get_untracked()
+            }
+        }
+
+        impl SetValueLens for $L {
+            fn set(object: &mut <Self as Lens>::Object, value: <Self as Lens>::Value) {
+                object.$p.set(value)
+            }
+        }
     };
 }
 

@@ -133,7 +133,7 @@ impl GameEntity for WordLineSectionEntity {
         vec![animate_towards::<WordLineArtifactStrokeWidthRatioLens>(
             0.0,
             1.0 / 1000.0,
-        )]
+        ).to_stage()].into()
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
@@ -169,11 +169,12 @@ impl GameEntity for WordLineSectionEntity {
             stroke_width_ratio: RwSignal::new(initial_width_ratio),
         };
 
-        let animations = vec![
-            animate_towards::<WordLineArtifactV2Lens>(v2, 1.0),
-            animate_towards::<WordLineArtifactStrokeWidthRatioLens>(1.0, 1.0 / 250.0),
-        ];
-        (artifact, animations)
+        artifact.with_animations(
+            [
+                animate_towards::<WordLineArtifactV2Lens>(v2, 1.0).to_stage(),
+                animate_towards::<WordLineArtifactStrokeWidthRatioLens>(1.0, 1.0 / 250.0).to_stage(),
+            ]
+        )
     }
 
     fn on_update(
@@ -207,11 +208,11 @@ impl GameEntity for WordLineSectionEntity {
             }
         }
 
-        let animations = vec![
-            animate_towards::<WordLineArtifactV2Lens>(v2, 1.0),
-            animate_towards::<WordLineArtifactStrokeWidthRatioLens>(1.0, 1.0 / 250.0),
-        ];
-
-        animations
+        artifact.update_animations(
+            [
+                animate_towards::<WordLineArtifactV2Lens>(v2, 1.0).to_stage(),
+                animate_towards::<WordLineArtifactStrokeWidthRatioLens>(1.0, 1.0 / 250.0).to_stage(),
+            ]
+        )
     }
 }

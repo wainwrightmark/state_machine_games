@@ -1,4 +1,7 @@
-use crate::{quiz_salad_command::{LozengeClickedCommand, QuizSaladCommand}, *};
+use crate::{
+    quiz_salad_command::{LozengeClickedCommand, QuizSaladCommand},
+    *,
+};
 
 define_signal_lens!(LozengeArtifactFillLens, LozengeArtifact, Srgba, fill);
 
@@ -68,29 +71,25 @@ impl GameEntity for LozengeEntity {
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         let position = self.position();
 
-        (
-            LozengeArtifact {
-                index: self.index,
-                x: position.x,
-                y: position.y,
-                fill: RwSignal::new(self.selected.color()),
-            },
-            AnimationList::new(),
-        )
+        LozengeArtifact {
+            index: self.index,
+            x: position.x,
+            y: position.y,
+            fill: RwSignal::new(self.selected.color()),
+        }
+        .with_animations([])
     }
 
     fn on_update(
         &self,
-        _artifact: &mut Self::Artifact,
+        artifact: &mut Self::Artifact,
         _former_entity_state: EntityState,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
-        let animations = vec![animate_towards::<LozengeArtifactFillLens>(
+        artifact.update_animations([animate_towards::<LozengeArtifactFillLens>(
             self.selected.color(),
             1.0 / 1000.0,
-        )];
-
-        animations
+        ).to_stage()])
     }
 }
 
@@ -102,19 +101,20 @@ pub struct LozengeArtifact {
     pub fill: RwSignal<bevy_color::Srgba>,
 }
 
-impl GameArtifact for LozengeArtifact {
-    
-}
+impl GameArtifact for LozengeArtifact {}
 
 impl LeptosGameArtifact for LozengeArtifact {
     type Command = QuizSaladCommand;
     fn render(
-        self,_: (),
+        self,
+        _: (),
         sender: impl state_machine_games::prelude::CommandSender<Self::Command>,
     ) -> impl IntoView {
         let Self { index, x, y, fill } = self;
         let on_click = move |_: MouseEvent| {
-            sender.send_command(QuizSaladCommand::LozengeClicked(LozengeClickedCommand(index)));
+            sender.send_command(QuizSaladCommand::LozengeClicked(LozengeClickedCommand(
+                index,
+            )));
         };
         view! {
             <rect x={x} y={y} width={LOZENGE_WIDTH} height={LOZENGE_HEIGHT} fill={move || fill.get().to_hex()} rx={LOZENGE_RADIUS} ry={LOZENGE_RADIUS} on:click=on_click>

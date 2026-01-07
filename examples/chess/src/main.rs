@@ -1,5 +1,6 @@
+use const_sized_bit_set::prelude::{BitSet, BitSet64};
 use glam::Vec2;
-use leptos::{logging::log, prelude::*};
+use leptos::{attr::Selected, logging::log, prelude::*};
 use state_machine_games::prelude::*;
 use strum::{EnumIter, IntoEnumIterator};
 use timecat::prelude::*;
@@ -8,6 +9,7 @@ type Stores = (
     ArcRwSignal<SingleTypeEntityStore<ChessSquareEntity>>,
     ArcRwSignal<SingleTypeEntityStore<ChessPiece>>,
     ArcRwSignal<SingleTypeEntityStore<ButtonEntity>>,
+    ArcRwSignal<SingleTypeEntityStore<BoardAnnotation>>,
 );
 
 fn main() {
@@ -32,7 +34,9 @@ fn game_component() -> impl IntoView {
     view! {
         <svg viewBox="0 0 320.0 320.0"  style="max-width: 800px;  margin-inline: auto; ">
         {move || SingleTypeEntityStore::render(stores.0.clone(), (), command_sender1.clone())}
+        {move || SingleTypeEntityStore::render(stores.3.clone(), (), ())}
         {move || SingleTypeEntityStore::render(stores.1.clone(), (), ())}
+
         </svg>
         <div>
             {move || SingleTypeEntityStore::render(stores.2.clone(),(), command_sender2.clone())}
@@ -67,7 +71,7 @@ impl GameEntity for ButtonEntity {
             ButtonEntity::PlayBestMove => ButtonArtifact::PlayBestMove,
             ButtonEntity::Restart => ButtonArtifact::Restart,
         };
-        (artifact, vec![])
+        artifact.with_animations([])
     }
 
     fn on_update(
@@ -76,7 +80,7 @@ impl GameEntity for ButtonEntity {
         _former_entity_state: EntityState,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
-        vec![]
+        AnimationList::EMPTY
     }
 }
 
@@ -182,23 +186,7 @@ const DEPTH: i8 = 5;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ChessSquareArtifact {
     pub square: Square,
-    pub selected: RwSignal<bool>,
 }
-
-// impl Ord for ChessSquare {
-//     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-//         self.square
-//             .to_int()
-//             .cmp(&other.square.to_int())
-//             .then(self.selected.cmp(&other.selected))
-//     }
-// }
-
-// impl PartialOrd for ChessSquare {
-//     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-//         Some(Ord::cmp(self, other))
-//     }
-// }
 
 impl GameArtifact for ChessSquareArtifact {}
 
@@ -211,12 +199,10 @@ impl LeptosGameArtifact for ChessSquareArtifact {
         } else {
             "#ebecd0"
         };
-        let stroke_width = move || if self.selected.get() { 5 } else { 0 };
         view! {
-            <rect x=x y=y width=SQUARE_SIZE height=SQUARE_SIZE fill={fill} stroke = {"#000000"} stroke-width={stroke_width}
+            <rect x=x y=y width=SQUARE_SIZE height=SQUARE_SIZE fill={fill}
                 on:click= move|_|{sender.send_command(ChessCommand::ClickSquare(self.square) );}
              />
-
         }
     }
 }
@@ -224,37 +210,30 @@ impl LeptosGameArtifact for ChessSquareArtifact {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ChessSquareEntity {
     pub square: Square,
-    pub selected: bool,
 }
 
 impl GameEntity for ChessSquareEntity {
     type Artifact = ChessSquareArtifact;
     type Key = u8;
-    type StateSegment = Option<Square>;
+    type StateSegment = ();
 
     fn key(&self) -> Self::Key {
         self.square.to_int()
     }
 
-    fn get_entities(selected_square: &Option<Square>) -> impl Iterator<Item = Self> {
+    fn get_entities(_: &()) -> impl Iterator<Item = Self> {
         let entities = (0..64)
             .map(|i| unsafe { Square::from_int(i) })
-            .map(move |square| Self {
-                square,
-                selected: Some(square) == selected_square.clone(),
-            });
+            .map(move |square| Self { square });
 
         entities
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        (
-            ChessSquareArtifact {
-                square: self.square,
-                selected: RwSignal::new(self.selected),
-            },
-            vec![],
-        )
+        ChessSquareArtifact {
+            square: self.square,
+        }
+        .with_animations([])
     }
 
     fn on_update(
@@ -263,8 +242,99 @@ impl GameEntity for ChessSquareEntity {
         _former_entity_state: EntityState,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
-        artifact.selected.set(self.selected);
-        vec![]
+        AnimationList::EMPTY
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct BoardAnnotation {
+    pub square: u8,
+    pub selected: bool,
+    pub non_capture_move: bool,
+    pub capture_move: bool,
+}
+
+impl GameEntityKey for BoardAnnotation{}
+
+impl GameArtifact for BoardAnnotation {}
+
+impl LeptosGameArtifact for BoardAnnotation {
+    type Command = ();
+    fn render(self, _: (), sender: impl CommandSender<Self::Command>) -> impl IntoView {
+        let Vec2 { x, y } = square_index_to_position(self.square, false);
+        let Vec2 { x: cx, y: cy } = square_index_to_position(self.square, false) + Vec2{x: SQUARE_SIZE * 0.5, y: SQUARE_SIZE * 0.5};
+        
+        let selected = if self.selected {
+            Some(view! {
+                <rect x=x y=y width=SQUARE_SIZE height=SQUARE_SIZE fill="#AABB00" style="pointer-events: none"/>
+            })
+        } else {
+            None
+        };
+        
+        let capture_dot = if self.capture_move {
+            Some(view! {
+                <circle cx=cx cy=cy r={SQUARE_SIZE * 0.5} height=SQUARE_SIZE fill="#666666" style="pointer-events: none"/>
+            })
+        } else {
+            None
+        };
+        
+        let non_capture_dot = if self.non_capture_move {
+            Some(view! {
+                <circle cx=cx cy=cy r={SQUARE_SIZE * 0.25} height=SQUARE_SIZE fill="#666666" style="pointer-events: none"/>
+            })
+        } else {
+            None
+        };
+
+        view! {
+            {selected}
+            {capture_dot}
+            {non_capture_dot}
+        }
+    }
+}
+
+impl GameEntity for BoardAnnotation {
+    type Artifact = Self;
+    type Key = Self;
+    type StateSegment = BoardAnnotationsSegment;
+
+    fn key(&self) -> Self::Key {
+        *self
+    }
+
+    fn get_entities(segment: &Self::StateSegment) -> impl Iterator<Item = Self> {
+        let tiles = segment
+            .selected
+            .with_union(&segment.captures.with_union(&segment.non_captures));
+
+        tiles.into_iter().map(|tile| {
+            let selected = segment.selected.contains_const(tile);
+            let non_capture_move = segment.non_captures.contains_const(tile);
+            let capture_move = segment.captures.contains_const(tile);
+            Self {
+                square: tile as u8,
+                selected,
+                non_capture_move,
+                capture_move,
+            }
+        })
+    }
+
+    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+        self.with_animations([])
+    }
+
+    fn on_update(
+        &self,
+        artifact: &mut Self::Artifact,
+        _former_entity_state: EntityState,
+        previous_animations: AnimationList<Self::Artifact>,
+    ) -> AnimationList<Self::Artifact> {
+        *artifact = *self;
+        previous_animations
     }
 }
 
@@ -327,7 +397,7 @@ impl GameEntity for ChessPiece {
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        (*self, vec![])
+        self.with_animations([])
     }
 
     fn on_update(
@@ -337,12 +407,24 @@ impl GameEntity for ChessPiece {
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         *artifact = *self;
-        vec![]
+        AnimationList::EMPTY
     }
 }
 
 const SQUARE_SIZE: f32 = 40.0;
 pub fn square_to_position(square: Square, center: bool) -> Vec2 {
+    let x = square.get_file().to_int() as f32 * SQUARE_SIZE;
+    let y = (7 - square.get_rank().to_int()) as f32 * SQUARE_SIZE;
+
+    let mut r = Vec2 { x, y };
+    if center {
+        r += Vec2::splat(SQUARE_SIZE * 0.5);
+    }
+    r
+}
+
+pub fn square_index_to_position(square: u8, center: bool) -> Vec2 {
+    let square = unsafe{Square::from_int(square)} ;
     let x = square.get_file().to_int() as f32 * SQUARE_SIZE;
     let y = (7 - square.get_rank().to_int()) as f32 * SQUARE_SIZE;
 
@@ -383,13 +465,51 @@ impl GameState for ChessState {
     }
 }
 
-impl HasSegment<Option<Square>> for ChessState {
-    fn get_segment(&self) -> Option<Square> {
-        self.selected_square
+#[derive(Debug, Clone, PartialEq)]
+pub struct BoardAnnotationsSegment {
+    pub selected: BitSet64,
+    pub captures: BitSet64,
+    pub non_captures: BitSet64,
+}
+
+impl HasSegment<BoardAnnotationsSegment> for ChessState {
+    fn get_segment(&self) -> BoardAnnotationsSegment {
+        let mut selected = BitSet64::EMPTY;
+        let mut captures = BitSet64::EMPTY;
+        let mut non_captures = BitSet64::EMPTY;
+
+        if let Some(selected_square) = self.selected_square {
+            selected.insert_const(selected_square as u32);
+
+            let lm = self.board.generate_legal_moves();
+
+            for m in lm.iter() {
+                if m.get_source() == selected_square {
+                    let dest = m.get_dest();
+                    if self.board.get_piece_at(dest).is_some() {
+                        captures.insert_const(dest as u32);
+                    } else {
+                        non_captures.insert_const(dest as u32);
+                    }
+                }
+            }
+        }
+
+        if let Some(m) = self.board.get_last_stack_move() {
+            for x in [m.get_source(), m.get_dest()].iter().flatten() {
+                selected.insert_const(*x as u32);
+            }
+        }
+
+        BoardAnnotationsSegment {
+            selected,
+            captures,
+            non_captures,
+        }
     }
 
-    fn segment_eq(&self, s: &Option<Square>) -> bool {
-        self.selected_square.eq(s)
+    fn segment_eq(&self, s: &BoardAnnotationsSegment) -> bool {
+        <Self as HasSegment<BoardAnnotationsSegment>>::get_segment(&self) == *s
     }
 }
 

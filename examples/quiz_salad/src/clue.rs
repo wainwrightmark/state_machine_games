@@ -71,12 +71,10 @@ impl GameEntity for ClueEntity {
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        (
-            Self::Artifact {
-                text: RwSignal::new(self.text),
-            },
-            vec![],
-        )
+        Self::Artifact {
+            text: RwSignal::new(self.text),
+        }
+        .with_animations([])
     }
 
     fn on_update(
@@ -86,6 +84,6 @@ impl GameEntity for ClueEntity {
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         artifact.text.set(self.text);
-        vec![]
+        AnimationList::EMPTY
     }
 }

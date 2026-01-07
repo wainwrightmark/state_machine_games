@@ -63,15 +63,17 @@ impl GameEntity for AnimatedTextEntity {
 
         //log!("Position {position:?} target position {target_position} distance {distance}");
 
-        let animations = vec![
+        let animations = [
             animate_towards::<AnimatedTextArtifactPositionLens>(
                 target_position,
                 (distance / duration_ms).abs(),
-            ),
-            animate_towards::<AnimatedTextArtifactScaleLens>(0.5, 1.0 / duration_ms),
+            )
+            .to_stage(),
+            animate_set_value::<AnimatedTextArtifactScaleLens>(0.0).to_stage().precede_with(
+            animate_towards::<AnimatedTextArtifactScaleLens>(0.5, 0.5 / duration_ms)),
         ];
 
-        (artifact, animations)
+        artifact.with_animations(animations)
     }
 
     fn on_update(
@@ -113,16 +115,14 @@ define_signal_lens!(
     scale
 );
 
-impl GameArtifact for AnimatedTextArtifact {
-    
-}
+impl GameArtifact for AnimatedTextArtifact {}
 
 impl LeptosGameArtifact for AnimatedTextArtifact {
     type Command = ();
     fn render(
         self,
         _: (),
-        sender: impl state_machine_games::prelude::CommandSender<Self::Command>,
+        _sender: impl state_machine_games::prelude::CommandSender<Self::Command>,
     ) -> impl IntoView {
         view! {
 
