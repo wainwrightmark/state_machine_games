@@ -2,7 +2,8 @@ use bevy_color::Srgba;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ColorScheme {
-    pub background: Srgba,
+    pub background_incomplete: Srgba,
+    pub background_complete: Srgba,
 
     pub tile: Srgba,
     pub tile_letter_unselected: Srgba,
@@ -50,7 +51,8 @@ impl ColorScheme {
 }
 
 pub const CLASSIC_COLOR_SCHEME: ColorScheme = ColorScheme {
-    background: rgb_hex(0xf5f5f5),        // #f5f5f5ff
+    background_incomplete: rgb_hex(0xf5f5f5),        // #f5f5f5ff
+    background_complete: rgb_hex(0x27bf4d),        // #f5f5f5ff
     tile: rgb_hex(0xebebeb),              // #ebebebff
     tile_letter_unselected: rgb_hex(0x043e40),       // #043e40ff
     tile_letter_selected: rgb_hex(0xf5f5f5),       // #f5f5f5ff

@@ -13,6 +13,7 @@ pub mod quiz_salad_game_state;
 pub mod tile;
 pub mod util;
 pub mod word_line;
+pub mod background_color;
 
 use animated_text::*;
 use clue::*;
@@ -20,6 +21,7 @@ use lozenge_entity::*;
 use quiz_salad_game_state::*;
 use tile::*;
 use word_line::*;
+use background_color::*;
 
 use crate::colors::CLASSIC_COLOR_SCHEME;
 use crate::found_words_state::Completion;
@@ -46,6 +48,7 @@ type Stores = (
     ArcRwSignal<SingleTypeEntityStore<WordLineSectionEntity>>,
     ArcRwSignal<SingleTypeEntityStore<LozengeEntity>>,
     ArcRwSignal<SingleTypeEntityStore<AnimatedTextEntity>>,
+    ResourceStore<BackgroundColor>
 );
 
 
@@ -103,26 +106,39 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     let state = QuizSaladGameState::new(puzzle);
 
     let stores = Stores::new(&state);
-    let machine = GameMachine::new(state, stores.clone());
+
+    let tiles_store1 = stores.0.clone();
+    let tiles_store2 = stores.0.clone();
+    let clues_store = stores.1.clone();
+    let word_line_store = stores.2.clone();
+    let lozenge_store = stores.3.clone();
+    let animated_text_store = stores.4.clone();
+    let background_color = stores.5.artifact.color;
+
+    let machine = GameMachine::new(state, stores);
 
     let cs1 = machine.command_sender();
     let cs2 = machine.command_sender();
 
     machine.run_game();
 
-    let tiles_store = stores.0.clone();
+    
+    let svg_style = move ||{       
+
+        format!("max-width: 100%; max-height: 100%; user-select:none; position:fixed; margin:auto; inset: 0px; background: {}", background_color.get().to_hex())
+    };
 
     view! {
         <div style="height: 100vh; width: 100vw; overflow: hidden;">
-            <svg viewBox=format!("0 0 {GAME_WIDTH} {GAME_HEIGHT}") style="max-width: 100%; max-height: 100%; user-select:none; position:fixed; margin:auto; inset: 0px;">
+            <svg viewBox=format!("0 0 {GAME_WIDTH} {GAME_HEIGHT}") style={svg_style}>
 
 
-            {move || SingleTypeEntityStore::render(tiles_store.clone(),RenderTileFill, cs1.clone())} // Tile
-            {move || SingleTypeEntityStore::render(stores.1.clone(),(), ())} // Clue
-            {move || SingleTypeEntityStore::render(stores.2.clone(),(), ())} // Word Line
-            {move || SingleTypeEntityStore::render(stores.0.clone(),RenderTileText, ())} // Tile
-            {move || SingleTypeEntityStore::render(stores.3.clone(),(), cs2.clone())} // Lozenge
-            {move || SingleTypeEntityStore::render(stores.4.clone(),(), ())} // Animated Text
+            {move || SingleTypeEntityStore::render(tiles_store1.clone(),RenderTileFill, cs1.clone())} // Tile
+            {move || SingleTypeEntityStore::render(clues_store.clone(),(), ())} 
+            {move || SingleTypeEntityStore::render(word_line_store.clone(),(), ())}
+            {move || SingleTypeEntityStore::render(tiles_store2.clone(),RenderTileText, ())} 
+            {move || SingleTypeEntityStore::render(lozenge_store.clone(),(), cs2.clone())}
+            {move || SingleTypeEntityStore::render(animated_text_store.clone(),(), ())} // Animated Text
 
             </svg>
             // <div>

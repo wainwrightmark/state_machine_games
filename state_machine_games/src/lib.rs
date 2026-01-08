@@ -14,6 +14,7 @@ pub mod game_machine;
 pub mod mutation_result;
 pub mod tiny_rng;
 pub mod skeleton;
+pub mod resource;
 
 pub mod prelude {
     pub use crate::animate_result::*;
@@ -32,6 +33,7 @@ pub mod prelude {
     pub use crate::mutation_result::*;
     pub use crate::tiny_rng::*;
     pub use crate::skeleton::*;
+    pub use crate::resource::*;
 
     pub use glam::*;
 }

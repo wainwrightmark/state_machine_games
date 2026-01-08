@@ -32,6 +32,15 @@ impl<T: GameArtifact> AnimationList<T> {
     pub const fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
+
+    pub fn clear(&mut self){
+        self.inner.clear();
+    }
+
+    pub fn push(&mut self, t: AnimationStage<T>){
+        self.inner.push(t);
+    }
+
 }
 
 impl<T: GameArtifact> From<Vec<AnimationStage<T>>> for AnimationList<T> {
