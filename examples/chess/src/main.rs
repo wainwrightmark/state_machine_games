@@ -1,15 +1,16 @@
+use std::sync::mpsc::Sender;
+
 use const_sized_bit_set::prelude::{BitSet, BitSet64};
 use glam::Vec2;
-use leptos::{attr::Selected, logging::log, prelude::*};
+use leptos::{logging::log, prelude::*};
 use state_machine_games::prelude::*;
-use strum::{EnumIter, IntoEnumIterator};
 use timecat::prelude::*;
 
 type Stores = (
     ArcRwSignal<SingleTypeEntityStore<ChessSquareEntity>>,
     ArcRwSignal<SingleTypeEntityStore<ChessPiece>>,
-    ArcRwSignal<SingleTypeEntityStore<ButtonEntity>>,
     ArcRwSignal<SingleTypeEntityStore<BoardAnnotation>>,
+    ResourceStore<EvaluationResource>
 );
 
 fn main() {
@@ -25,7 +26,11 @@ fn game_component() -> impl IntoView {
     };
 
     let stores = Stores::new(&state);
-    let machine = GameMachine::new(state, stores.clone());
+    let squares = stores.0.clone();
+    let pieces = stores.1.clone();
+    let annotations = stores.2.clone();
+    let evaluation: RwSignal<i16> = stores.3.artifact.value.clone();
+    let machine = GameMachine::new(state, stores);
     let command_sender1 = machine.command_sender();
     let command_sender2 = machine.command_sender();
 
@@ -33,88 +38,48 @@ fn game_component() -> impl IntoView {
 
     view! {
         <svg viewBox="0 0 320.0 320.0"  style="max-width: 800px;  margin-inline: auto; ">
-        {move || SingleTypeEntityStore::render(stores.0.clone(), (), command_sender1.clone())}
-        {move || SingleTypeEntityStore::render(stores.3.clone(), (), ())}
-        {move || SingleTypeEntityStore::render(stores.1.clone(), (), ())}
+        {move || SingleTypeEntityStore::render(squares.clone(), (), command_sender1.clone())}
+        {move || SingleTypeEntityStore::render(annotations.clone(), (), ())}
+        {move || SingleTypeEntityStore::render(pieces.clone(), (), ())}
+        
 
         </svg>
         <div>
-            {move || SingleTypeEntityStore::render(stores.2.clone(),(), command_sender2.clone())}
+            {buttons_view(command_sender2)}
+            {evaluation_view(evaluation)}
         </div>
 
     }
 }
 
-#[derive(Debug, PartialEq, Hash, Eq, PartialOrd, Ord, Clone, Copy, EnumIter)]
-pub enum ButtonEntity {
-    PlayBestMove,
-    Restart,
-}
+fn evaluation_view(evaluation: RwSignal<i16>)-> impl IntoView{
 
-impl GameEntityKey for ButtonEntity {}
-
-impl GameEntity for ButtonEntity {
-    type Artifact = ButtonArtifact;
-    type Key = Self;
-    type StateSegment = ();
-
-    fn key(&self) -> Self::Key {
-        *self
-    }
-
-    fn get_entities(_: &()) -> impl Iterator<Item = Self> {
-        ButtonEntity::iter()
-    }
-
-    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        let artifact = match self {
-            ButtonEntity::PlayBestMove => ButtonArtifact::PlayBestMove,
-            ButtonEntity::Restart => ButtonArtifact::Restart,
-        };
-        artifact.with_animations([])
-    }
-
-    fn on_update(
-        &self,
-        _artifact: &mut Self::Artifact,
-        _former_entity_state: EntityState,
-        _previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact> {
-        AnimationList::EMPTY
+    view! {
+        <code>
+        {evaluation}
+        </code>
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum ButtonArtifact {
-    PlayBestMove,
-    Restart,
-}
+fn buttons_view(command_sender: Sender<ChessCommand>) -> impl IntoView {
+    let sender2 = command_sender.clone();
 
-impl GameArtifact for ButtonArtifact {}
+    let depth = RwSignal::new(5i8.to_string());
 
-impl LeptosGameArtifact for ButtonArtifact {
-    type Command = ChessCommand;
-    fn render(self, _: (), sender: impl CommandSender<Self::Command>) -> impl IntoView {
-        let command = match self {
-            ButtonArtifact::PlayBestMove => ChessCommand::PlayBestMove,
-            ButtonArtifact::Restart => ChessCommand::Restart,
-        };
-        let name = match self {
-            ButtonArtifact::PlayBestMove => "Play Best Move",
-            ButtonArtifact::Restart => "Restart",
-        };
-
-        view! {
-            <button on:click=move|_|{sender.send_command(command);}>
-                {name}
-            </button>
-        }
+    view! {
+        <input type="number" min="1" max="50" bind:value=depth />
+        <button on:click=move|_|{command_sender.send_command(ChessCommand::PlayBestMove{depth: depth.get().parse::<i8>().unwrap_or_default()});}>
+            {"Play Best Move"}
+        </button>
+        <button on:click=move|_|{sender2.send_command(ChessCommand::Restart);}>
+            {"Restart"}
+        </button>
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum ChessCommand {
-    PlayBestMove,
+    PlayBestMove { depth: i8 },
     Restart,
     ClickSquare(Square),
 }
@@ -122,11 +87,11 @@ pub enum ChessCommand {
 impl GameCommand<ChessState> for ChessCommand {
     fn apply_command(&self, game_state: &mut ChessState) -> MutationResult {
         match self.clone() {
-            ChessCommand::PlayBestMove => {
+            ChessCommand::PlayBestMove { depth } => {
                 let mut engine = Engine::from_board(game_state.board.clone());
 
                 // Configure the engine to search for the best move up to a depth of 5 plies.
-                let response = engine.search_depth_verbose(DEPTH);
+                let response = engine.search_depth_verbose(depth);
                 if let Some(best_move) = response.get_best_move() {
                     match game_state.board.push(best_move) {
                         Ok(()) => MutationResult::CHANGED_NO_TRANSITION,
@@ -181,7 +146,7 @@ impl GameCommand<ChessState> for ChessCommand {
     }
 }
 
-const DEPTH: i8 = 5;
+//const DEPTH: i8 = 5;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ChessSquareArtifact {
@@ -254,7 +219,7 @@ pub struct BoardAnnotation {
     pub capture_move: bool,
 }
 
-impl GameEntityKey for BoardAnnotation{}
+impl GameEntityKey for BoardAnnotation {}
 
 impl GameArtifact for BoardAnnotation {}
 
@@ -262,8 +227,12 @@ impl LeptosGameArtifact for BoardAnnotation {
     type Command = ();
     fn render(self, _: (), sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = square_index_to_position(self.square, false);
-        let Vec2 { x: cx, y: cy } = square_index_to_position(self.square, false) + Vec2{x: SQUARE_SIZE * 0.5, y: SQUARE_SIZE * 0.5};
-        
+        let Vec2 { x: cx, y: cy } = square_index_to_position(self.square, false)
+            + Vec2 {
+                x: SQUARE_SIZE * 0.5,
+                y: SQUARE_SIZE * 0.5,
+            };
+
         let selected = if self.selected {
             Some(view! {
                 <rect x=x y=y width=SQUARE_SIZE height=SQUARE_SIZE fill="#AABB00" style="pointer-events: none"/>
@@ -271,7 +240,7 @@ impl LeptosGameArtifact for BoardAnnotation {
         } else {
             None
         };
-        
+
         let capture_dot = if self.capture_move {
             Some(view! {
                 <circle cx=cx cy=cy r={SQUARE_SIZE * 0.5} height=SQUARE_SIZE fill="#666666" style="pointer-events: none"/>
@@ -279,7 +248,7 @@ impl LeptosGameArtifact for BoardAnnotation {
         } else {
             None
         };
-        
+
         let non_capture_dot = if self.non_capture_move {
             Some(view! {
                 <circle cx=cx cy=cy r={SQUARE_SIZE * 0.25} height=SQUARE_SIZE fill="#666666" style="pointer-events: none"/>
@@ -368,7 +337,7 @@ impl LeptosGameArtifact for ChessPiece {
     fn render(self, _: (), _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = square_to_position(self.square, true);
 
-        log!("Piece {} x: {x} y: {y}", self.piece);
+        //log!("Piece {} x: {x} y: {y}", self.piece);
 
         view! {
             <text x=x y=y font-size={40} style="pointer-events: none;user-select: none;font-family: monospace;dominant-baseline: central;text-anchor: middle;">
@@ -424,7 +393,7 @@ pub fn square_to_position(square: Square, center: bool) -> Vec2 {
 }
 
 pub fn square_index_to_position(square: u8, center: bool) -> Vec2 {
-    let square = unsafe{Square::from_int(square)} ;
+    let square = unsafe { Square::from_int(square) };
     let x = square.get_file().to_int() as f32 * SQUARE_SIZE;
     let y = (7 - square.get_rank().to_int()) as f32 * SQUARE_SIZE;
 
@@ -524,3 +493,25 @@ impl HasSegment<ChessPosition> for ChessState {
         self.board.get_position().eq(s)
     }
 }
+
+#[derive(Debug, Clone, Default)]
+pub struct EvaluationResource{
+    pub value: RwSignal<i16>
+}
+
+impl GameArtifact for EvaluationResource{
+
+}
+
+impl ResourceValue for EvaluationResource{
+    type Segment = ChessPosition;
+
+    type GS = ChessState;
+
+    fn update_value(segment: &Self::Segment, artifact: &mut Self, _animations: &mut AnimationList<Self>)-> bool {
+        artifact.value.set(segment.slow_evaluate()); 
+        true
+    }
+}
+
+

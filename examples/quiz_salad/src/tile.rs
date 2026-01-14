@@ -21,11 +21,11 @@ define_signal_lens!(TileTextArtifactFillLens, TileArtifact, Srgba, text_fill);
 pub struct RenderTileFill;
 
 impl LeptosGameArtifact<RenderTileFill> for TileArtifact {
-    type Command = QuizSaladCommand;
-    fn render(self, _: RenderTileFill, sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    type Command = ();
+    fn render(self, _: RenderTileFill, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
         let Vec2 { x, y } = tile_position(self.tile, PositionOrigin::TopLeft);
 
-        let tile = self.tile;
+        //let tile = self.tile;
 
         view! {
             <rect
@@ -38,9 +38,10 @@ impl LeptosGameArtifact<RenderTileFill> for TileArtifact {
             fill={colors::CLASSIC_COLOR_SCHEME.tile.to_hex()}
             transform={move || format!("scale({})", self.scale.get())}
             style="transform-box: content-box; transform-origin: center center;"
-            on:click={move|_|{
-                sender.send_command(QuizSaladCommand::TileClicked(TileClickedCommand(tile)));
-            }}
+            // on:click={move|_|{
+            //     sender.send_command(QuizSaladCommand::TileClicked(TileClickedCommand(tile)));
+            // }}
+        
             >  </rect>
 
         }

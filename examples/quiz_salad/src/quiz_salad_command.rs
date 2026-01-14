@@ -1,16 +1,25 @@
-use crate::*;
+use crate::{grid_input::{GridInputCommand, SetChosenState}, *};
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum QuizSaladCommand {
-    TileClicked(TileClickedCommand),
+    //TileClicked(TileClickedCommand),
+    //SetChosen(SetChosenState),
+    BoardPointerEvent(GridInputCommand),
     LozengeClicked(LozengeClickedCommand),
 }
 
 impl GameCommand<QuizSaladGameState> for QuizSaladCommand {
     fn apply_command(&self, game_state: &mut QuizSaladGameState) -> MutationResult {
         match self {
-            QuizSaladCommand::TileClicked(tile_clicked_command) => {
-                tile_clicked_command.apply_command(game_state)
+            // QuizSaladCommand::TileClicked(tile_clicked)=>{
+            //     tile_clicked.apply_command(game_state)
+            // }
+            // QuizSaladCommand::SetChosen(set_chosen_command) => {
+            //     set_chosen_command.apply_command(game_state)
+            // }
+            QuizSaladCommand::BoardPointerEvent(gic)=>{
+                leptos::logging::log!("GIC: {gic:?}");
+                gic.apply_command(game_state)
             }
             QuizSaladCommand::LozengeClicked(lozenge_clicked_command) => {
                 lozenge_clicked_command.apply_command(game_state)

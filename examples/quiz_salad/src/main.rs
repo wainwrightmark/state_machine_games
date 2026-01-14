@@ -1,4 +1,5 @@
 pub mod animated_text;
+pub mod background_color;
 pub mod chosen_state;
 pub mod clue;
 pub mod colors;
@@ -10,22 +11,30 @@ pub mod lozenge_entity;
 pub mod puzzle;
 pub mod quiz_salad_command;
 pub mod quiz_salad_game_state;
+pub mod svg_coordinates;
 pub mod tile;
 pub mod util;
 pub mod word_line;
-pub mod background_color;
 
 use animated_text::*;
+use background_color::*;
 use clue::*;
+use leptos::svg::Svg;
 use lozenge_entity::*;
 use quiz_salad_game_state::*;
 use tile::*;
+use web_sys::PointerEvent;
 use word_line::*;
-use background_color::*;
+use ws_core::HasCenter;
 
 use crate::colors::CLASSIC_COLOR_SCHEME;
 use crate::found_words_state::Completion;
+
+use crate::grid_input::GridInputCommand;
+use crate::grid_input::GridInputState;
 use crate::layout::*;
+use crate::quiz_salad_command::QuizSaladCommand;
+use crate::quiz_salad_command::TileClickedCommand;
 use bevy_color::Srgba;
 use itertools::Itertools;
 use leptos::ev::MouseEvent;
@@ -44,13 +53,12 @@ use crate::{chosen_state::ChosenState, found_words_state::FoundWordsState, puzzl
 
 type Stores = (
     ArcRwSignal<SingleTypeEntityStore<TileEntity>>,
-    ArcRwSignal<SingleTypeEntityStore<ClueEntity>>,    
+    ArcRwSignal<SingleTypeEntityStore<ClueEntity>>,
     ArcRwSignal<SingleTypeEntityStore<WordLineSectionEntity>>,
     ArcRwSignal<SingleTypeEntityStore<LozengeEntity>>,
     ArcRwSignal<SingleTypeEntityStore<AnimatedTextEntity>>,
-    ResourceStore<BackgroundColor>
+    ResourceStore<BackgroundColor>,
 );
-
 
 pub fn main() {
     wasm_logger::init(wasm_logger::Config::default());
@@ -117,26 +125,118 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
 
     let machine = GameMachine::new(state, stores);
 
-    let cs1 = machine.command_sender();
+    //let cs1 = machine.command_sender();
     let cs2 = machine.command_sender();
+    let cs3 = machine.command_sender();
+    let cs4 = machine.command_sender();
+    let cs5 = machine.command_sender();
 
     machine.run_game();
 
-    
-    let svg_style = move ||{       
+    let svg_style = move || {
+        format!(
+            "max-width: 100%; max-height: 100%; user-select:none; position:fixed; margin:auto; inset: 0px; background: {}",
+            background_color.get().to_hex()
+        )
+    };
 
-        format!("max-width: 100%; max-height: 100%; user-select:none; position:fixed; margin:auto; inset: 0px; background: {}", background_color.get().to_hex())
+    let node_ref = NodeRef::<Svg>::new();
+
+    let on_pointer_down = move |ev: PointerEvent| {
+        //ev.
+        let Some(element) = node_ref.get() else {
+            return;
+        };
+        let click_position = crate::svg_coordinates::get_svg_coordinates(
+            ev,
+            element,
+            Vec2 { x: 0.0, y: 0.0 },
+            Vec2 {
+                x: GAME_WIDTH,
+                y: GAME_HEIGHT,
+            },
+        );
+
+        let tile = get_tile_from_position(click_position, 0.9);
+        let command = GridInputCommand::Start(tile);
+
+        match cs3.send(QuizSaladCommand::BoardPointerEvent(command)) {
+            Ok(()) => {}
+            Err(_err) => {
+                leptos::logging::error!("Could not send command");
+            }
+        }
+    };
+
+    let on_pointer_up = move |ev: PointerEvent| {
+        let Some(element) = node_ref.get() else {
+            return;
+        };
+        let click_position = crate::svg_coordinates::get_svg_coordinates(
+            ev,
+            element,
+            Vec2 { x: 0.0, y: 0.0 },
+            Vec2 {
+                x: GAME_WIDTH,
+                y: GAME_HEIGHT,
+            },
+        );
+
+        let tile = get_tile_from_position(click_position, 0.9);
+        let command = GridInputCommand::End(tile);
+
+        match cs4.send(QuizSaladCommand::BoardPointerEvent(command)) {
+            Ok(()) => {}
+            Err(_err) => {
+                leptos::logging::error!("Could not send command");
+            }
+        }
+    };
+
+    let on_pointer_move = move |ev: PointerEvent| {
+        if ev.pressure() == 0.0{
+            return;
+        }
+
+        let Some(element) = node_ref.get() else {
+            return;
+        };
+        let click_position = crate::svg_coordinates::get_svg_coordinates(
+            ev,
+            element,
+            Vec2 { x: 0.0, y: 0.0 },
+            Vec2 {
+                x: GAME_WIDTH,
+                y: GAME_HEIGHT,
+            },
+        );
+
+        let Some(tile) = get_tile_from_position(click_position, 0.3) else {
+            return;
+        };
+        let command = GridInputCommand::Move(tile);
+
+        match cs5.send(QuizSaladCommand::BoardPointerEvent(command)) {
+            Ok(()) => {}
+            Err(_err) => {
+                leptos::logging::error!("Could not send command");
+            }
+        }
     };
 
     view! {
         <div style="height: 100vh; width: 100vw; overflow: hidden;">
-            <svg viewBox=format!("0 0 {GAME_WIDTH} {GAME_HEIGHT}") style={svg_style}>
+            <svg node_ref=node_ref viewBox=format!("0 0 {GAME_WIDTH} {GAME_HEIGHT}") style={svg_style}
+            on:pointerdown=on_pointer_down
+            on:pointerup=on_pointer_up
+            on:pointermove=on_pointer_move
+            >
 
 
-            {move || SingleTypeEntityStore::render(tiles_store1.clone(),RenderTileFill, cs1.clone())} // Tile
-            {move || SingleTypeEntityStore::render(clues_store.clone(),(), ())} 
+            {move || SingleTypeEntityStore::render(tiles_store1.clone(),RenderTileFill, ())} // Tile
+            {move || SingleTypeEntityStore::render(clues_store.clone(),(), ())}
             {move || SingleTypeEntityStore::render(word_line_store.clone(),(), ())}
-            {move || SingleTypeEntityStore::render(tiles_store2.clone(),RenderTileText, ())} 
+            {move || SingleTypeEntityStore::render(tiles_store2.clone(),RenderTileText, ())}
             {move || SingleTypeEntityStore::render(lozenge_store.clone(),(), cs2.clone())}
             {move || SingleTypeEntityStore::render(animated_text_store.clone(),(), ())} // Animated Text
 
@@ -146,5 +246,45 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
             // </div>
         </div>
 
+    }
+}
+
+fn get_tile_from_position(position: Vec2, sensitivity: f32) -> Option<Tile4x4> {
+    let y = position.y - TOP_OFFSET;
+    let x = position.x - LEFT_OFFSET;
+
+    if x < 0.0 || y < 0.0 {
+        return None;
+    }
+
+    const TILE_SIZE: f32 = BOARD_SIZE / 4.0;
+
+    let x = x / TILE_SIZE;
+    let y = y / TILE_SIZE;
+    let x = x as u8;
+    let y = y as u8;
+
+    let tile = Tile4x4::try_new(x, y)?;
+
+    let c = tile.get_center(TILE_SIZE);
+    let distances = ((c + Vec2 {
+        x: LEFT_OFFSET,
+        y: TOP_OFFSET,
+    } - position)
+        / TILE_SIZE)
+        .abs();
+
+    // log!(
+    //     "Position: {position}\n
+    // Tile {tile}\n
+    //  Sensitivity {sensitivity}\n
+    //  Distances {distances}"
+    // );
+
+    if distances.x <= sensitivity && distances.y <= sensitivity {
+        //leptos::logging::log!("GIC: {gic:?}");
+        Some(tile)
+    } else {
+        None
     }
 }

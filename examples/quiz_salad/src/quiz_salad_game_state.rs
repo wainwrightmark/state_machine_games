@@ -7,6 +7,7 @@ pub struct QuizSaladGameState {
     pub found_words: FoundWordsState,
     pub chosen_state: ChosenState,
     pub word_just_found: bool,
+    pub input_state: GridInputState,
 }
 
 impl QuizSaladGameState {
@@ -19,6 +20,7 @@ impl QuizSaladGameState {
             found_words,
             chosen_state: Default::default(),
             word_just_found: false,
+            input_state: Default::default()
         }
     }
 }
@@ -51,6 +53,7 @@ impl GameState for QuizSaladGameState {
 
                 self.current_clue = new_current_clue.unwrap_or_default();
             }
+            self.word_just_found = false;
 
             MutationResult::CHANGED_NO_TRANSITION
         } else {

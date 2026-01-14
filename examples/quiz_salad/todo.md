@@ -5,5 +5,5 @@
 - [ ] Better word line
 - [ ] Implement phases - end screen
 - [ ] Timer
-- [ ] Background color
+- [x] Background color
 - [x] Split into multiple files
