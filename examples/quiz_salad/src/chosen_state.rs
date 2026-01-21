@@ -6,10 +6,11 @@ use crate::found_words_state::FoundWordsState;
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct ChosenState {
     pub solution: Solution4x4,
+    pub word_just_found: bool
 }
 
 impl ChosenState {
-    const EMPTY_SOLUTION: &'static Solution4x4 = &Solution4x4::new_const();
+    
     pub fn current_solution(&self) -> &Solution4x4 {
         &self.solution
     }

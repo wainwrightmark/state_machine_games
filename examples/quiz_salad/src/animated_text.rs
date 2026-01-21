@@ -18,7 +18,7 @@ impl GameEntity for AnimatedTextEntity {
     }
 
     fn get_entities(segment: &Self::StateSegment) -> impl Iterator<Item = Self> {
-        if !segment.word_just_found {
+        if !segment.chosen_state.word_just_found {
             return None.into_iter();
         }
 

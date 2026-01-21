@@ -263,8 +263,8 @@ macro_rules! define_signal_lens {
             }
         }
 
-        impl SetValueLens for $L {
-            fn set(object: &mut <Self as Lens>::Object, value: <Self as Lens>::Value) {
+        impl $crate::lens::SetValueLens for $L {
+            fn set(object: &mut <Self as $crate::lens::Lens>::Object, value: <Self as $crate::lens::Lens>::Value) {
                 object.$p.set(value)
             }
         }

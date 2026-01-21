@@ -12,7 +12,7 @@ pub trait GameArtifact: Clone + Send + Sync + 'static + Sized {
         animations: impl IntoIterator<Item = AnimationStage<Self>>,
     ) -> AnimationList<Self> {
         AnimationList::new_unfinished(&self, animations)
-    }
+    }    
 }
 
 #[cfg(feature = "leptos")]

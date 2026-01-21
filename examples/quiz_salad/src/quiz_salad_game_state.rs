@@ -5,8 +5,7 @@ pub struct QuizSaladGameState {
     pub puzzle: Puzzle,
     pub current_clue: usize,
     pub found_words: FoundWordsState,
-    pub chosen_state: ChosenState,
-    pub word_just_found: bool,
+    pub chosen_state: ChosenState,    
     pub input_state: GridInputState,
 }
 
@@ -18,8 +17,7 @@ impl QuizSaladGameState {
             current_clue: Default::default(),
             puzzle,
             found_words,
-            chosen_state: Default::default(),
-            word_just_found: false,
+            chosen_state: Default::default(),            
             input_state: Default::default()
         }
     }
@@ -29,7 +27,7 @@ impl GameState for QuizSaladGameState {
     type Command = QuizSaladCommand;
 
     fn maybe_transition(&mut self) -> MutationResult {
-        if self.word_just_found {
+        if self.chosen_state.word_just_found {
             self.chosen_state.solution = ArrayVec::new();
 
             let new_unneeded_tiles = self
@@ -53,7 +51,7 @@ impl GameState for QuizSaladGameState {
 
                 self.current_clue = new_current_clue.unwrap_or_default();
             }
-            self.word_just_found = false;
+            self.chosen_state.word_just_found = false;
 
             MutationResult::CHANGED_NO_TRANSITION
         } else {
@@ -69,5 +67,15 @@ impl HasSegment<FoundWordsState> for QuizSaladGameState {
 
     fn segment_eq(&self, s: &FoundWordsState) -> bool {
         self.found_words.eq(s)
+    }
+}
+
+impl HasSegment<ChosenState> for QuizSaladGameState{
+    fn get_segment(&self) -> ChosenState {
+        self.chosen_state.clone()
+    }
+
+    fn segment_eq(&self, s: &ChosenState) -> bool {
+        self.chosen_state.eq(s)
     }
 }

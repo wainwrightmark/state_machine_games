@@ -329,7 +329,6 @@ impl Match3TileEntity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TileKey(u32);
 
-impl GameEntityKey for TileKey {}
 
 impl GameEntity for Match3TileEntity {
     type Artifact = TileArtifact;

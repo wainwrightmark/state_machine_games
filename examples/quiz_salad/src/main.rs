@@ -11,10 +11,13 @@ pub mod lozenge_entity;
 pub mod puzzle;
 pub mod quiz_salad_command;
 pub mod quiz_salad_game_state;
+pub mod state_tracking;
 pub mod svg_coordinates;
 pub mod tile;
 pub mod util;
-pub mod word_line;
+//pub mod word_line;
+//pub mod word_line2;
+pub mod word_line3;
 
 use animated_text::*;
 use background_color::*;
@@ -24,7 +27,6 @@ use lozenge_entity::*;
 use quiz_salad_game_state::*;
 use tile::*;
 use web_sys::PointerEvent;
-use word_line::*;
 use ws_core::HasCenter;
 
 use crate::colors::CLASSIC_COLOR_SCHEME;
@@ -34,7 +36,7 @@ use crate::grid_input::GridInputCommand;
 use crate::grid_input::GridInputState;
 use crate::layout::*;
 use crate::quiz_salad_command::QuizSaladCommand;
-use crate::quiz_salad_command::TileClickedCommand;
+use crate::word_line3::*;
 use bevy_color::Srgba;
 use itertools::Itertools;
 use leptos::ev::MouseEvent;
@@ -54,7 +56,7 @@ use crate::{chosen_state::ChosenState, found_words_state::FoundWordsState, puzzl
 type Stores = (
     ArcRwSignal<SingleTypeEntityStore<TileEntity>>,
     ArcRwSignal<SingleTypeEntityStore<ClueEntity>>,
-    ArcRwSignal<SingleTypeEntityStore<WordLineSectionEntity>>,
+    ArcRwSignal<SingleTypeEntityStore<WordLineEntity>>,    
     ArcRwSignal<SingleTypeEntityStore<LozengeEntity>>,
     ArcRwSignal<SingleTypeEntityStore<AnimatedTextEntity>>,
     ResourceStore<BackgroundColor>,
@@ -119,6 +121,7 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     let tiles_store2 = stores.0.clone();
     let clues_store = stores.1.clone();
     let word_line_store = stores.2.clone();
+    
     let lozenge_store = stores.3.clone();
     let animated_text_store = stores.4.clone();
     let background_color = stores.5.artifact.color;
@@ -133,9 +136,11 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
 
     machine.run_game();
 
-    let svg_style = move || {
+    let svg_style = "max-width: 100%; max-height: 100%; user-select:none; position:fixed; margin:auto; inset: 0px;";
+
+    let div_style = move || {
         format!(
-            "max-width: 100%; max-height: 100%; user-select:none; position:fixed; margin:auto; inset: 0px; background: {}",
+            "height: 100vh; width: 100vw; overflow: hidden; background: {}",
             background_color.get().to_hex()
         )
     };
@@ -194,7 +199,7 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     };
 
     let on_pointer_move = move |ev: PointerEvent| {
-        if ev.pressure() == 0.0{
+        if ev.pressure() == 0.0 {
             return;
         }
 
@@ -225,7 +230,7 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     };
 
     view! {
-        <div style="height: 100vh; width: 100vw; overflow: hidden;">
+        <div style=div_style>
             <svg node_ref=node_ref viewBox=format!("0 0 {GAME_WIDTH} {GAME_HEIGHT}") style={svg_style}
             on:pointerdown=on_pointer_down
             on:pointerup=on_pointer_up
@@ -235,10 +240,12 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
 
             {move || SingleTypeEntityStore::render(tiles_store1.clone(),RenderTileFill, ())} // Tile
             {move || SingleTypeEntityStore::render(clues_store.clone(),(), ())}
-            {move || SingleTypeEntityStore::render(word_line_store.clone(),(), ())}
+            {move || SingleTypeEntityStore::render(word_line_store.clone(),(), ())}            
             {move || SingleTypeEntityStore::render(tiles_store2.clone(),RenderTileText, ())}
             {move || SingleTypeEntityStore::render(lozenge_store.clone(),(), cs2.clone())}
             {move || SingleTypeEntityStore::render(animated_text_store.clone(),(), ())} // Animated Text
+
+            //todo render the tile text twice with a wordline clip_path
 
             </svg>
             // <div>

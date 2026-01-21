@@ -33,14 +33,17 @@ impl<T: GameArtifact> AnimationList<T> {
         self.inner.is_empty()
     }
 
-    pub fn clear(&mut self){
+    pub fn clear(&mut self) {
         self.inner.clear();
     }
 
-    pub fn push(&mut self, t: AnimationStage<T>){
+    pub fn push(&mut self, t: AnimationStage<T>) {
         self.inner.push(t);
     }
 
+    pub fn retain_unfinished(&mut self, artifact: &T) {
+        self.inner.retain(|x| !x.is_finished(artifact));
+    }
 }
 
 impl<T: GameArtifact> From<Vec<AnimationStage<T>>> for AnimationList<T> {
@@ -154,6 +157,14 @@ pub fn animate_towards<L: GetValueLens + UpdateLens<Value: ApproachValue, Object
         velocity_units_per_ms,
         phantom: Default::default(),
     }
+}
+
+pub fn animate_spring<L: GetValueLens + UpdateLens<Value: ApproachValue + DifferenceLogScaling, Object: GameArtifact>>(
+    target_value: L::Value,
+    base_velocity_units_per_ms: f64,
+    log_scaling: f64
+)-> AnimateSpringTowards<L::Object, L::Value, L>{
+    AnimateSpringTowards { target_value, base_velocity_units_per_ms, log_scaling, phantom: PhantomData }
 }
 
 impl<TArtifact: GameArtifact> AnimationStage<TArtifact> {
@@ -361,6 +372,113 @@ impl<
 
     fn box_clone(&self) -> Box<dyn Animation<T>> {
         let clone: AnimateSetValue<T, V, Lens> = self.clone();
+        Box::new(clone)
+    }
+}
+
+pub trait DifferenceLogScaling {
+    fn calculate_scaled_velocity(
+        current_value: &Self,
+        target_value: &Self,
+        log_scaling: f64,
+        base_velocity_units_per_ms: f64,
+    ) -> f64;
+}
+
+impl DifferenceLogScaling for f64 {
+    fn calculate_scaled_velocity(
+        current_value: &Self,
+        target_value: &Self,
+        log_scaling: f64,
+        base_velocity_units_per_ms: f64,
+    ) -> f64 {
+        let distance = (*current_value - target_value).abs();
+        let power = (distance / log_scaling).max(1.0) as f64;
+        let scale = 2.0f64.powf(power);
+        let velocity = base_velocity_units_per_ms * scale;
+
+        velocity
+    }
+}
+
+impl DifferenceLogScaling for f32 {
+    fn calculate_scaled_velocity(
+        current_value: &Self,
+        target_value: &Self,
+        log_scaling: f64,
+        base_velocity_units_per_ms: f64,
+    ) -> f64 {
+        let distance = (*current_value - *target_value).abs();
+        let power = (distance as f64 / log_scaling).max(1.0) as f64;
+        let scale = 2.0f64.powf(power);
+        let velocity = base_velocity_units_per_ms as f64 * scale;
+
+        velocity
+    }
+}
+
+#[derive(Debug)]
+pub struct AnimateSpringTowards<
+    T: GameArtifact,
+    V: ApproachValue + DifferenceLogScaling,
+    Lens: UpdateLens<Object = T, Value = V>,
+> {
+    target_value: V,
+    base_velocity_units_per_ms: f64,
+    /// if the current distance is x, the velocity is:
+    /// base_velocity * 2^max(1.0, x/log_scaling)
+    log_scaling: f64,
+    phantom: PhantomData<Lens>,
+}
+
+impl<
+    T: GameArtifact,
+    V: ApproachValue + DifferenceLogScaling,
+    Lens: UpdateLens<Object = T, Value = V>,
+> Clone for AnimateSpringTowards<T, V, Lens>
+{
+    fn clone(&self) -> Self {
+        Self {
+            target_value: self.target_value.clone(),
+            base_velocity_units_per_ms: self.base_velocity_units_per_ms,
+            log_scaling: self.log_scaling,
+            phantom: self.phantom.clone(),
+        }
+    }
+}
+
+impl<
+    T: GameArtifact,
+    V: ApproachValue + DifferenceLogScaling,
+    Lens: GetValueLens + UpdateLens<Object = T, Value = V>,
+> Animation<T> for AnimateSpringTowards<T, V, Lens>
+{
+    fn step(&mut self, object: &mut T, delta_ms: f64) -> AnimateResult {
+        let mut result: AnimateResult = AnimateResult::FinishStep;
+        Lens::update(object, |current_value| {
+            let velocity = V::calculate_scaled_velocity(
+                current_value,
+                &self.target_value,
+                self.log_scaling,
+                self.base_velocity_units_per_ms,
+            );
+
+            if V::approach(current_value, &self.target_value, velocity, delta_ms) {
+                result = AnimateResult::FinishStep;
+            } else {
+                result = AnimateResult::Continue;
+            }
+        });
+
+        result
+    }
+
+    fn is_finished(&self, target: &T) -> bool {
+        self.target_value == Lens::get_value(target)
+    }
+
+    fn box_clone(&self) -> Box<dyn Animation<T>> {
+        let clone: AnimateSpringTowards<T, V, Lens> = self.clone();
         Box::new(clone)
     }
 }

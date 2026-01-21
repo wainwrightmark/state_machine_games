@@ -72,8 +72,6 @@ pub enum Key {
     Circle(u32),
 }
 
-impl GameEntityKey for Key {}
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct Circle {
     pub k: u32,

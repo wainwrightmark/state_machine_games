@@ -10,7 +10,7 @@ type Stores = (
     ArcRwSignal<SingleTypeEntityStore<ChessSquareEntity>>,
     ArcRwSignal<SingleTypeEntityStore<ChessPiece>>,
     ArcRwSignal<SingleTypeEntityStore<BoardAnnotation>>,
-    ResourceStore<EvaluationResource>
+    ResourceStore<EvaluationResource>,
 );
 
 fn main() {
@@ -41,7 +41,7 @@ fn game_component() -> impl IntoView {
         {move || SingleTypeEntityStore::render(squares.clone(), (), command_sender1.clone())}
         {move || SingleTypeEntityStore::render(annotations.clone(), (), ())}
         {move || SingleTypeEntityStore::render(pieces.clone(), (), ())}
-        
+
 
         </svg>
         <div>
@@ -52,8 +52,7 @@ fn game_component() -> impl IntoView {
     }
 }
 
-fn evaluation_view(evaluation: RwSignal<i16>)-> impl IntoView{
-
+fn evaluation_view(evaluation: RwSignal<i16>) -> impl IntoView {
     view! {
         <code>
         {evaluation}
@@ -219,8 +218,6 @@ pub struct BoardAnnotation {
     pub capture_move: bool,
 }
 
-impl GameEntityKey for BoardAnnotation {}
-
 impl GameArtifact for BoardAnnotation {}
 
 impl LeptosGameArtifact for BoardAnnotation {
@@ -327,8 +324,6 @@ impl PartialOrd for ChessPiece {
         Some(Ord::cmp(self, other))
     }
 }
-
-impl GameEntityKey for ChessPiece {}
 
 impl GameArtifact for ChessPiece {}
 
@@ -495,23 +490,23 @@ impl HasSegment<ChessPosition> for ChessState {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct EvaluationResource{
-    pub value: RwSignal<i16>
+pub struct EvaluationResource {
+    pub value: RwSignal<i16>,
 }
 
-impl GameArtifact for EvaluationResource{
+impl GameArtifact for EvaluationResource {}
 
-}
-
-impl ResourceValue for EvaluationResource{
+impl ResourceValue for EvaluationResource {
     type Segment = ChessPosition;
 
     type GS = ChessState;
 
-    fn update_value(segment: &Self::Segment, artifact: &mut Self, _animations: &mut AnimationList<Self>)-> bool {
-        artifact.value.set(segment.slow_evaluate()); 
+    fn update_value(
+        segment: &Self::Segment,
+        artifact: &mut Self,
+        _animations: &mut AnimationList<Self>,
+    ) -> bool {
+        artifact.value.set(segment.slow_evaluate());
         true
     }
 }
-
-

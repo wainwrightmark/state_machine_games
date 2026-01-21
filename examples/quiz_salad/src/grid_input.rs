@@ -19,7 +19,7 @@ impl GameCommand<QuizSaladGameState> for GridInputCommand {
                 *tile,
                 &game_state.puzzle.grid,
                 &game_state.found_words,
-                game_state.word_just_found,
+                game_state.chosen_state.word_just_found,
             ),
             GridInputCommand::Start(None) => {
                 game_state.input_state.handle_input_start_no_location();
@@ -30,7 +30,7 @@ impl GameCommand<QuizSaladGameState> for GridInputCommand {
                 *tile,
                 &game_state.puzzle.grid,
                 &game_state.found_words,
-                game_state.word_just_found,
+                game_state.chosen_state. word_just_found,
             ),
             GridInputCommand::End(Some(tile)) => game_state
                 .input_state
@@ -98,7 +98,7 @@ impl SetChosenState {
             {
                 if !completion.is_complete() {
                     *completion = found_words_state::Completion::Complete { index: c_index };
-                    game_state.word_just_found = true;
+                    game_state.chosen_state.word_just_found = true;
                     return MutationResult::changed_with_transition(500.0);
                 }
             }
