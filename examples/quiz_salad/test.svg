@@ -1,4 +1,5 @@
-<svg style="background:#F4F4F4"
+<svg
+   style="background:#F4F4F4"
    viewBox="0 0 640 1136">
    <rect style="transform-box: content-box; transform-origin: center center;" width="135" height="135" x="20" y="268"
       rx="6.75" ry="6.75" fill="#EAEAEA" transform="scale(1)">
@@ -64,37 +65,18 @@
       rx="6.75" ry="6.75" fill="#EAEAEA" transform="scale(1)">
       <!---->
    </rect>
-   <!----><text style="text-align: center; text-anchor: middle;" x="320" y="930" font-size="40" font-weight="600"
-      font-family="Montserrat" dominant-baseline="central" fill="#676C71">A word that might</text><text
-      style="text-align: center; text-anchor: middle;" x="320" y="970" font-size="40" font-weight="600"
-      font-family="Montserrat" dominant-baseline="central" fill="#676C71">follow 'bird' or 'love'</text>
+   <!----><text style="text-align: center; text-anchor: middle;" x="320" y="950" font-size="40" font-weight="600"
+      font-family="Montserrat" dominant-baseline="central" fill="#676C71">An Italian island</text>
    <!---->
-   <g id="word_line" opacity="1">
-      <line x1="87.5" y1="335.5" x2="242.5" y2="490.5" opacity="1" visibility="visible" stroke="#006AFE"
-         stroke-linecap="round" stroke-width="96" pointer-events="none">
-         <!---->
-      </line>
-      <line x1="242.5" y1="490.5" x2="397.5" y2="335.5" opacity="1" visibility="visible" stroke="#0015FE"
-         stroke-linecap="round" stroke-width="96" pointer-events="none">
-         <!---->
-      </line>
-      <line x1="397.5" y1="335.5" x2="552.5" y2="490.5" opacity="1" visibility="visible" stroke="#4000FE"
-         stroke-linecap="round" stroke-width="96" pointer-events="none">
-         <!---->
-      </line>
-      <line x1="552.5" y1="490.5" x2="397.5" y2="645.5" opacity="1" visibility="visible" stroke="#9400FE"
-         stroke-linecap="round" stroke-width="96" pointer-events="none">
-         <!---->
-      </line>
-      <!---->
-   </g>
+
+   <g >
    <!----><text style="transform-box: content-box; transform-origin: center;" x="87.5" y="335.5"
-      dominant-baseline="central" text-anchor="middle" fill="#F4F4F4" font-size="80" font-family="Montserrat"
+      dominant-baseline="central" text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat"
       font-weight="600" transform="scale(1)" pointer-events="none">L</text><text
       style="transform-box: content-box; transform-origin: center;" x="242.5" y="335.5" dominant-baseline="central"
       text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
       pointer-events="none">Y</text><text style="transform-box: content-box; transform-origin: center;" x="397.5"
-      y="335.5" dominant-baseline="central" text-anchor="middle" fill="#F4F4F4" font-size="80" font-family="Montserrat"
+      y="335.5" dominant-baseline="central" text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat"
       font-weight="600" transform="scale(1)" pointer-events="none">C</text><text
       style="transform-box: content-box; transform-origin: center;" x="552.5" y="335.5" dominant-baseline="central"
       text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
@@ -102,17 +84,112 @@
       y="490.5" dominant-baseline="central" text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat"
       font-weight="600" transform="scale(1)" pointer-events="none">W</text><text
       style="transform-box: content-box; transform-origin: center;" x="242.5" y="490.5" dominant-baseline="central"
-      text-anchor="middle" fill="#F4F4F4" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
+      text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
       pointer-events="none">A</text><text style="transform-box: content-box; transform-origin: center;" x="397.5"
       y="490.5" dominant-baseline="central" text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat"
       font-weight="600" transform="scale(1)" pointer-events="none">U</text><text
       style="transform-box: content-box; transform-origin: center;" x="552.5" y="490.5" dominant-baseline="central"
-      text-anchor="middle" fill="#F4F4F4" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
+      text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
       pointer-events="none">R</text><text style="transform-box: content-box; transform-origin: center;" x="87.5"
       y="645.5" dominant-baseline="central" text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat"
       font-weight="600" transform="scale(1)" pointer-events="none">S</text><text
       style="transform-box: content-box; transform-origin: center;" x="242.5" y="645.5" dominant-baseline="central"
       text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
+      pointer-events="none">G</text><text style="transform-box: content-box; transform-origin: center;" x="397.5"
+      y="645.5" dominant-baseline="central" text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat"
+      font-weight="600" transform="scale(1)" pointer-events="none">P</text><text
+      style="transform-box: content-box; transform-origin: center;" x="552.5" y="645.5" dominant-baseline="central"
+      text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
+      pointer-events="none">I</text><text style="transform-box: content-box; transform-origin: center;" x="87.5"
+      y="800.5" dominant-baseline="central" text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat"
+      font-weight="600" transform="scale(1)" pointer-events="none">H</text><text
+      style="transform-box: content-box; transform-origin: center;" x="242.5" y="800.5" dominant-baseline="central"
+      text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
+      pointer-events="none">O</text><text style="transform-box: content-box; transform-origin: center;" x="397.5"
+      y="800.5" dominant-baseline="central" text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat"
+      font-weight="600" transform="scale(1)" pointer-events="none">N</text><text
+      style="transform-box: content-box; transform-origin: center;" x="552.5" y="800.5" dominant-baseline="central"
+      text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
+      pointer-events="none">D</text>
+   </g>
+   
+   <mask  id="myMask" clipPathUnits="userSpaceOnUse" mask-type="luminance">
+          
+
+          <line x1="397.5" y1="645.5" x2="397.5" y2="490.5" opacity="1" visibility="visible" stroke="#FFFFFF"
+         stroke-linecap="round" stroke-width="86" pointer-events="none">
+         <!---->
+      </line>
+      <line x1="397.5" y1="490.5" x2="242.5" y2="645.5" opacity="1" visibility="visible" stroke="#FFFFFF"
+         stroke-linecap="round" stroke-width="86" pointer-events="none">
+         <!---->
+      </line>
+      <line x1="242.5" y1="645.5" x2="87.5" y2="490.5" opacity="1" visibility="visible" stroke="#FFFFFF"
+         stroke-linecap="round" stroke-width="86" pointer-events="none">
+         <!---->
+      </line>
+      <line x1="87.5" y1="490.5" x2="242.5" y2="490.5" opacity="1" visibility="visible" stroke="#FFFFFF"
+         stroke-linecap="round" stroke-width="86" pointer-events="none">
+         <!---->
+      </line>
+      <line x1="242.5" y1="490.5" x2="87.5" y2="645.5" opacity="1" visibility="visible" stroke="#FFFFFF"
+         stroke-linecap="round" stroke-width="86" pointer-events="none" >
+         <!---->
+      </line>
+
+   </mask >
+   
+   
+   <g id="word_line" opacity="1">
+      <line x1="397.5" y1="645.5" x2="397.5" y2="490.5" opacity="1" visibility="visible" stroke="#006AFE"
+         stroke-linecap="round" stroke-width="86" pointer-events="none">
+         <!---->
+      </line>
+      <line x1="397.5" y1="490.5" x2="242.5" y2="645.5" opacity="1" visibility="visible" stroke="#0015FE"
+         stroke-linecap="round" stroke-width="86" pointer-events="none">
+         <!---->
+      </line>
+      <line x1="242.5" y1="645.5" x2="87.5" y2="490.5" opacity="1" visibility="visible" stroke="#4000FE"
+         stroke-linecap="round" stroke-width="86" pointer-events="none">
+         <!---->
+      </line>
+      <line x1="87.5" y1="490.5" x2="242.5" y2="490.5" opacity="1" visibility="visible" stroke="#9400FE"
+         stroke-linecap="round" stroke-width="86" pointer-events="none">
+         <!---->
+      </line>
+      <line x1="242.5" y1="490.5" x2="87.5" y2="645.5" opacity="1" visibility="visible" stroke="#E900FE"
+         stroke-linecap="round" stroke-width="86" pointer-events="none">
+         <!---->
+      </line>
+      <!---->
+   </g>
+
+   <g mask="url(#myMask)">
+   <!----><text style="transform-box: content-box; transform-origin: center;" x="87.5" y="335.5"
+      dominant-baseline="central" text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat"
+      font-weight="600" transform="scale(1)" pointer-events="none">L</text><text
+      style="transform-box: content-box; transform-origin: center;" x="242.5" y="335.5" dominant-baseline="central"
+      text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
+      pointer-events="none">Y</text><text style="transform-box: content-box; transform-origin: center;" x="397.5"
+      y="335.5" dominant-baseline="central" text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat"
+      font-weight="600" transform="scale(1)" pointer-events="none">C</text><text
+      style="transform-box: content-box; transform-origin: center;" x="552.5" y="335.5" dominant-baseline="central"
+      text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
+      pointer-events="none">A</text><text style="transform-box: content-box; transform-origin: center;" x="87.5"
+      y="490.5" dominant-baseline="central" text-anchor="middle" fill="#F4F4F4" font-size="80" font-family="Montserrat"
+      font-weight="600" transform="scale(1)" pointer-events="none">W</text><text
+      style="transform-box: content-box; transform-origin: center;" x="242.5" y="490.5" dominant-baseline="central"
+      text-anchor="middle" fill="#F4F4F4" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
+      pointer-events="none">A</text><text style="transform-box: content-box; transform-origin: center;" x="397.5"
+      y="490.5" dominant-baseline="central" text-anchor="middle" fill="#F4F4F4" font-size="80" font-family="Montserrat"
+      font-weight="600" transform="scale(1)" pointer-events="none">U</text><text
+      style="transform-box: content-box; transform-origin: center;" x="552.5" y="490.5" dominant-baseline="central"
+      text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
+      pointer-events="none">R</text><text style="transform-box: content-box; transform-origin: center;" x="87.5"
+      y="645.5" dominant-baseline="central" text-anchor="middle" fill="#F4F4F4" font-size="80" font-family="Montserrat"
+      font-weight="600" transform="scale(1)" pointer-events="none">S</text><text
+      style="transform-box: content-box; transform-origin: center;" x="242.5" y="645.5" dominant-baseline="central"
+      text-anchor="middle" fill="#F4F4F4" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
       pointer-events="none">G</text><text style="transform-box: content-box; transform-origin: center;" x="397.5"
       y="645.5" dominant-baseline="central" text-anchor="middle" fill="#F4F4F4" font-size="80" font-family="Montserrat"
       font-weight="600" transform="scale(1)" pointer-events="none">P</text><text
@@ -129,11 +206,12 @@
       style="transform-box: content-box; transform-origin: center;" x="552.5" y="800.5" dominant-baseline="central"
       text-anchor="middle" fill="#043E40" font-size="80" font-family="Montserrat" font-weight="600" transform="scale(1)"
       pointer-events="none">D</text>
+   </g>
    <!---->
-   <rect x="20" y="1016" width="50" height="100" stroke-width="10" stroke="#676C71" fill="#EAEAEA" rx="30" ry="30">
+   <rect x="20" y="1016" width="50" height="100" stroke-width="0" stroke="#676C71" fill="#27BE4D" rx="30" ry="30">
       <!---->
    </rect>
-   <rect x="81.111115" y="1016" width="50" height="100" stroke-width="0" stroke="#676C71" fill="#EAEAEA" rx="30"
+   <rect x="81.111115" y="1016" width="50" height="100" stroke-width="10" stroke="#676C71" fill="#EAEAEA" rx="30"
       ry="30">
       <!---->
    </rect>

@@ -129,6 +129,7 @@ pub struct WordLineEntity {
     /// The current solution
     pub solution: Solution4x4,
     pub word_jut_found: bool,
+    pub close_to_solution: bool,
 }
 
 fn should_line_retract(new: &Solution4x4, old: &Solution4x4) -> bool {
@@ -172,7 +173,8 @@ impl GameEntity for WordLineEntity {
     fn get_entities(segment: &Self::StateSegment) -> impl Iterator<Item = Self> {
         let wle = WordLineEntity {
             solution: segment.chosen.solution.clone(),
-            word_jut_found: segment.is_close_to_word,
+            word_jut_found: segment.chosen.word_just_found,
+            close_to_solution: segment.is_close_to_word
         };
         [wle].into_iter().filter(|x| !x.solution.is_empty())
     }
@@ -207,7 +209,7 @@ impl GameEntity for WordLineEntity {
             }
         });
 
-        let line_width = if self.word_jut_found {
+        let line_width = if self.close_to_solution {
             let mut animation = animate_towards::<WordLineArtifactWidthLens>(1.0, 0.2 / 1000.0)
                 .to_stage()
                 .precede_with(animate_towards::<WordLineArtifactWidthLens>(
