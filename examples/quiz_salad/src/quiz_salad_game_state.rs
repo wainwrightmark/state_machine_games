@@ -21,6 +21,10 @@ impl QuizSaladGameState {
             input_state: Default::default()
         }
     }
+
+    pub fn is_close_to_solution(&self)-> bool{
+        self.chosen_state.is_close_to_a_solution(&self.puzzle, &self.found_words)
+    }   
 }
 
 impl GameState for QuizSaladGameState {

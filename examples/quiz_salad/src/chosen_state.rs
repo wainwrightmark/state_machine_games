@@ -19,7 +19,7 @@ impl ChosenState {
 
     pub fn is_close_to_a_solution(
         &self,
-        level: &DesignedLevel4x4,
+        level: &impl LevelTrait<4,16>,
         found_words: &FoundWordsState,
     ) -> bool {
         let solution = self.current_solution();
@@ -27,14 +27,14 @@ impl ChosenState {
             return false;
         }
 
-        let chars: CharsArray4x4 = solution.iter().map(|t| level.grid[*t]).collect();
+        let chars: CharsArray4x4 = solution.iter().map(|t| level.grid()[*t]).collect();
 
-        for (word, completion) in level.words.iter().zip(found_words.word_completions.iter()) {
+        for (word, completion) in level.words().iter().zip(found_words.word_completions.iter()) {
             if completion.is_complete() {
                 continue;
             }
-            if word.characters.first() == chars.first()
-                && Self::lev_distance_one_or_less(&chars, &word.characters)
+            if word.characters().first() == chars.first()
+                && Self::lev_distance_one_or_less(&chars, word.characters())
             {
                 return true;
             }

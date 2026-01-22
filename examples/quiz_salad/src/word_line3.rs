@@ -1,5 +1,5 @@
-use ws_core::Solution4x4;
 use crate::*;
+use ws_core::Solution4x4;
 
 fn make_line_segments(solution: Solution4x4) -> ArrayVec<LineSegment, 15> {
     if let Ok(&s) = solution.iter().exactly_one() {
@@ -75,10 +75,10 @@ impl LeptosGameArtifact for WordLineArtifact {
                     (ratio) * PATH_STROKE_WIDTH
                 };
 
-                let segment_opacity = move ||{
-                    if segment.index == 0{
+                let segment_opacity = move || {
+                    if segment.index == 0 {
                         1.0
-                    }else{
+                    } else {
                         (this_segment_length() * 2.0).clamp(0.0, 1.0)
                     }
                 };
@@ -132,18 +132,34 @@ pub struct WordLineEntity {
 }
 
 fn should_line_retract(new: &Solution4x4, old: &Solution4x4) -> bool {
-
-    if new.len() == 1 && old.len() > 2{
+    if new.len() == 1 && old.len() > 2 {
         return false;
     }
 
     new.len() <= old.len() && new.iter().zip(old.iter()).all(|(a, b)| a == b)
 }
+#[derive(Debug, Clone, PartialEq)]
+pub struct WordLineStateSegment {
+    pub chosen: ChosenState,
+    pub is_close_to_word: bool,
+}
+impl HasSegment<WordLineStateSegment> for QuizSaladGameState {
+    fn get_segment(&self) -> WordLineStateSegment {
+        WordLineStateSegment {
+            chosen: self.chosen_state.clone(),
+            is_close_to_word: self.is_close_to_solution(),
+        }
+    }
+
+    fn segment_eq(&self, s: &WordLineStateSegment) -> bool {
+        self.chosen_state == s.chosen && s.is_close_to_word == self.is_close_to_solution()
+    }
+}
 
 impl GameEntity for WordLineEntity {
     type Artifact = WordLineArtifact;
     type Key = Tile4x4;
-    type StateSegment = ChosenState;
+    type StateSegment = WordLineStateSegment;
 
     fn key(&self) -> Self::Key {
         self.solution
@@ -155,8 +171,8 @@ impl GameEntity for WordLineEntity {
 
     fn get_entities(segment: &Self::StateSegment) -> impl Iterator<Item = Self> {
         let wle = WordLineEntity {
-            solution: segment.solution.clone(),
-            word_jut_found: segment.word_just_found,
+            solution: segment.chosen.solution.clone(),
+            word_jut_found: segment.is_close_to_word,
         };
         [wle].into_iter().filter(|x| !x.solution.is_empty())
     }
@@ -171,7 +187,7 @@ impl GameEntity for WordLineEntity {
         artifact.with_animations([animate_spring::<WordLineArtifactSegmentsLens>(
             self.solution.len() as f32,
             1.0 / 1000.0,
-            1.0
+            1.0,
         )
         .to_stage()])
     }
@@ -191,16 +207,31 @@ impl GameEntity for WordLineEntity {
             }
         });
 
-        artifact.update_animations([
+        let line_width = if self.word_jut_found {
+            let mut animation = animate_towards::<WordLineArtifactWidthLens>(1.0, 0.2 / 1000.0)
+                .to_stage()
+                .precede_with(animate_towards::<WordLineArtifactWidthLens>(
+                    0.9,
+                    0.2 / 1000.0,
+                ));
+            animation.loop_forever();
+            animation
+        } else {
+            animate_towards::<WordLineArtifactWidthLens>(1.0, 1.0 / 1000.0).to_stage()
+        };
+
+        let list = artifact.update_animations([
             animate_spring::<WordLineArtifactSegmentsLens>(
                 self.solution.len() as f32,
                 2.0 / 1000.0,
-                1.0
+                1.0,
             )
             .to_stage(),
-            animate_towards::<WordLineArtifactWidthLens>(1.0, 1.0 / 1000.0).to_stage(),
+            line_width,
             animate_towards::<WordLineArtifactOpacityLens>(1.0, 1.0 / 1000.0).to_stage(),
-        ])
+        ]);
+
+        list
     }
 
     fn on_death(
