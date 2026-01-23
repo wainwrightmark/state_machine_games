@@ -56,7 +56,7 @@ use crate::{chosen_state::ChosenState, found_words_state::FoundWordsState, puzzl
 type Stores = (
     ArcRwSignal<SingleTypeEntityStore<TileEntity>>,
     ArcRwSignal<SingleTypeEntityStore<ClueEntity>>,
-    ArcRwSignal<SingleTypeEntityStore<WordLineEntity>>,    
+    ArcRwSignal<SingleTypeEntityStore<WordLineEntity>>,
     ArcRwSignal<SingleTypeEntityStore<LozengeEntity>>,
     ArcRwSignal<SingleTypeEntityStore<AnimatedTextEntity>>,
     ResourceStore<BackgroundColor>,
@@ -121,7 +121,7 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     let tiles_store2 = stores.0.clone();
     let clues_store = stores.1.clone();
     let word_line_store = stores.2.clone();
-    
+
     let lozenge_store = stores.3.clone();
     let animated_text_store = stores.4.clone();
     let background_color = stores.5.artifact.color;
@@ -148,7 +148,6 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     let node_ref = NodeRef::<Svg>::new();
 
     let on_pointer_down = move |ev: PointerEvent| {
-        //ev.
         let Some(element) = node_ref.get() else {
             return;
         };
@@ -240,17 +239,14 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
 
             {move || SingleTypeEntityStore::render(tiles_store1.clone(),RenderTileFill, ())} // Tile
             {move || SingleTypeEntityStore::render(clues_store.clone(),(), ())}
-            {move || SingleTypeEntityStore::render(word_line_store.clone(),(), ())}            
+            {move || SingleTypeEntityStore::render(word_line_store.clone(),(), ())}
             {move || SingleTypeEntityStore::render(tiles_store2.clone(),RenderTileText, ())}
             {move || SingleTypeEntityStore::render(lozenge_store.clone(),(), cs2.clone())}
             {move || SingleTypeEntityStore::render(animated_text_store.clone(),(), ())} // Animated Text
 
-            //todo render the tile text twice with a wordline clip_path
+            //todo render the tile text twice with a wordline luminosity mask
 
             </svg>
-            // <div>
-            //     {move || SingleTypeEntityStore::render(stores.4.clone(), button_sender.clone())}
-            // </div>
         </div>
 
     }

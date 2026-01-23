@@ -22,6 +22,35 @@ impl FoundWordsState {
         });
     }
 
+    /// replays the found words in order to get the same set of unneeded tiles
+    pub fn recalculate_unneeded_tiles(&mut self, level: &impl LevelTrait<4,16>) {
+        let mut new_tiles = Default::default();
+        for finish_index in self
+            .word_completions
+            .iter()
+            .filter_map(|completion| match completion {
+                Completion::Complete { index } => Some(*index),
+                _ => None,
+            })
+            .sorted_by_key(|x| *x)
+        {
+            new_tiles = level.calculate_unneeded_tiles(new_tiles, |index| {
+                self.word_completions
+                    .get(index)
+                    .map(|completion| {
+                        if let Completion::Complete { index } = completion {
+                            index <= &finish_index
+                        } else {
+                            false
+                        }
+                    })
+                    .unwrap_or(true)
+            });
+        }
+
+        self.unneeded_tiles = new_tiles;
+    }
+
     /// Inadvisable tiles are tiles that are selectable, but can't lead to a solution
     pub fn calculate_inadvisable_tiles(
         &self,
