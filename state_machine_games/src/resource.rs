@@ -1,5 +1,6 @@
 use crate::prelude::{
     AnimateResult, AnimationList, ChangeWatcher, GameArtifact, GameState, HasSegment,
+    InitFromGameState,
 };
 
 pub trait ResourceValue: GameArtifact + Default + Send + Sync + 'static {
@@ -7,9 +8,12 @@ pub trait ResourceValue: GameArtifact + Default + Send + Sync + 'static {
     type GS: GameState + HasSegment<Self::Segment>;
 
     ///Returns whether anything was changed
-    fn update_value(segment: &Self::Segment, artifact: &mut Self, animations: &mut AnimationList<Self>)-> bool;
+    fn update_value(
+        segment: &Self::Segment,
+        artifact: &mut Self,
+        animations: &mut AnimationList<Self>,
+    ) -> bool;
 }
-
 
 pub struct ResourceStore<R: ResourceValue> {
     pub artifact: R,
@@ -23,11 +27,12 @@ impl<R: ResourceValue> ChangeWatcher<R::GS> for ResourceStore<R> {
         state: &R::GS,
         _reason: &crate::prelude::StateChangeReason<R::GS>,
     ) -> bool {
-        if state.segment_eq(&self.segment){return false;};
+        if state.segment_eq(&self.segment) {
+            return false;
+        };
         self.segment = state.get_segment();
 
         R::update_value(&self.segment, &mut self.artifact, &mut self.animations)
-
     }
 
     fn step_animations(&mut self, delta_ms: f64) {
@@ -38,14 +43,15 @@ impl<R: ResourceValue> ChangeWatcher<R::GS> for ResourceStore<R> {
             }
         });
     }
-
-    fn new(state: &R::GS) -> Self {
+}
+impl<R: ResourceValue> InitFromGameState<R::GS> for ResourceStore<R> {
+    fn init(state: &R::GS) -> Self {
         let segment = state.get_segment();
         let mut artifact = R::default();
         let mut animations = AnimationList::default();
 
-        R::update_value(&segment,&mut artifact,&mut animations);
-        
+        R::update_value(&segment, &mut artifact, &mut animations);
+
         Self {
             artifact,
             animations,

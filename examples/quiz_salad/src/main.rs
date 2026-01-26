@@ -53,15 +53,6 @@ use ws_core::{ArrayVec, Character, LevelTrait, Tile4x4, Ustr};
 
 use crate::{chosen_state::ChosenState, found_words_state::FoundWordsState, puzzle::Puzzle};
 
-type Stores = (
-    ArcRwSignal<SingleTypeEntityStore<TileEntity>>,
-    ArcRwSignal<SingleTypeEntityStore<ClueEntity>>,
-    ArcRwSignal<SingleTypeEntityStore<WordLineEntity>>,
-    ArcRwSignal<SingleTypeEntityStore<LozengeEntity>>,
-    ArcRwSignal<SingleTypeEntityStore<AnimatedTextEntity>>,
-    ResourceStore<BackgroundColor>,
-);
-
 pub fn main() {
     wasm_logger::init(wasm_logger::Config::default());
     console_error_panic_hook::set_once();
@@ -115,18 +106,23 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
 
     let state = QuizSaladGameState::new(puzzle);
 
-    let stores = Stores::new(&state);
+    let tiles :ArcRwSignal<SingleTypeEntityStore<TileEntity>> = InitFromGameState::init(&state);
+    let clues :ArcRwSignal<SingleTypeEntityStore<ClueEntity>> = InitFromGameState::init(&state);
+    let word_line :ArcRwSignal<SingleTypeEntityStore<WordLineEntity>> = InitFromGameState::init(&state);
+    let lozenges :ArcRwSignal<SingleTypeEntityStore<LozengeEntity>> = InitFromGameState::init(&state);
+    let animated_text :ArcRwSignal<SingleTypeEntityStore<AnimatedTextEntity>> = InitFromGameState::init(&state);
+    let background_color :ResourceStore<BackgroundColor> = InitFromGameState::init(&state);
 
-    let tiles_store1 = stores.0.clone();
-    let tiles_store2 = stores.0.clone();
-    let clues_store = stores.1.clone();
-    let word_line_store = stores.2.clone();
+    
+    let background_color_value = background_color.artifact.color;
 
-    let lozenge_store = stores.3.clone();
-    let animated_text_store = stores.4.clone();
-    let background_color = stores.5.artifact.color;
-
-    let machine = GameMachine::new(state, stores);
+    let mut machine = GameMachine::new(state);
+    machine.add_change_watcher(tiles.clone());
+    machine.add_change_watcher(clues.clone());
+    machine.add_change_watcher(word_line.clone());
+    machine.add_change_watcher(lozenges.clone());
+    machine.add_change_watcher(animated_text.clone());
+    machine.add_change_watcher(background_color);
 
     //let cs1 = machine.command_sender();
     let cs2 = machine.command_sender();
@@ -141,7 +137,7 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     let div_style = move || {
         format!(
             "height: 100vh; width: 100vw; overflow: hidden; background: {}",
-            background_color.get().to_hex()
+            background_color_value.get().to_hex()
         )
     };
 
@@ -228,6 +224,8 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
         }
     };
 
+    let tiles2= tiles.clone();
+
     view! {
         <div style=div_style>
             <svg node_ref=node_ref viewBox=format!("0 0 {GAME_WIDTH} {GAME_HEIGHT}") style={svg_style}
@@ -237,12 +235,12 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
             >
 
 
-            {move || SingleTypeEntityStore::render(tiles_store1.clone(),RenderTileFill, ())} // Tile
-            {move || SingleTypeEntityStore::render(clues_store.clone(),(), ())}
-            {move || SingleTypeEntityStore::render(word_line_store.clone(),(), ())}
-            {move || SingleTypeEntityStore::render(tiles_store2.clone(),RenderTileText, ())}
-            {move || SingleTypeEntityStore::render(lozenge_store.clone(),(), cs2.clone())}
-            {move || SingleTypeEntityStore::render(animated_text_store.clone(),(), ())} // Animated Text
+            {move || SingleTypeEntityStore::render(tiles.clone(),RenderTileFill, ())} // Tile
+            {move || SingleTypeEntityStore::render(clues.clone(),(), ())}
+            {move || SingleTypeEntityStore::render(word_line.clone(),(), ())}
+            {move || SingleTypeEntityStore::render(tiles2.clone(),RenderTileText, ())}
+            {move || SingleTypeEntityStore::render(lozenges.clone(),(), cs2.clone())}
+            {move || SingleTypeEntityStore::render(animated_text.clone(),(), ())} // Animated Text
 
             //todo render the tile text twice with a wordline luminosity mask
 

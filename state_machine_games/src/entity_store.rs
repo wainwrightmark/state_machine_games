@@ -1,3 +1,5 @@
+use std::sync::{Arc, RwLock};
+
 use crate::prelude::*;
 use const_sized_bit_set::prelude::*;
 use impl_trait_for_tuples::impl_for_tuples;
@@ -17,26 +19,31 @@ pub trait ChangeWatcher<GS: GameState>: Send + Sync + 'static {
     //Step all animations in this store
     //This should never change the structure of the store
     fn step_animations(&mut self, delta_ms: f64);
-
-    fn new(state: &GS) -> Self;
 }
 
-#[impl_for_tuples(1, 8)]
-impl<GS: GameState> ChangeWatcher<GS> for Tuple {
-    for_tuples!( where #( Tuple: ChangeWatcher<GS> )* );
-
-    fn on_state_change(&mut self, state: &GS, reason: &StateChangeReason<GS>) -> bool {
-        for_tuples! (#(self.Tuple.on_state_change(state, reason))| *)
-    }
-
-    fn step_animations(&mut self, delta_ms: f64) {
-        for_tuples! (#(self.Tuple.step_animations(delta_ms);) *)
-    }
-
-    fn new(state: &GS) -> Self {
-        (for_tuples! (#(Tuple::new(state) ), *))
-    }
+pub trait InitFromGameState<GS: GameState> {
+    fn init(state: &GS) -> Self;
 }
+
+// #[impl_for_tuples(1, 8)]
+// impl<GS: GameState> ChangeWatcher<GS> for Tuple {
+//     for_tuples!( where #( Tuple: ChangeWatcher<GS> )* );
+
+//     fn on_state_change(&mut self, state: &GS, reason: &StateChangeReason<GS>) -> bool {
+//         for_tuples! (#(self.Tuple.on_state_change(state, reason))| *)
+//     }
+
+//     fn step_animations(&mut self, delta_ms: f64) {
+//         for_tuples! (#(self.Tuple.step_animations(delta_ms);) *)
+//     }
+// }
+
+// #[impl_for_tuples(1, 8)]
+// impl<GS: GameState> InitFromGameState<GS> for Tuple {
+//     fn init(state: &GS) -> Self {
+//         (for_tuples! (#(Tuple::init(state) ), *))
+//     }
+// }
 
 pub struct SingleTypeEntityStore<E: GameEntity> {
     pub entities: Vec<StoredEntity<E>>,
@@ -68,8 +75,12 @@ impl<E: GameEntity, GS: GameState + HasSegment<E::StateSegment>> ChangeWatcher<G
             }
         });
     }
+}
 
-    fn new(state: &GS) -> Self {
+impl<E: GameEntity, GS: GameState + HasSegment<E::StateSegment>> InitFromGameState<GS>
+    for SingleTypeEntityStore<E>
+{
+    fn init(state: &GS) -> Self {
         let mut s = Self {
             entities: Vec::new(),
             animated_entities: BitSetVec::EMPTY,
@@ -84,8 +95,26 @@ impl<E: GameEntity, GS: GameState + HasSegment<E::StateSegment>> ChangeWatcher<G
     }
 }
 
+impl<GS: GameState, T: ChangeWatcher<GS>> ChangeWatcher<GS> for std::sync::Arc<RwLock<T>> {
+    fn on_state_change(&mut self, state: &GS, reason: &StateChangeReason<GS>) -> bool {
+        self.write().unwrap().on_state_change(state, reason)
+    }
+
+    fn step_animations(&mut self, delta_ms: f64) {
+        self.write().unwrap().step_animations(delta_ms);
+    }
+}
+
+impl<GS: GameState, T: InitFromGameState<GS>> InitFromGameState<GS> for std::sync::Arc<RwLock<T>> {
+    fn init(state: &GS) -> Self {
+        Arc::new(RwLock::new(T::init(state)))
+    }
+}
+
 #[cfg(feature = "leptos")]
-pub trait LeptosRenderable<Argument: Clone + Send + Sync + 'static, Command: Send + 'static>: Sized {
+pub trait LeptosRenderable<Argument: Clone + Send + Sync + 'static, Command: Send + 'static>:
+    Sized
+{
     fn render(
         signal: leptos::prelude::ArcRwSignal<Self>,
         argument: Argument,

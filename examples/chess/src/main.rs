@@ -6,13 +6,6 @@ use leptos::{logging::log, prelude::*};
 use state_machine_games::prelude::*;
 use timecat::prelude::*;
 
-type Stores = (
-    ArcRwSignal<SingleTypeEntityStore<ChessSquareEntity>>,
-    ArcRwSignal<SingleTypeEntityStore<ChessPiece>>,
-    ArcRwSignal<SingleTypeEntityStore<BoardAnnotation>>,
-    ResourceStore<EvaluationResource>,
-);
-
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
     console_error_panic_hook::set_once();
@@ -25,12 +18,19 @@ fn game_component() -> impl IntoView {
         selected_square: None,
     };
 
-    let stores = Stores::new(&state);
-    let squares = stores.0.clone();
-    let pieces = stores.1.clone();
-    let annotations = stores.2.clone();
-    let evaluation: RwSignal<i16> = stores.3.artifact.value.clone();
-    let machine = GameMachine::new(state, stores);
+    let squares: ArcRwSignal<SingleTypeEntityStore<ChessSquareEntity>> =
+        InitFromGameState::init(&state);
+    let pieces: ArcRwSignal<SingleTypeEntityStore<ChessPiece>> = InitFromGameState::init(&state);
+    let annotations: ArcRwSignal<SingleTypeEntityStore<BoardAnnotation>> =
+        InitFromGameState::init(&state);
+    let evaluation: ResourceStore<EvaluationResource> = InitFromGameState::init(&state);
+    let ev_score = evaluation.artifact.value.clone();
+
+    let mut machine = GameMachine::new(state);
+    machine.add_change_watcher(squares.clone());
+    machine.add_change_watcher(pieces.clone());
+    machine.add_change_watcher(annotations.clone());
+    machine.add_change_watcher(evaluation);
     let command_sender1 = machine.command_sender();
     let command_sender2 = machine.command_sender();
 
@@ -46,7 +46,7 @@ fn game_component() -> impl IntoView {
         </svg>
         <div>
             {buttons_view(command_sender2)}
-            {evaluation_view(evaluation)}
+            {evaluation_view(ev_score)}
         </div>
 
     }

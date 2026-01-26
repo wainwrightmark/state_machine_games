@@ -7,11 +7,6 @@ use strum::{EnumCount, FromRepr};
 pub type Match3Tile = geometrid::tile::Tile<8, 8>;
 pub type Match3Grid = geometrid::tile_map::TileMap<Option<Gem>, 8, 8, 64>;
 
-type Stores = (
-    ArcRwSignal<SingleTypeEntityStore<ScoreTextEntity>>,
-    ArcRwSignal<SingleTypeEntityStore<MovesLeftEntity>>,
-    ArcRwSignal<SingleTypeEntityStore<Match3TileEntity>>,
-);
 
 pub fn main() {
     wasm_logger::init(wasm_logger::Config::default());
@@ -22,17 +17,23 @@ pub fn main() {
 fn game_component() -> impl IntoView {
     let state = Match3Game::new_random(123);
 
-    //let (sender, receiver) = mpsc::channel::<Match3Command>();
-    let stores = Stores::new(&state);
-    let machine = GameMachine::new(state, stores.clone());
+    let score_text : ArcRwSignal<SingleTypeEntityStore<ScoreTextEntity>> = InitFromGameState::init(&state);
+    let moves_left : ArcRwSignal<SingleTypeEntityStore<MovesLeftEntity>> = InitFromGameState::init(&state);
+    let match3 : ArcRwSignal<SingleTypeEntityStore<Match3TileEntity>> =InitFromGameState::init(&state); 
+
+    
+    let mut machine = GameMachine::new(state);
+    machine.add_change_watcher(score_text.clone());
+    machine.add_change_watcher(moves_left.clone());
+    machine.add_change_watcher(match3.clone());
     let sender = machine.command_sender();
     machine.run_game();
 
     view! {
         <svg viewBox="0 0 800.0 800.0"  style="max-width: 800px;  margin-inline: auto; ">
-        {move || SingleTypeEntityStore::render(stores.0.clone(),(), ())}
-        {move || SingleTypeEntityStore::render(stores.1.clone(),(), ())}
-        {move || SingleTypeEntityStore::render(stores.2.clone(),(), sender.clone())}
+        {move || SingleTypeEntityStore::render(score_text.clone(),(), ())}
+        {move || SingleTypeEntityStore::render(moves_left.clone(),(), ())}
+        {move || SingleTypeEntityStore::render(match3.clone(),(), sender.clone())}
         </svg>
 
     }

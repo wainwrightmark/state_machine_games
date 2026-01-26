@@ -4,9 +4,9 @@ use crate::prelude::*;
 
 pub fn run_game<GS: GameState, Stores: ChangeWatcher<GS>>() {}
 
-pub struct GameMachine<GS: GameState, Stores: ChangeWatcher<GS>> {
+pub struct GameMachine<GS: GameState> {
     state: GS,
-    stores: Stores,
+    change_watchers: Vec<Box<dyn ChangeWatcher<GS>>>,
     ms_until_transition: Option<f64>,
     sender: mpsc::Sender<GS::Command>,
     receiver: mpsc::Receiver<GS::Command>,
@@ -31,28 +31,42 @@ impl<GS: GameState, S: ChangeWatcher<GS>> ChangeWatcher<GS> for leptos::prelude:
             x.step_animations(delta_ms);
         })
     }
+}
 
-    fn new(state: &GS) -> Self {
+#[cfg(feature = "leptos")]
+impl<GS: GameState, S: InitFromGameState<GS>> InitFromGameState<GS>
+    for leptos::prelude::ArcRwSignal<S>
+{
+    fn init(state: &GS) -> Self {
         use leptos::prelude::ArcRwSignal;
 
-        ArcRwSignal::new(S::new(state))
+        ArcRwSignal::new(S::init(state))
     }
 }
 
-impl<GS: GameState, Stores: ChangeWatcher<GS>> GameMachine<GS, Stores> {
-    pub fn new(state: GS, mut stores: Stores) -> Self {
-        stores.on_state_change(&state, &StateChangeReason::InitialState);
-
+impl<GS: GameState> GameMachine<GS> {
+    pub fn new(state: GS) -> Self {
         let (sender, receiver) = mpsc::channel();
 
         Self {
             state,
-            stores,
+            change_watchers: vec![],
             ms_until_transition: Some(0.0),
             sender,
             receiver,
         }
     }
+
+    pub fn init_change_watcher<S: ChangeWatcher<GS> + InitFromGameState<GS>>(&mut self) {
+        let s = S::init(&self.state);
+        self.add_change_watcher(s);
+    }
+
+    pub fn add_change_watcher<S: ChangeWatcher<GS>>(&mut self, mut s: S) {
+        s.on_state_change(&self.state, &StateChangeReason::InitialState);
+        self.change_watchers.push(Box::new(s));
+    }
+
     #[cfg(feature = "leptos")]
     pub fn run_game(self) {
         let mutex = std::sync::Mutex::new(self);
@@ -71,7 +85,9 @@ impl<GS: GameState, Stores: ChangeWatcher<GS>> GameMachine<GS, Stores> {
             && transition_ms <= remaining_ms
         {
             //run animations up to the transition
-            self.stores.step_animations(transition_ms);
+            for x in self.change_watchers.iter_mut(){
+                x.step_animations(transition_ms);
+            }            
 
             remaining_ms -= transition_ms;
 
@@ -80,8 +96,10 @@ impl<GS: GameState, Stores: ChangeWatcher<GS>> GameMachine<GS, Stores> {
             self.ms_until_transition = mr.transition_callback_in_ms;
 
             if mr.changed {
-                self.stores
-                    .on_state_change(&self.state, &StateChangeReason::Transition);
+                for x in self.change_watchers.iter_mut(){
+                    x.on_state_change(&self.state, &StateChangeReason::Transition);
+                }
+                    
             }
         }
 
@@ -92,7 +110,9 @@ impl<GS: GameState, Stores: ChangeWatcher<GS>> GameMachine<GS, Stores> {
 
         //run animations
         if remaining_ms > 0.0 {
-            self.stores.step_animations(remaining_ms);
+            for x in self.change_watchers.iter_mut(){
+                x.step_animations(remaining_ms);
+            }            
         }
 
         while let Some((cmd, mr)) = self.receiver.try_recv().ok().map(|cmd| {
@@ -100,8 +120,10 @@ impl<GS: GameState, Stores: ChangeWatcher<GS>> GameMachine<GS, Stores> {
             (cmd, mr)
         }) {
             if mr.changed {
-                self.stores
-                    .on_state_change(&self.state, &StateChangeReason::Command(cmd));
+                let reason = StateChangeReason::Command(cmd);
+                for x in self.change_watchers.iter_mut(){
+                    x.on_state_change(&self.state, &reason);
+                }                    
             }
 
             match (self.ms_until_transition, mr.transition_callback_in_ms) {
@@ -119,6 +141,8 @@ impl<GS: GameState, Stores: ChangeWatcher<GS>> GameMachine<GS, Stores> {
 
 #[cfg(test)]
 mod tests {
+    use std::{ops::Deref, sync::RwLock};
+
     use crate::prelude::*;
 
     #[derive(Debug, PartialEq, Clone)]
@@ -184,9 +208,12 @@ mod tests {
     #[test]
     pub fn test_game_machine() {
         let state = MyGameState(vec![1, 2, 3]);
-        let store: SingleTypeEntityStore<MyEntity> = SingleTypeEntityStore::new(&state);
+        let store: std::sync::Arc<RwLock<SingleTypeEntityStore<MyEntity>>> = InitFromGameState::init(&state);
+        
 
-        let mut machine = GameMachine::new(state, store);
+        let mut machine = GameMachine::new(state);
+        machine.add_change_watcher(store.clone());
+
         let sender = machine.sender.clone();
 
         fn assert_entities(store: &SingleTypeEntityStore<MyEntity>, expected: &str) {
@@ -206,20 +233,22 @@ mod tests {
             assert_eq!(actual, expected)
         }
 
-        assert_entities(&machine.stores, "1,2,3");
+        
+
+        assert_entities(store.read().unwrap().deref(), "1,2,3");
 
         machine.step_game(1000.0);
-        assert_entities(&machine.stores, "1,2,3");
+        assert_entities(store.read().unwrap().deref(), "1,2,3");
 
         sender.send(MyCommand(vec![2, 3, 4])).unwrap();
-        assert_entities(&machine.stores, "1,2,3");
+        assert_entities(store.read().unwrap().deref(), "1,2,3");
 
         machine.step_game(1000.0);
-        assert_entities(&machine.stores, "2,3,4");
+        assert_entities(store.read().unwrap().deref(), "2,3,4");
 
         sender.send(MyCommand(vec![4, 2, 5])).unwrap();
 
         machine.step_game(1000.0);
-        assert_entities(&machine.stores, "2,4,5");
+        assert_entities(store.read().unwrap().deref(), "2,4,5");
     }
 }

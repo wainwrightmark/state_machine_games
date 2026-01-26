@@ -5,10 +5,6 @@ use leptos::prelude::*;
 use rand::{RngCore, seq::SliceRandom};
 use rand_core::SeedableRng;
 use state_machine_games::{define_signal_lens, prelude::*};
-type Stores = (
-    ArcRwSignal<SingleTypeEntityStore<SquareButton>>,
-    ArcRwSignal<SingleTypeEntityStore<Circle>>,
-);
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
@@ -22,16 +18,21 @@ fn game_component() -> impl IntoView {
         rng: TinyRng::seed_from_u64(123),
     };
 
-    let stores: Stores = Stores::new(&state);
-    let machine = GameMachine::new(state, stores.clone());
+    let square_button: ArcRwSignal<SingleTypeEntityStore<SquareButton>> = InitFromGameState::init(&state);
+    let circles: ArcRwSignal<SingleTypeEntityStore<Circle>> = InitFromGameState::init(&state);
+
+    
+    let mut machine = GameMachine::new(state);
+    machine.add_change_watcher(square_button.clone());
+    machine.add_change_watcher(circles.clone());
     let sender = machine.command_sender().clone();
 
     machine.run_game();
 
     view! {
         <svg viewBox="0 0 800.0 800.0"  style="max-width: 800px;  margin-inline: auto; ">
-        {move || SingleTypeEntityStore::render(stores.0.clone(), (), sender.clone())}
-        {move || SingleTypeEntityStore::render(stores.1.clone(), (), ())}
+        {move || SingleTypeEntityStore::render(square_button.clone(), (), sender.clone())}
+        {move || SingleTypeEntityStore::render(circles.clone(), (), ())}
         </svg>
     }
 }
