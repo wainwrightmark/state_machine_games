@@ -2,7 +2,6 @@ use std::sync::{Arc, RwLock};
 
 use crate::prelude::*;
 use const_sized_bit_set::prelude::*;
-use impl_trait_for_tuples::impl_for_tuples;
 
 #[derive(Debug)]
 pub enum StateChangeReason<GS: GameState> {
@@ -12,7 +11,7 @@ pub enum StateChangeReason<GS: GameState> {
 }
 
 pub trait ChangeWatcher<GS: GameState>: Send + Sync + 'static {
-    //Regather entities from the state
+    //React to the state changing
     //Returns `true` if at least one entity has been added or removed
     fn on_state_change(&mut self, state: &GS, reason: &StateChangeReason<GS>) -> bool;
 

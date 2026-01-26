@@ -76,7 +76,7 @@ impl SetChosenState {
             return MutationResult::NO_CHANGE;
         }
 
-        log!("Setting chosen state");
+        //log!("Setting chosen state");
 
         game_state.chosen_state = self.0.clone();
 
@@ -112,7 +112,7 @@ impl GridInputState {
     #[named]
     pub fn handle_input_start_no_location(&mut self) {
         self.started_empty = true;
-        log!("{} {}", function_name!(), line!());
+        //log!("{} {}", function_name!(), line!());
     }
 
     #[named]
@@ -128,7 +128,7 @@ impl GridInputState {
         self.started_empty = false;
         if self.last_tile == Some(tile) {
             self.multi_click = Some(MultiClick::DeleteOnEndThenStop);
-            log!("Last Tile {:?} {:?} {} {}",self.last_tile, tile, function_name!(), line!());
+            //log!("Last Tile {:?} {:?} {} {}",self.last_tile, tile, function_name!(), line!());
             return None;
         }
 
@@ -201,10 +201,10 @@ impl GridInputState {
         self.multi_click = next_multi_click;
 
         if chosen_state != &new_chosen_state {
-            log!("{} {} {}", tile, function_name!(), line!());
+            //log!("{} {} {}", tile, function_name!(), line!());
             return Some(SetChosenState(new_chosen_state));
         } else {
-            log!("{} {} {}", tile, function_name!(), line!());
+            //log!("{} {} {}", tile, function_name!(), line!());
             return None;
         }
     }
@@ -232,7 +232,7 @@ impl GridInputState {
             changed = true;
             new_chosen = ChosenState::default();
             self.last_truncate = None;
-            log!("{} {} {}", file!(), function_name!(), line!());
+            //log!("{} {} {}", file!(), function_name!(), line!());
         }
 
         if let Some(last) = chosen_state.solution.last() {
@@ -242,7 +242,7 @@ impl GridInputState {
                 changed = true;
                 new_chosen.solution.truncate(index + 1);
                 self.last_truncate = None;
-                log!("{} {} {}", tile, function_name!(), line!());
+                //log!("{} {} {}", tile, function_name!(), line!());
             } else if last.is_adjacent_to(&tile) {
                 //element is not already present
                 if allow_tile(tile, grid, found_words) {
@@ -250,12 +250,12 @@ impl GridInputState {
                     changed = true;
                     new_chosen.solution.push(tile);
                     self.last_truncate = None;
-                    log!("{} {} {}", tile, function_name!(), line!());
+                    //log!("{} {} {}", tile, function_name!(), line!());
                 }
             }
         }
         if changed {
-            log!("{} {} {}", tile, function_name!(), line!());
+            //log!("{} {} {}", tile, function_name!(), line!());
             return Some(SetChosenState(new_chosen));
         } else {
             return None;
@@ -279,28 +279,28 @@ impl GridInputState {
                     result = Some(SetChosenState(new_chosen));
 
                     self.multi_click = None;
-                    log!("{} {}", function_name!(), line!());
+                    //log!("{} {}", function_name!(), line!());
                 }
                 Some(MultiClick::DeleteOnEndThenMaybeSwitch(tile)) => {
                     let mut new_chosen = chosen_state.clone();
                     new_chosen.solution.pop();
                     result = Some(SetChosenState(new_chosen));
                     self.multi_click = if tile == location {
-                        log!("{} {} {}", tile, function_name!(), line!());
+                        //log!("{} {} {}", tile, function_name!(), line!());
                         Some(MultiClick::SwitchOnStart(tile))
                     } else {
-                        log!("{} {} {}", tile, function_name!(), line!());
+                        //log!("{} {} {}", tile, function_name!(), line!());
                         None
                     };
                 }
                 _ => {
-                    log!("{} {}", function_name!(), line!());
+                    //log!("{} {}", function_name!(), line!());
                     self.multi_click = None;
                     result = None;
                 }
             }
         } else {
-            log!("{} {}", function_name!(), line!());
+            //log!("{} {}", function_name!(), line!());
             self.multi_click = None;
             result = None;
         }
@@ -317,9 +317,9 @@ impl GridInputState {
     ) -> Option<SetChosenState> {
         let result: Option<SetChosenState>;
         if self.started_empty && !is_level_complete && !chosen_state.solution.is_empty() {
-            log!("{} {}",  function_name!(), line!());
+            //log!("{} {}",  function_name!(), line!());
             result = Some(SetChosenState(ChosenState::default()));
-            log!("{} {}",  function_name!(), line!());
+            //log!("{} {}",  function_name!(), line!());
         } else {
             result = None;
         }

@@ -2,27 +2,45 @@ use crate::{grid_input::GridInputCommand, *};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum QuizSaladCommand {
-    //TileClicked(TileClickedCommand),
-    //SetChosen(SetChosenState),
     BoardPointerEvent(GridInputCommand),
     LozengeClicked(LozengeClickedCommand),
+    ChangeLevel {
+        puzzle: Puzzle,
+        found_words: FoundWordsState,
+    },
 }
 
 impl GameCommand<QuizSaladGameState> for QuizSaladCommand {
     fn apply_command(&self, game_state: &mut QuizSaladGameState) -> MutationResult {
         match self {
-            // QuizSaladCommand::TileClicked(tile_clicked)=>{
-            //     tile_clicked.apply_command(game_state)
-            // }
-            // QuizSaladCommand::SetChosen(set_chosen_command) => {
-            //     set_chosen_command.apply_command(game_state)
-            // }
             QuizSaladCommand::BoardPointerEvent(gic) => {
-                leptos::logging::log!("GIC: {gic:?}");
+                //leptos::logging::log!("GIC: {gic:?}");
                 gic.apply_command(game_state)
             }
             QuizSaladCommand::LozengeClicked(lozenge_clicked_command) => {
                 lozenge_clicked_command.apply_command(game_state)
+            }
+
+            QuizSaladCommand::ChangeLevel {
+                puzzle,
+                found_words,
+            } => {
+                let current_clue = found_words
+                    .word_completions
+                    .iter()
+                    .enumerate()
+                    .filter(|(_index, completion)| !completion.is_complete())
+                    .map(|x| x.0)
+                    .next().unwrap_or_default();
+
+                *game_state = QuizSaladGameState {
+                    puzzle: puzzle.clone(),
+                    current_clue,
+                    found_words: found_words.clone(),
+                    chosen_state: ChosenState::default(),
+                    input_state: GridInputState::default(),
+                };
+                MutationResult::CHANGED_NO_TRANSITION
             }
         }
     }
