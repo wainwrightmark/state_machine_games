@@ -123,8 +123,6 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
         }
     });
 
-    let now = signal(now);
-
     let tiles: ArcRwSignal<SingleTypeEntityStore<TileEntity>> = InitFromGameState::init(&state);
     let clues: ArcRwSignal<SingleTypeEntityStore<ClueEntity>> = InitFromGameState::init(&state);
     let word_line: ArcRwSignal<SingleTypeEntityStore<WordLineEntity>> =
@@ -143,6 +141,25 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     let start_time_watcher = ValueWatcher::<StartTimeLens>::init(&state);
     let start_time = start_time_watcher.value_signal;
 
+    let finish_time_watcher = ValueWatcher::<FinishTimeLens>::init(&state);
+    let finish_time = finish_time_watcher.value_signal;
+
+    let timestamp = use_timestamp();
+
+    let seconds: Memo<u32> = Memo::new(move |_| {
+        let start_time = start_time.get();
+        let finish_seconds = finish_time.get();
+        let timestamp: f64 = timestamp.get();
+
+        if let Some(finish_seconds) = finish_seconds {
+            return finish_seconds;
+        }
+
+        let seconds = (timestamp - start_time) / 1000.0;
+
+        seconds.floor().max(0.0) as u32
+    });
+
     let background_color_value = background_color.artifact.color;
 
     let mut machine = GameMachine::new(state);
@@ -154,6 +171,7 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     machine.add_change_watcher(background_color);
     machine.add_change_watcher(found_words_state_tracker);
     machine.add_change_watcher(start_time_watcher);
+    machine.add_change_watcher(finish_time_watcher);
 
     let cs2 = machine.command_sender();
     let cs3 = machine.command_sender();
@@ -222,7 +240,7 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
 
             //todo render the tile text twice with a wordline luminosity mask
 
-            {timer_component(start_time)}
+            {timer_component(seconds)}
 
             </svg>
         </div>
@@ -230,17 +248,7 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     }
 }
 
-fn timer_component(start_time: RwSignal<f64>) -> impl IntoView {
-    let timestamp = use_timestamp();
-
-    let seconds: Memo<u32> = Memo::new(move |_| {
-        let start_time = start_time.get();
-        let timestamp: f64 = timestamp.get();
-
-        let seconds = (timestamp - start_time) / 1000.0;
-        seconds.floor().max(0.0) as u32
-    });
-
+fn timer_component(seconds: Memo<u32>) -> impl IntoView {
     let time_str: Memo<String> = Memo::new(move |_| {
         let total_seconds = seconds.get();
 
@@ -256,14 +264,14 @@ fn timer_component(start_time: RwSignal<f64>) -> impl IntoView {
     });
 
     view! {
-        <text 
-        style="transform-box: content-box; transform-origin: center;" 
-        x="240" y="120" 
+        <text
+        style="transform-box: content-box; transform-origin: center;"
+        x="240" y="120"
         dominant-baseline="central"
         text-anchor="start"
-        fill="#043E40" 
-        font-size="60" 
-        font-family="Montserrat" 
+        fill="#043E40"
+        font-size="60"
+        font-family="Montserrat"
         font-weight="600"
         pointer-events="none">
             {time_str}

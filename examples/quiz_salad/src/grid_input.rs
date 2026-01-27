@@ -1,8 +1,7 @@
 use crate::chosen_state::ChosenState;
 use crate::*;
-use ws_core::Grid4x4;
 use ::function_name::named;
-
+use ws_core::Grid4x4;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum GridInputCommand {
@@ -30,7 +29,7 @@ impl GameCommand<QuizSaladGameState> for GridInputCommand {
                 *tile,
                 &game_state.puzzle.grid,
                 &game_state.found_words,
-                game_state.chosen_state. word_just_found,
+                game_state.chosen_state.word_just_found,
             ),
             GridInputCommand::End(Some(tile)) => game_state
                 .input_state
@@ -99,6 +98,16 @@ impl SetChosenState {
                 if !completion.is_complete() {
                     *completion = found_words_state::Completion::Complete { index: c_index };
                     game_state.chosen_state.word_just_found = true;
+
+                    if game_state.found_words.is_level_complete() {
+                        leptos::logging::log!("Level complete");
+                        let now = js_sys::Date::now();
+                        let finish_seconds = ((now - game_state.start_timestamp) / 1000.0)
+                            .floor()
+                            .max(0.0) as u32;
+                        game_state.finish_seconds = Some(finish_seconds);
+                    }
+
                     return MutationResult::changed_with_transition(500.0);
                 }
             }

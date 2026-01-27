@@ -61,10 +61,10 @@ impl ChangeWatcher<QuizSaladGameState> for FoundWordsStateTracker {
         if self.current_found_words != state.found_words {
             self.current_found_words = state.found_words.clone();
             let now = js_sys::Date::now();
-            let ms_used = (now - state.start_timestamp).max(0.0);
+            let elapsed_ms = (now - state.start_timestamp).max(0.0);
 
             let sls =
-                SavedLevelState::new(&self.current_puzzle, &self.current_found_words, ms_used);
+                SavedLevelState::new(&self.current_puzzle, &self.current_found_words, elapsed_ms);
             leptos::logging::log!("Send Save Level Command");
             self.sender
                 .try_send(QSDatabaseCommand::SaveLevel(sls))
@@ -171,14 +171,14 @@ impl SavedLevelState {
     pub fn new(
         level: &impl LevelTrait<4, 16>,
         found_words: &FoundWordsState,
-        ms_used: f64,
+        elapsed_ms: f64,
     ) -> Self {
         let key = get_level_key(level);
         Self {
             key,
             word_completions: found_words.word_completions.clone(),
             hints_used: found_words.hints_used,
-            elapsed_ms: ms_used,
+            elapsed_ms,
         }
     }
 

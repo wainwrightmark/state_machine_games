@@ -211,7 +211,7 @@ impl_set_lens!((L0, l0), (L1, l1), (L2, l2), (L3, l3));
 
 #[macro_export]
 macro_rules! define_lens {
-    ($L:ident, $O:ident, $V:ident, $p:ident) => {
+    ($L:ident, $O:ty, $V:ty, $p:ident) => {
         #[derive(Debug, Clone, PartialEq, Eq)]
         pub struct $L;
 
@@ -242,7 +242,7 @@ macro_rules! define_lens {
 
 #[macro_export]
 macro_rules! define_signal_lens {
-    ($L:ident, $O:ident, $V:ident, $p:ident) => {
+    ($L:ident, $O:ty, $V:ty, $p:ident) => {
         #[derive(Debug, Clone, PartialEq, Eq)]
         pub struct $L;
 
@@ -270,6 +270,7 @@ macro_rules! define_signal_lens {
         }
     };
 }
+
 
 define_lens!(Vec2XLens, Vec2, f32, x);
 define_lens!(Vec2YLens, Vec2, f32, y);

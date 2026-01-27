@@ -10,7 +10,7 @@ pub struct QuizSaladGameState {
     pub chosen_state: ChosenState,
     pub input_state: GridInputState,
     pub start_timestamp: f64,
-    pub finish_timestamp: Option<f64>,
+    pub finish_seconds: Option<u32>,
 }
 
 impl QuizSaladGameState {
@@ -24,7 +24,7 @@ impl QuizSaladGameState {
             chosen_state: Default::default(),
             input_state: Default::default(),
             start_timestamp,
-            finish_timestamp: None,
+            finish_seconds: None,
         }
     }
 
@@ -93,3 +93,4 @@ impl HasSegment<ChosenState> for QuizSaladGameState {
 
 
 define_lens!(StartTimeLens, QuizSaladGameState, f64, start_timestamp);
+define_lens!(FinishTimeLens, QuizSaladGameState, Option<u32>, finish_seconds);

@@ -1,7 +1,5 @@
-use crate::{
-    quiz_salad_command::{QuizSaladCommand, TileClickedCommand},
-    *,
-};
+use crate::*;
+use crate::*;
 
 #[derive(Debug, Clone)]
 pub struct TileArtifact {
@@ -22,7 +20,11 @@ pub struct RenderTileFill;
 
 impl LeptosGameArtifact<RenderTileFill> for TileArtifact {
     type Command = ();
-    fn render(self, _: RenderTileFill, _sender: impl CommandSender<Self::Command>) -> impl IntoView {
+    fn render(
+        self,
+        _: RenderTileFill,
+        _sender: impl CommandSender<Self::Command>,
+    ) -> impl IntoView {
         let Vec2 { x, y } = tile_position(self.tile, PositionOrigin::TopLeft);
 
         //let tile = self.tile;
@@ -41,7 +43,7 @@ impl LeptosGameArtifact<RenderTileFill> for TileArtifact {
             // on:click={move|_|{
             //     sender.send_command(QuizSaladCommand::TileClicked(TileClickedCommand(tile)));
             // }}
-        
+
             >  </rect>
 
         }
