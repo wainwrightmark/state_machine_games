@@ -7,6 +7,7 @@ pub enum QuizSaladCommand {
     ChangeLevel {
         puzzle: Puzzle,
         found_words: FoundWordsState,
+        elapsed_ms: f64
     },
 }
 
@@ -24,6 +25,7 @@ impl GameCommand<QuizSaladGameState> for QuizSaladCommand {
             QuizSaladCommand::ChangeLevel {
                 puzzle,
                 found_words,
+                elapsed_ms
             } => {
                 let current_clue = found_words
                     .word_completions
@@ -33,12 +35,16 @@ impl GameCommand<QuizSaladGameState> for QuizSaladCommand {
                     .map(|x| x.0)
                     .next().unwrap_or_default();
 
+                let start_timestamp = js_sys::Date::now() - elapsed_ms.max(0.0);
+
                 *game_state = QuizSaladGameState {
                     puzzle: puzzle.clone(),
                     current_clue,
                     found_words: found_words.clone(),
                     chosen_state: ChosenState::default(),
                     input_state: GridInputState::default(),
+                    start_timestamp,
+                    finish_timestamp: None
                 };
                 MutationResult::CHANGED_NO_TRANSITION
             }

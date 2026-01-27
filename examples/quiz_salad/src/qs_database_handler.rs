@@ -2,6 +2,7 @@ use indexed_db_futures::{Build, database::Database};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use state_machine_games::prelude::ChangeWatcher;
+use web_sys::js_sys;
 use ws_core::{BasicWordTrait, LevelTrait, TileSet32};
 
 use crate::{
@@ -59,7 +60,11 @@ impl ChangeWatcher<QuizSaladGameState> for FoundWordsStateTracker {
 
         if self.current_found_words != state.found_words {
             self.current_found_words = state.found_words.clone();
-            let sls = SavedLevelState::new(&self.current_puzzle, &self.current_found_words);
+            let now = js_sys::Date::now();
+            let ms_used = (now - state.start_timestamp).max(0.0);
+
+            let sls =
+                SavedLevelState::new(&self.current_puzzle, &self.current_found_words, ms_used);
             leptos::logging::log!("Send Save Level Command");
             self.sender
                 .try_send(QSDatabaseCommand::SaveLevel(sls))
@@ -130,9 +135,11 @@ impl DatabaseCommand for QSDatabaseCommand {
                 {
                     Some(saved_level_state) => {
                         let found_words = saved_level_state.to_found_words_state(puzzle);
+                        let elapsed_ms = saved_level_state.elapsed_ms;
                         let command = QuizSaladCommand::ChangeLevel {
                             puzzle: puzzle.clone(),
                             found_words,
+                            elapsed_ms
                         };
                         return Ok(Some(command));
                     }
@@ -157,15 +164,21 @@ pub struct SavedLevelState {
     pub key: String,
     pub word_completions: Vec<crate::Completion>,
     pub hints_used: usize,
+    pub elapsed_ms: f64,
 }
 
 impl SavedLevelState {
-    pub fn new(level: &impl LevelTrait<4, 16>, found_words: &FoundWordsState) -> Self {
+    pub fn new(
+        level: &impl LevelTrait<4, 16>,
+        found_words: &FoundWordsState,
+        ms_used: f64,
+    ) -> Self {
         let key = get_level_key(level);
         Self {
             key,
             word_completions: found_words.word_completions.clone(),
             hints_used: found_words.hints_used,
+            elapsed_ms: ms_used,
         }
     }
 

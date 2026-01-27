@@ -16,8 +16,6 @@ pub mod quiz_salad_game_state;
 pub mod svg_coordinates;
 pub mod tile;
 pub mod util;
-//pub mod word_line;
-//pub mod word_line2;
 pub mod word_line3;
 
 use std::sync::mpsc::Sender;
@@ -26,10 +24,12 @@ use animated_text::*;
 use background_color::*;
 use clue::*;
 use leptos::svg::Svg;
+use leptos_use::use_timestamp;
 use lozenge_entity::*;
 use quiz_salad_game_state::*;
 use tile::*;
 use web_sys::PointerEvent;
+use web_sys::js_sys;
 use ws_core::HasCenter;
 
 use crate::colors::CLASSIC_COLOR_SCHEME;
@@ -104,13 +104,14 @@ fn game_component_with_path() -> impl IntoView {
 
 fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     let puzzle = puzzle_memo.get_untracked();
+    let now = js_sys::Date::now();
 
-    let state = QuizSaladGameState::new(puzzle.clone());
+    let state = QuizSaladGameState::new(puzzle.clone(), now);
     let (db_command_sender, db_command_receiver) = async_channel::unbounded::<QSDatabaseCommand>();
 
     db_command_sender
-                .try_send(QSDatabaseCommand::LoadLevel(puzzle.clone()))
-                .unwrap();
+        .try_send(QSDatabaseCommand::LoadLevel(puzzle.clone()))
+        .unwrap();
 
     Effect::new({
         let db_command_sender = db_command_sender.clone();
@@ -121,6 +122,8 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
                 .unwrap();
         }
     });
+
+    let now = signal(now);
 
     let tiles: ArcRwSignal<SingleTypeEntityStore<TileEntity>> = InitFromGameState::init(&state);
     let clues: ArcRwSignal<SingleTypeEntityStore<ClueEntity>> = InitFromGameState::init(&state);
@@ -137,6 +140,9 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
         db_command_sender,
     );
 
+    let start_time_watcher = ValueWatcher::<StartTimeLens>::init(&state);
+    let start_time = start_time_watcher.value_signal;
+
     let background_color_value = background_color.artifact.color;
 
     let mut machine = GameMachine::new(state);
@@ -147,6 +153,7 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     machine.add_change_watcher(animated_text.clone());
     machine.add_change_watcher(background_color);
     machine.add_change_watcher(found_words_state_tracker);
+    machine.add_change_watcher(start_time_watcher);
 
     let cs2 = machine.command_sender();
     let cs3 = machine.command_sender();
@@ -194,19 +201,73 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
             on:pointermove=on_pointer_move
             >
 
-
+            <g id="tiles">
             {move || SingleTypeEntityStore::render(tiles.clone(),RenderTileFill, ())} // Tile
+            </g>
+            <g id="clues">
             {move || SingleTypeEntityStore::render(clues.clone(),(), ())}
+            </g>
+            <g id="word_line">
             {move || SingleTypeEntityStore::render(word_line.clone(),(), ())}
+            </g>
+            <g id="tile_text">
             {move || SingleTypeEntityStore::render(tiles2.clone(),RenderTileText, ())}
+            </g>
+            <g id="lozenges">
             {move || SingleTypeEntityStore::render(lozenges.clone(),(), cs2.clone())}
+            </g>
+            <g id="animated_text">
             {move || SingleTypeEntityStore::render(animated_text.clone(),(), ())} // Animated Text
+            </g>
 
             //todo render the tile text twice with a wordline luminosity mask
+
+            {timer_component(start_time)}
 
             </svg>
         </div>
 
+    }
+}
+
+fn timer_component(start_time: RwSignal<f64>) -> impl IntoView {
+    let timestamp = use_timestamp();
+
+    let seconds: Memo<u32> = Memo::new(move |_| {
+        let start_time = start_time.get();
+        let timestamp: f64 = timestamp.get();
+
+        let seconds = (timestamp - start_time) / 1000.0;
+        seconds.floor().max(0.0) as u32
+    });
+
+    let time_str: Memo<String> = Memo::new(move |_| {
+        let total_seconds = seconds.get();
+
+        let hours = total_seconds / 3600;
+        let minutes = (total_seconds / 60) % 60;
+        let extra_seconds = total_seconds % 60;
+
+        if hours > 0 {
+            format!("{hours:02}:{minutes:02}:{extra_seconds:02}")
+        } else {
+            format!("{minutes:02}:{extra_seconds:02}")
+        }
+    });
+
+    view! {
+        <text 
+        style="transform-box: content-box; transform-origin: center;" 
+        x="240" y="120" 
+        dominant-baseline="central"
+        text-anchor="start"
+        fill="#043E40" 
+        font-size="60" 
+        font-family="Montserrat" 
+        font-weight="600"
+        pointer-events="none">
+            {time_str}
+        </text>
     }
 }
 

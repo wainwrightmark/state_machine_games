@@ -1,3 +1,5 @@
+use state_machine_games::define_lens;
+
 use crate::{quiz_salad_command::QuizSaladCommand, *};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -5,26 +7,31 @@ pub struct QuizSaladGameState {
     pub puzzle: Puzzle,
     pub current_clue: usize,
     pub found_words: FoundWordsState,
-    pub chosen_state: ChosenState,    
+    pub chosen_state: ChosenState,
     pub input_state: GridInputState,
+    pub start_timestamp: f64,
+    pub finish_timestamp: Option<f64>,
 }
 
 impl QuizSaladGameState {
-    pub fn new(puzzle: Puzzle) -> Self {
+    pub fn new(puzzle: Puzzle, start_timestamp: f64) -> Self {
         let found_words = FoundWordsState::new_from_level(&puzzle);
 
         Self {
             current_clue: Default::default(),
             puzzle,
             found_words,
-            chosen_state: Default::default(),            
-            input_state: Default::default()
+            chosen_state: Default::default(),
+            input_state: Default::default(),
+            start_timestamp,
+            finish_timestamp: None,
         }
     }
 
-    pub fn is_close_to_solution(&self)-> bool{
-        self.chosen_state.is_close_to_a_solution(&self.puzzle, &self.found_words)
-    }   
+    pub fn is_close_to_solution(&self) -> bool {
+        self.chosen_state
+            .is_close_to_a_solution(&self.puzzle, &self.found_words)
+    }
 }
 
 impl GameState for QuizSaladGameState {
@@ -74,7 +81,7 @@ impl HasSegment<FoundWordsState> for QuizSaladGameState {
     }
 }
 
-impl HasSegment<ChosenState> for QuizSaladGameState{
+impl HasSegment<ChosenState> for QuizSaladGameState {
     fn get_segment(&self) -> ChosenState {
         self.chosen_state.clone()
     }
@@ -83,3 +90,6 @@ impl HasSegment<ChosenState> for QuizSaladGameState{
         self.chosen_state.eq(s)
     }
 }
+
+
+define_lens!(StartTimeLens, QuizSaladGameState, f64, start_timestamp);

@@ -1,8 +1,8 @@
 - [x] leptos routing - custom level
-- [ ] save state - state change watcher
-- [ ] Better system for effects (e.g. animated words)
-- [ ] Better touch controls
-- [ ] Better word line
+- [x] save state - state change watcher
+- [x] Better system for effects (e.g. animated words)
+- [x] Better touch controls
+- [x] Better word line
 - [ ] Implement phases - end screen
 - [ ] Timer
 - [x] Background color
