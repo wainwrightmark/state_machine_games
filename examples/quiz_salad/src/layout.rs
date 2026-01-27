@@ -20,7 +20,6 @@ pub const LOZENGE_RADIUS: f32 = 30.0;
 pub const CLUE_FONT_SIZE: f32 = 40.0;
 pub const FONT_FAMILY: &'static str = "Montserrat";
 
-
 pub const TILE_LETTER_FONT_SIZE: f32 = 80.0;
 pub const PATH_STROKE_WIDTH: f32 = 96.0;
 
@@ -41,6 +40,35 @@ pub const fn tile_position(tile: Tile4x4, origin: PositionOrigin) -> Vec2 {
         LEFT_OFFSET + layout_util::Spacing::SpaceBetween.apply(BOARD_SIZE, TILE_SIZE, 4.0, x);
     let mut y =
         TOP_OFFSET + layout_util::Spacing::SpaceBetween.apply(BOARD_SIZE, TILE_SIZE, 4.0, y);
+
+    if matches!(origin, PositionOrigin::Center) {
+        x = x + (TILE_SIZE * 0.5);
+        y = y + (TILE_SIZE * 0.5);
+    }
+
+    Vec2 { x, y }
+}
+
+pub const fn postgame_tile_position(
+    index: usize,
+    word_length: usize,
+    origin: PositionOrigin,
+) -> Vec2 {
+    // let scale = if word_length > 4 {
+    //     word_length as f32
+    // } else {
+    //     4.0
+    // } / 4.0;
+
+    let mut x = LEFT_OFFSET
+        + layout_util::Spacing::SpaceBetween.apply(
+            BOARD_SIZE,
+            TILE_SIZE,
+            word_length as f32,
+            index as f32,
+        );
+
+    let mut y = TOP_OFFSET + (BOARD_SIZE * 0.5);
 
     if matches!(origin, PositionOrigin::Center) {
         x = x + (TILE_SIZE * 0.5);

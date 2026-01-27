@@ -46,7 +46,7 @@ impl GameEntity for AnimatedTextEntity {
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        let position = tile_position(self.tile, PositionOrigin::Center);
+        let position = tile_position(self.tile, PositionOrigin::Center); //todo offset
 
         let artifact = Self::Artifact {
             text: self.text,
@@ -80,8 +80,8 @@ impl GameEntity for AnimatedTextEntity {
 
     fn on_update(
         &self,
-        artifact: &mut Self::Artifact,
-        former_entity_state: EntityState,
+        _artifact: &mut Self::Artifact,
+        _former_entity_state: EntityState,
         previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         previous_animations

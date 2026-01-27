@@ -1,19 +1,20 @@
-use crate::*;
+use ws_core::WordTrait;
+
 use crate::*;
 
 #[derive(Debug, Clone)]
 pub struct TileArtifact {
-    pub tile: Tile4x4,
+    pub position: RwSignal<Vec2>,
     pub character: Character,
     pub text_fill: RwSignal<Srgba>,
-    //pub selected: RwSignal<bool>,
     pub scale: RwSignal<f32>,
 }
 
 impl GameArtifact for TileArtifact {}
 
-define_signal_lens!(TileTextArtifactScaleLens, TileArtifact, f32, scale);
-define_signal_lens!(TileTextArtifactFillLens, TileArtifact, Srgba, text_fill);
+define_signal_lens!(TileArtifactScaleLens, TileArtifact, f32, scale);
+define_signal_lens!(TileArtifactFillLens, TileArtifact, Srgba, text_fill);
+define_signal_lens!(TileArtifactPositionLens, TileArtifact, Vec2, position);
 
 #[derive(Clone)]
 pub struct RenderTileFill;
@@ -25,9 +26,8 @@ impl LeptosGameArtifact<RenderTileFill> for TileArtifact {
         _: RenderTileFill,
         _sender: impl CommandSender<Self::Command>,
     ) -> impl IntoView {
-        let Vec2 { x, y } = tile_position(self.tile, PositionOrigin::TopLeft);
-
-        //let tile = self.tile;
+        let x = move || self.position.get().x;
+        let y = move || self.position.get().y;
 
         view! {
             <rect
@@ -40,9 +40,6 @@ impl LeptosGameArtifact<RenderTileFill> for TileArtifact {
             fill={colors::CLASSIC_COLOR_SCHEME.tile.to_hex()}
             transform={move || format!("scale({})", self.scale.get())}
             style="transform-box: content-box; transform-origin: center center;"
-            // on:click={move|_|{
-            //     sender.send_command(QuizSaladCommand::TileClicked(TileClickedCommand(tile)));
-            // }}
 
             >  </rect>
 
@@ -60,7 +57,8 @@ impl LeptosGameArtifact<RenderTileText> for TileArtifact {
         _: RenderTileText,
         _sender: impl CommandSender<Self::Command>,
     ) -> impl IntoView {
-        let Vec2 { x, y } = tile_position(self.tile, PositionOrigin::Center);
+        let x = move || self.position.get().x + (TILE_SIZE * 0.5);
+        let y = move || self.position.get().y + (TILE_SIZE * 0.5);
 
         let style = move || format!("transform-box: content-box; transform-origin: center;",);
         let fill = move || self.text_fill.get().to_hex();
@@ -84,11 +82,44 @@ impl LeptosGameArtifact<RenderTileText> for TileArtifact {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum TileType {
+    Playing(Tile4x4),
+    Unneeded { base_tile: Tile4x4 },
+    PostGame { index: usize, word_length: usize },
+    PostGameUnneeded { base_tile: Tile4x4 },
+}
+impl TileType {
+    pub fn position(&self, origin: PositionOrigin) -> Vec2 {
+        match self {
+            TileType::Playing(tile) | TileType::Unneeded { base_tile: tile } | TileType::PostGameUnneeded { base_tile: tile } => {
+                tile_position(*tile, origin)
+            }
+
+            TileType::PostGame { index, word_length } => {
+                postgame_tile_position(*index, *word_length, origin)
+            }
+        }
+    }
+
+    pub fn scale(&self) -> f32 {
+        match self {
+            TileType::Playing(_) => 1.0,
+            TileType::Unneeded { base_tile: _ } => 0.0,
+            TileType::PostGameUnneeded { base_tile: _ } => 0.0,
+            TileType::PostGame {
+                index: _,
+                word_length,
+            } => 4.0 / ((*word_length).max(4usize) as f32) ,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct TileEntity {
-    tile: Tile4x4,
+    base_tile: Tile4x4,
+    tile_type: TileType,
     character: Character,
     selected: bool,
-    unneeded: bool,
 }
 
 impl TileEntity {
@@ -108,32 +139,61 @@ impl GameEntity for TileEntity {
     type StateSegment = QuizSaladGameState;
 
     fn key(&self) -> Self::Key {
-        self.tile.inner()
+        self.base_tile.inner()
     }
 
     fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
         let solution = game_state.chosen_state.solution.clone();
-        let unneeded_tiles = game_state.found_words.unneeded_tiles;
+
+        let postgame_solution = if game_state.finish_seconds.is_some() {
+            game_state
+                .puzzle
+                .words
+                .get(game_state.current_clue)
+                .and_then(|x| x.find_solution(game_state.puzzle.grid))
+                .unwrap_or_default()
+        } else {
+            ArrayVec::new()
+        };
+
+        //game_state.chosen_state.solution.clone();
+
+        //let unneeded_tiles = game_state.found_words.unneeded_tiles;
         game_state
             .puzzle
             .grid
             .enumerate()
             .map(move |(tile, &character)| {
+                let tile_type = if game_state.finish_seconds.is_some() {
+                    if let Some(index) = postgame_solution.iter().position(|x| x.eq(&tile)) {
+                        TileType::PostGame {
+                            index,
+                            word_length: postgame_solution.len(),
+                        }
+                    } else {
+                        TileType::PostGameUnneeded  { base_tile: tile }
+                    }
+                } else if game_state.found_words.unneeded_tiles.get_bit(&tile) {
+                    TileType::Unneeded { base_tile: tile }
+                } else {
+                    TileType::Playing(tile)
+                };
+
                 let selected = solution.contains(&tile);
                 Self {
-                    tile,
+                    base_tile: tile,
+                    tile_type,
                     character,
                     selected,
-                    unneeded: unneeded_tiles.get_bit(&tile),
                 }
             })
     }
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         Self::Artifact {
-            tile: self.tile,
+            position: RwSignal::new(self.tile_type.position(PositionOrigin::TopLeft)),
             character: self.character,
-            scale: RwSignal::new(if self.unneeded { 0.0 } else { 1.0 }),
+            scale: RwSignal::new(self.tile_type.scale()),
             text_fill: RwSignal::new(self.fill()),
         }
         .with_animations([])
@@ -145,13 +205,16 @@ impl GameEntity for TileEntity {
         _former_entity_state: EntityState,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
+
+        
+
         artifact.update_animations([
-            animate_towards::<TileTextArtifactScaleLens>(
-                if self.unneeded { 0.0 } else { 1.0 },
-                1.0 / 1000.0,
-            )
-            .to_stage(),
-            animate_towards::<TileTextArtifactFillLens>(self.fill(), 1.0 / 1000.0).to_stage(),
+            animate_towards::<TileArtifactScaleLens>(self.tile_type.scale(), 1.0 / 1000.0)
+                .to_stage(),
+            animate_towards::<TileArtifactFillLens>(self.fill(), 1.0 / 1000.0).to_stage(),
+
+
+            animate_towards::<TileArtifactPositionLens>(self.tile_type.position(PositionOrigin::TopLeft), 1000.0 / 1000.0).to_stage(),
         ])
     }
 }
