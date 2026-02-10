@@ -13,10 +13,10 @@ pub mod puzzle;
 pub mod qs_database_handler;
 pub mod quiz_salad_command;
 pub mod quiz_salad_game_state;
-pub mod svg_coordinates;
 pub mod tile;
 pub mod util;
 pub mod word_line3;
+pub mod menu;
 
 use std::sync::mpsc::Sender;
 
@@ -323,7 +323,7 @@ fn on_pointer_down(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<Qui
     let Some(element) = node_ref.get() else {
         return;
     };
-    let click_position = crate::svg_coordinates::get_svg_coordinates(
+    let click_position = state_machine_games::svg_coordinates::get_svg_coordinates(
         ev,
         element,
         Vec2 { x: 0.0, y: 0.0 },
@@ -348,7 +348,7 @@ fn on_pointer_up(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<QuizS
     let Some(element) = node_ref.get() else {
         return;
     };
-    let click_position = crate::svg_coordinates::get_svg_coordinates(
+    let click_position = state_machine_games::svg_coordinates::get_svg_coordinates(
         ev,
         element,
         Vec2 { x: 0.0, y: 0.0 },
@@ -377,7 +377,7 @@ fn on_pointer_move(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<Qui
     let Some(element) = node_ref.get() else {
         return;
     };
-    let click_position = crate::svg_coordinates::get_svg_coordinates(
+    let click_position = state_machine_games::svg_coordinates::get_svg_coordinates(
         ev,
         element,
         Vec2 { x: 0.0, y: 0.0 },
