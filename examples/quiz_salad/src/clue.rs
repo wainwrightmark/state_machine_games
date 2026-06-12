@@ -6,10 +6,10 @@ pub struct ClueArtifact {
 }
 
 impl GameArtifact for ClueArtifact {}
-impl LeptosGameArtifact for ClueArtifact {
-    type Command = ();
-    fn render(self, _: (), _sender: impl CommandSender<Self::Command>) -> impl IntoView {
-        move || match util::split_two_line_ustr(self.text.get(), 30) {
+impl LeptosRender for ClueArtifact {
+    type Artifact = Self;
+    fn render(artifact: Self::Artifact) -> impl IntoView {
+        move || match util::split_two_line_ustr(artifact.text.get(), 30) {
             itertools::Either::Left(a) => leptos::either::Either::Left(view! {
                 <text x=320 y=950
                 font-size={CLUE_FONT_SIZE}
@@ -53,13 +53,13 @@ pub struct ClueEntity {
 impl GameEntity for ClueEntity {
     type Artifact = ClueArtifact;
     type Key = ();
-    type StateSegment = QuizSaladGameState;
+    type Segment = QuizSaladGameState;
 
     fn key(&self) -> Self::Key {
         ()
     }
 
-    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::Segment) -> impl Iterator<Item = Self> {
         let text = game_state
             .puzzle
             .words
@@ -80,7 +80,7 @@ impl GameEntity for ClueEntity {
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        former_entity_state: EntityState,
+        former_entity_state: EntityLifecycle,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         artifact.text.set(self.text);

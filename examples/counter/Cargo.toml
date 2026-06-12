@@ -6,17 +6,19 @@ edition = "2024"
 
 
 [dependencies]
-state_machine_games = {path = "../../state_machine_games", features = ["leptos"]}
-console_error_panic_hook = {workspace=true}
-wasm-logger = {workspace=true}
-leptos = { workspace=true, features = ["csr"] }
-glam = {workspace=true}
+state_machine_games = {path = "../../state_machine_games"}
+console_error_panic_hook = "0.1.7"
+wasm-logger = "0.2.0"
+leptos = { version = "0.8.12", features = ["csr"] }
+glam = {version = "0.32"}
 tiny_graph = {git = "https://github.com/wainwrightmark/tiny_graph"}
-rand_core = {workspace=true}
-rand = {workspace=true}
+rand_core = "0.10"
+rand = "0.10"
+leptos-use = "0.18.3"
+serde = { version = "1.0.228", features = ["derive"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom = { version = "0.4", features = ["wasm_js"] }
 
 [dev-dependencies]
 insta   = "1.43"

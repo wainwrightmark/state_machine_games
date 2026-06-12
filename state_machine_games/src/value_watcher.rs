@@ -1,58 +1,19 @@
-use std::marker::PhantomData;
+use leptos::prelude::Read;
+use leptos::prelude::Memo;
+use leptos::prelude::guards::Plain;
+use leptos::prelude::guards::ReadGuard;
 
-use leptos::prelude::{RwSignal, Update};
+use crate::prelude::GetValueLens;
 
-use crate::{
-    lens::GetValueLens,
-    prelude::{ChangeWatcher, GameState, InitFromGameState},
-};
-
-#[derive(Debug)]
-pub struct ValueWatcher<L: GetValueLens>
+pub fn watch_value<L: GetValueLens>(
+    signal: impl Read<Value = ReadGuard<L::Object, Plain<L::Object>>> + Send + Sync + 'static,
+) -> Memo<L::Value>
 where
-    L::Object: GameState,
-    L::Value: Send + Sync + 'static,
-{
-    pub value_signal: RwSignal<L::Value>,
-    phantom: PhantomData<L>,
-}
-
-impl<L: GetValueLens> InitFromGameState<L::Object> for ValueWatcher<L>
-where
-    L::Object: GameState,
+    L::Object: Send + Sync + 'static,
     L::Value: PartialEq + Send + Sync + 'static,
 {
-    fn init(state: &L::Object) -> Self {
-        let value_signal = RwSignal::new(L::get_value(state));
-        Self {
-            value_signal,
-            phantom: PhantomData,
-        }
-    }
-}
-
-impl<L: GetValueLens> ChangeWatcher<L::Object> for ValueWatcher<L>
-where
-    L::Object: GameState,
-    L::Value: PartialEq + Send + Sync + 'static,
-{
-    fn on_state_change(
-        &mut self,
-        state: &L::Object,
-        _reason: &crate::prelude::StateChangeReason<L::Object>,
-    ) -> bool {
-        self.value_signal
-            .try_update(|v| {
-                let new_v: L::Value = L::get_value(state);
-                if new_v.eq(v) {
-                    false
-                } else {
-                    *v = new_v;
-                    true
-                }
-            })
-            .unwrap_or_default()
-    }
-
-    fn step_animations(&mut self, _delta_ms: f64) {}
+    Memo::new(move |_| {
+        let guard = signal.read();
+        L::get_value(&guard)
+    })
 }

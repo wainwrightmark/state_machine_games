@@ -1,6 +1,6 @@
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-pub enum EntityState {
+pub enum EntityLifecycle {
     Alive,
     Dead,
 }

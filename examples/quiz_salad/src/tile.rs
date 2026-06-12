@@ -16,18 +16,14 @@ define_signal_lens!(TileArtifactScaleLens, TileArtifact, f32, scale);
 define_signal_lens!(TileArtifactFillLens, TileArtifact, Srgba, text_fill);
 define_signal_lens!(TileArtifactPositionLens, TileArtifact, Vec2, position);
 
-#[derive(Clone)]
-pub struct RenderTileFill;
+pub struct TileRender;
 
-impl LeptosGameArtifact<RenderTileFill> for TileArtifact {
-    type Command = ();
-    fn render(
-        self,
-        _: RenderTileFill,
-        _sender: impl CommandSender<Self::Command>,
-    ) -> impl IntoView {
-        let x = move || self.position.get().x;
-        let y = move || self.position.get().y;
+impl LeptosRender for TileRender {
+    type Artifact = TileArtifact;
+
+    fn render(artifact: Self::Artifact) -> impl IntoView + 'static {
+        let x = move || artifact.position.get().x;
+        let y = move || artifact.position.get().y;
 
         view! {
             <rect
@@ -38,7 +34,7 @@ impl LeptosGameArtifact<RenderTileFill> for TileArtifact {
             rx={TILE_RADIUS}
             ry={TILE_RADIUS}
             fill={colors::CLASSIC_COLOR_SCHEME.tile.to_hex()}
-            transform={move || format!("scale({})", self.scale.get())}
+            transform={move || format!("scale({})", artifact.scale.get())}
             style="transform-box: content-box; transform-origin: center center;"
 
             >  </rect>
@@ -47,21 +43,16 @@ impl LeptosGameArtifact<RenderTileFill> for TileArtifact {
     }
 }
 
-#[derive(Clone)]
-pub struct RenderTileText;
+pub struct TileTextRender;
 
-impl LeptosGameArtifact<RenderTileText> for TileArtifact {
-    type Command = ();
-    fn render(
-        self,
-        _: RenderTileText,
-        _sender: impl CommandSender<Self::Command>,
-    ) -> impl IntoView {
-        let x = move || self.position.get().x + (TILE_SIZE * 0.5);
-        let y = move || self.position.get().y + (TILE_SIZE * 0.5);
+impl LeptosRender for TileTextRender {
+    type Artifact = TileArtifact;
+    fn render(artifact: Self::Artifact) -> impl IntoView {
+        let x = move || artifact.position.get().x + (TILE_SIZE * 0.5);
+        let y = move || artifact.position.get().y + (TILE_SIZE * 0.5);
 
         let style = move || format!("transform-box: content-box; transform-origin: center;",);
-        let fill = move || self.text_fill.get().to_hex();
+        let fill = move || artifact.text_fill.get().to_hex();
 
         view! {
             <text x={x} y={y}
@@ -72,9 +63,9 @@ impl LeptosGameArtifact<RenderTileText> for TileArtifact {
             font-size={TILE_LETTER_FONT_SIZE}
             font-family={FONT_FAMILY}
             font-weight={600}
-            transform={move ||format!("scale({})", self.scale.get())}
+            transform={move ||format!("scale({})", artifact.scale.get())}
             pointer-events="none">
-                {self.character.as_char()}
+                {artifact.character.as_char()}
             </text>
 
         }
@@ -91,9 +82,9 @@ pub enum TileType {
 impl TileType {
     pub fn position(&self, origin: PositionOrigin) -> Vec2 {
         match self {
-            TileType::Playing(tile) | TileType::Unneeded { base_tile: tile } | TileType::PostGameUnneeded { base_tile: tile } => {
-                tile_position(*tile, origin)
-            }
+            TileType::Playing(tile)
+            | TileType::Unneeded { base_tile: tile }
+            | TileType::PostGameUnneeded { base_tile: tile } => tile_position(*tile, origin),
 
             TileType::PostGame { index, word_length } => {
                 postgame_tile_position(*index, *word_length, origin)
@@ -109,7 +100,7 @@ impl TileType {
             TileType::PostGame {
                 index: _,
                 word_length,
-            } => 4.0 / ((*word_length).max(4usize) as f32) ,
+            } => 4.0 / ((*word_length).max(4usize) as f32),
         }
     }
 }
@@ -136,13 +127,13 @@ impl GameEntity for TileEntity {
     type Artifact = TileArtifact;
     type Key = u8;
 
-    type StateSegment = QuizSaladGameState;
+    type Segment = QuizSaladGameState;
 
     fn key(&self) -> Self::Key {
         self.base_tile.inner()
     }
 
-    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::Segment) -> impl Iterator<Item = Self> {
         let solution = game_state.chosen_state.solution.clone();
 
         let postgame_solution = if game_state.finish_seconds.is_some() {
@@ -171,7 +162,7 @@ impl GameEntity for TileEntity {
                             word_length: postgame_solution.len(),
                         }
                     } else {
-                        TileType::PostGameUnneeded  { base_tile: tile }
+                        TileType::PostGameUnneeded { base_tile: tile }
                     }
                 } else if game_state.found_words.unneeded_tiles.get_bit(&tile) {
                     TileType::Unneeded { base_tile: tile }
@@ -202,19 +193,18 @@ impl GameEntity for TileEntity {
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        _former_entity_state: EntityState,
+        _former_entity_state: EntityLifecycle,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
-
-        
-
         artifact.update_animations([
             animate_towards::<TileArtifactScaleLens>(self.tile_type.scale(), 1.0 / 1000.0)
                 .to_stage(),
             animate_towards::<TileArtifactFillLens>(self.fill(), 1.0 / 1000.0).to_stage(),
-
-
-            animate_towards::<TileArtifactPositionLens>(self.tile_type.position(PositionOrigin::TopLeft), 1000.0 / 1000.0).to_stage(),
+            animate_towards::<TileArtifactPositionLens>(
+                self.tile_type.position(PositionOrigin::TopLeft),
+                1000.0 / 1000.0,
+            )
+            .to_stage(),
         ])
     }
 }

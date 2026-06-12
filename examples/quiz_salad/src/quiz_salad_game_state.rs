@@ -1,6 +1,6 @@
 use state_machine_games::define_lens;
 
-use crate::{quiz_salad_command::QuizSaladCommand, *};
+use crate::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct QuizSaladGameState {
@@ -35,8 +35,6 @@ impl QuizSaladGameState {
 }
 
 impl GameState for QuizSaladGameState {
-    type Command = QuizSaladCommand;
-
     fn maybe_transition(&mut self) -> MutationResult {
         if self.chosen_state.word_just_found {
             self.chosen_state.solution = ArrayVec::new();
@@ -71,26 +69,21 @@ impl GameState for QuizSaladGameState {
     }
 }
 
-impl HasSegment<FoundWordsState> for QuizSaladGameState {
-    fn get_segment(&self) -> FoundWordsState {
-        self.found_words.clone()
-    }
-
-    fn segment_eq(&self, s: &FoundWordsState) -> bool {
-        self.found_words.eq(s)
-    }
-}
-
-impl HasSegment<ChosenState> for QuizSaladGameState {
-    fn get_segment(&self) -> ChosenState {
-        self.chosen_state.clone()
-    }
-
-    fn segment_eq(&self, s: &ChosenState) -> bool {
-        self.chosen_state.eq(s)
-    }
-}
-
 
 define_lens!(StartTimeLens, QuizSaladGameState, f64, start_timestamp);
-define_lens!(FinishTimeLens, QuizSaladGameState, Option<u32>, finish_seconds);
+define_lens!(
+    FinishTimeLens,
+    QuizSaladGameState,
+    Option<u32>,
+    finish_seconds
+);
+
+impl QuizSaladGameState {
+    pub fn background_target_color(&self) -> Srgba {
+        if self.found_words.is_level_complete() {
+            CLASSIC_COLOR_SCHEME.background_complete
+        } else {
+            CLASSIC_COLOR_SCHEME.background_incomplete
+        }
+    }
+}

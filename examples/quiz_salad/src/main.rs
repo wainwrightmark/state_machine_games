@@ -23,10 +23,12 @@ use std::sync::mpsc::Sender;
 use animated_text::*;
 use background_color::*;
 use clue::*;
+use leptos::reactive::spawn_local;
 use leptos::svg::Svg;
 use leptos_use::use_timestamp;
 use lozenge_entity::*;
 use quiz_salad_game_state::*;
+use state_machine_games::value_watcher::watch_value;
 use tile::*;
 use web_sys::PointerEvent;
 use web_sys::js_sys;
@@ -37,8 +39,9 @@ use crate::found_words_state::Completion;
 use crate::grid_input::GridInputCommand;
 use crate::grid_input::GridInputState;
 use crate::layout::*;
-use crate::qs_database_handler::FoundWordsStateTracker;
 use crate::qs_database_handler::QSDatabaseCommand;
+use crate::qs_database_handler::SavedLevelState;
+use crate::qs_database_handler::handle_db_messages;
 use crate::quiz_salad_command::QuizSaladCommand;
 use crate::word_line3::*;
 use bevy_color::Srgba;
@@ -106,12 +109,16 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
     let puzzle = puzzle_memo.get_untracked();
     let now = js_sys::Date::now();
 
+    //todo load found words from db
+
     let state = QuizSaladGameState::new(puzzle.clone(), now);
+
+    let state_signal = RwSignal::new(state);
     let (db_command_sender, db_command_receiver) = async_channel::unbounded::<QSDatabaseCommand>();
 
-    db_command_sender
-        .try_send(QSDatabaseCommand::LoadLevel(puzzle.clone()))
-        .unwrap();
+    let sender: Sender<Box<dyn GameCommand<QuizSaladGameState> + 'static>> = run_game(state_signal);
+
+    //todo track found words
 
     Effect::new({
         let db_command_sender = db_command_sender.clone();
@@ -123,26 +130,65 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
         }
     });
 
-    let tiles: ArcRwSignal<SingleTypeEntityStore<TileEntity>> = InitFromGameState::init(&state);
-    let clues: ArcRwSignal<SingleTypeEntityStore<ClueEntity>> = InitFromGameState::init(&state);
-    let word_line: ArcRwSignal<SingleTypeEntityStore<WordLineEntity>> =
-        InitFromGameState::init(&state);
-    let lozenges: ArcRwSignal<SingleTypeEntityStore<LozengeEntity>> =
-        InitFromGameState::init(&state);
-    let animated_text: ArcRwSignal<SingleTypeEntityStore<AnimatedTextEntity>> =
-        InitFromGameState::init(&state);
-    let background_color: ResourceStore<BackgroundColor> = InitFromGameState::init(&state);
-    let found_words_state_tracker = FoundWordsStateTracker::new(
-        puzzle.clone(),
-        FoundWordsState::new_from_level(&puzzle),
-        db_command_sender,
+    {
+        let sender = sender.clone();
+        spawn_local(async move {
+            handle_db_messages(sender, db_command_receiver).await;
+        });
+    }
+
+    let current_puzzle_and_found_words = RwSignal::new((
+        puzzle_memo.get_untracked(),
+        state_signal.get_untracked().found_words,
+    ));
+
+    {
+        let db_command_sender = db_command_sender.clone();
+        Effect::new(move || {
+            let state = state_signal.read();
+            let (current_puzzle, current_found_words) =
+                current_puzzle_and_found_words.get_untracked();
+            if state.puzzle != current_puzzle {
+                current_puzzle_and_found_words
+                    .set((state.puzzle.clone(), state.found_words.clone()));
+            }
+            if state.found_words != current_found_words {
+                current_puzzle_and_found_words
+                    .set((state.puzzle.clone(), state.found_words.clone()));
+
+                let elapsed = js_sys::Date::now() - state.start_timestamp;
+                let state = SavedLevelState::new(&state.puzzle, &state.found_words, elapsed);
+                let db_command_sender = db_command_sender.clone();
+
+                spawn_local(async move {
+                    db_command_sender
+                        .send(QSDatabaseCommand::SaveLevel(state))
+                        .await
+                        .expect("Could not send save level command");
+                });
+            }
+        });
+    }
+
+    let word_line_segment: Memo<WordLineStateSegment> =
+        Memo::new(move |_| WordLineStateSegment::from(&*state_signal.read()));
+
+    let tiles = TileEntity::render_entities::<TileRender>(state_signal.into());
+    let tile_texts = TileEntity::render_entities::<TileTextRender>(state_signal.into());
+    let clues = ClueEntity::render_entities::<ClueArtifact>(state_signal.into());
+    let word_line = WordLineEntity::render_singleton::<WordLineArtifact>(word_line_segment.into());
+
+    let lozenges = LozengeEntity::render_entities::<LozengeArtifact>(state_signal.into());
+    let animated_text =
+        AnimatedTextEntity::render_entities::<AnimatedTextArtifact>(state_signal.into());
+
+    let background_color = BackgroundColor::track_singleton(
+        Memo::new(move |_| (&*state_signal.read()).background_target_color()).into(),
     );
+    let background_color = background_color.read_untracked().artifact.color;
 
-    let start_time_watcher = ValueWatcher::<StartTimeLens>::init(&state);
-    let start_time = start_time_watcher.value_signal;
-
-    let finish_time_watcher = ValueWatcher::<FinishTimeLens>::init(&state);
-    let finish_time = finish_time_watcher.value_signal;
+    let start_time = watch_value::<StartTimeLens>(state_signal);
+    let finish_time = watch_value::<FinishTimeLens>(state_signal);
 
     let timestamp = use_timestamp();
 
@@ -160,58 +206,56 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
         seconds.floor().max(0.0) as u32
     });
 
-    let background_color_value = background_color.artifact.color;
-
-    let mut machine = GameMachine::new(state);
-    machine.add_change_watcher(tiles.clone());
-    machine.add_change_watcher(clues.clone());
-    machine.add_change_watcher(word_line.clone());
-    machine.add_change_watcher(lozenges.clone());
-    machine.add_change_watcher(animated_text.clone());
-    machine.add_change_watcher(background_color);
-    machine.add_change_watcher(found_words_state_tracker);
-    machine.add_change_watcher(start_time_watcher);
-    machine.add_change_watcher(finish_time_watcher);
-
-    let cs2 = machine.command_sender();
-    let cs3 = machine.command_sender();
-    let cs4 = machine.command_sender();
-    let cs5 = machine.command_sender();
-    let cs6 = machine.command_sender();
-
-    machine.run_game();
-
     let svg_style = "max-width: 100%; max-height: 100%; user-select:none; position:fixed; margin:auto; inset: 0px;";
 
     let div_style = move || {
         format!(
             "height: 100vh; width: 100vw; overflow: hidden; background: {}",
-            background_color_value.get().to_hex()
+            background_color.get().to_hex()
         )
     };
 
     let node_ref = NodeRef::<Svg>::new();
 
-    let on_pointer_down = move |ev: PointerEvent| {
-        on_pointer_down(ev, node_ref, &cs3);
+    let on_pointer_down = {
+        let sender = sender.clone();
+        move |ev: PointerEvent| {
+            on_pointer_down(ev, node_ref, &sender);
+        }
     };
 
-    let on_pointer_up = move |ev: PointerEvent| {
-        on_pointer_up(ev, node_ref, &cs4);
+    let on_pointer_up = {
+        let sender = sender.clone();
+        move |ev: PointerEvent| {
+            on_pointer_up(ev, node_ref, &sender);
+        }
     };
 
-    let on_pointer_move = move |ev: PointerEvent| {
-        on_pointer_move(ev, node_ref, &cs5);
+    let on_pointer_move = {
+        let sender = sender.clone();
+        move |ev: PointerEvent| {
+            on_pointer_move(ev, node_ref, &sender);
+        }
     };
 
-    leptos::task::spawn_local(qs_database_handler::handle_db_messages(
-        cs6,
-        db_command_receiver,
-    ));
-
-    let tiles2 = tiles.clone();
+    // leptos::task::spawn_local(qs_database_handler::handle_db_messages(
+    //     sender.clone(),
+    //     db_command_receiver,
+    // ));
+    let sender1 = sender.clone();
+    provide_context(sender);
 
     view! {
+        <button style="position:fixed;" on:click=move|_|{
+            match sender1.send(Box::new(QuizSaladCommand::ResetLevel)) {
+                Ok(()) => {}
+                Err(_err) => {
+                    leptos::logging::error!("Could not send command");
+                }
+            }
+        }>
+            Reset
+        </button>
         <div style=div_style>
             <svg node_ref=node_ref viewBox=format!("0 0 {GAME_WIDTH} {GAME_HEIGHT}") style={svg_style}
             on:pointerdown=on_pointer_down
@@ -220,25 +264,25 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
             >
 
             <g id="tiles">
-            {move || SingleTypeEntityStore::render(tiles.clone(),RenderTileFill, ())} // Tile
+            {tiles}
             </g>
             <g id="clues">
-            {move || SingleTypeEntityStore::render(clues.clone(),(), ())}
+            {clues}
             </g>
             <g id="word_line">
-            {move || SingleTypeEntityStore::render(word_line.clone(),(), ())}
+                {word_line}
             </g>
             <g id="tile_text">
-            {move || SingleTypeEntityStore::render(tiles2.clone(),RenderTileText, ())}
+                {tile_texts}
             </g>
             <g id="lozenges">
-            {move || SingleTypeEntityStore::render(lozenges.clone(),(), cs2.clone())}
+            {lozenges}
             </g>
             <g id="animated_text">
-            {move || SingleTypeEntityStore::render(animated_text.clone(),(), ())} // Animated Text
+            {animated_text}
             </g>
 
-            //todo render the tile text twice with a wordline luminosity mask
+            // //todo render the tile text twice with a wordline luminosity mask
 
             {timer_component(seconds)}
 
@@ -296,14 +340,13 @@ fn get_tile_from_position(position: Vec2, sensitivity: f32) -> Option<Tile4x4> {
 
     let tile = Tile4x4::try_new(x, y)?;
 
-    let p =  glam::f32::Vec2 {
+    let p = glam::f32::Vec2 {
         x: LEFT_OFFSET - position.x,
         y: TOP_OFFSET - position.y,
     };
 
     let c = tile.get_center(TILE_SIZE);
-    let distances = ((c + p) / TILE_SIZE)
-        .abs();
+    let distances = ((c + p) / TILE_SIZE).abs();
 
     // log!(
     //     "Position: {position}\n
@@ -320,11 +363,15 @@ fn get_tile_from_position(position: Vec2, sensitivity: f32) -> Option<Tile4x4> {
     }
 }
 
-fn on_pointer_down(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<QuizSaladCommand>) {
+fn on_pointer_down(
+    ev: PointerEvent,
+    node_ref: NodeRef<Svg>,
+    sender: &Sender<Box<dyn GameCommand<QuizSaladGameState> + 'static>>,
+) {
     let Some(element) = node_ref.get() else {
         return;
     };
-    let click_position = state_machine_games::svg_coordinates::get_svg_coordinates(
+    let click_position = state_machine_games::svg_coordinates::get_svg_coordinates_from_pointer_event(
         ev,
         element,
         Vec2 { x: 0.0, y: 0.0 },
@@ -337,7 +384,7 @@ fn on_pointer_down(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<Qui
     let tile = get_tile_from_position(click_position, 0.9);
     let command = GridInputCommand::Start(tile);
 
-    match sender.send(QuizSaladCommand::BoardPointerEvent(command)) {
+    match sender.send(Box::new(QuizSaladCommand::BoardPointerEvent(command))) {
         Ok(()) => {}
         Err(_err) => {
             leptos::logging::error!("Could not send command");
@@ -345,11 +392,15 @@ fn on_pointer_down(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<Qui
     }
 }
 
-fn on_pointer_up(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<QuizSaladCommand>) {
+fn on_pointer_up(
+    ev: PointerEvent,
+    node_ref: NodeRef<Svg>,
+    sender: &Sender<Box<dyn GameCommand<QuizSaladGameState> + 'static>>,
+) {
     let Some(element) = node_ref.get() else {
         return;
     };
-    let click_position = state_machine_games::svg_coordinates::get_svg_coordinates(
+    let click_position = state_machine_games::svg_coordinates::get_svg_coordinates_from_pointer_event(
         ev,
         element,
         Vec2 { x: 0.0, y: 0.0 },
@@ -362,7 +413,7 @@ fn on_pointer_up(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<QuizS
     let tile = get_tile_from_position(click_position, 0.9);
     let command = GridInputCommand::End(tile);
 
-    match sender.send(QuizSaladCommand::BoardPointerEvent(command)) {
+    match sender.send(Box::new(QuizSaladCommand::BoardPointerEvent(command))) {
         Ok(()) => {}
         Err(_err) => {
             leptos::logging::error!("Could not send command");
@@ -370,7 +421,11 @@ fn on_pointer_up(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<QuizS
     }
 }
 
-fn on_pointer_move(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<QuizSaladCommand>) {
+fn on_pointer_move(
+    ev: PointerEvent,
+    node_ref: NodeRef<Svg>,
+    sender: &Sender<Box<dyn GameCommand<QuizSaladGameState> + 'static>>,
+) {
     if ev.pressure() == 0.0 {
         return;
     }
@@ -378,7 +433,7 @@ fn on_pointer_move(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<Qui
     let Some(element) = node_ref.get() else {
         return;
     };
-    let click_position = state_machine_games::svg_coordinates::get_svg_coordinates(
+    let click_position = state_machine_games::svg_coordinates::get_svg_coordinates_from_pointer_event(
         ev,
         element,
         Vec2 { x: 0.0, y: 0.0 },
@@ -393,7 +448,7 @@ fn on_pointer_move(ev: PointerEvent, node_ref: NodeRef<Svg>, sender: &Sender<Qui
     };
     let command = GridInputCommand::Move(tile);
 
-    match sender.send(QuizSaladCommand::BoardPointerEvent(command)) {
+    match sender.send(Box::new(QuizSaladCommand::BoardPointerEvent(command))) {
         Ok(()) => {}
         Err(_err) => {
             leptos::logging::error!("Could not send command");

@@ -1,0 +1,17 @@
+.game__animated-text {
+    text-align: center;
+    text-anchor: middle;
+
+    /* transform-box: fill-box;
+    transform-origin: center; */
+}
+
+.game__tile {
+    /* transform-box: content-box;
+    transform-origin: center center; */
+}
+
+.game__tile-text {
+    /* transform-box: content-box;
+    transform-origin: center center; */
+}

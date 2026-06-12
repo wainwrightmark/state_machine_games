@@ -7,13 +7,13 @@ pub trait EntityReceiver<E: GameEntity> {
 }
 
 pub struct GeneralEntityReceiver<'s, E: GameEntity> {
-    store: &'s mut SingleTypeEntityStore<E>,
+    store: &'s mut EntityStore<E>,
     remaining_keys: HashSet<E::Key>, //todo use a vec
     changed: bool,
 }
 
 impl<'s, E: GameEntity> GeneralEntityReceiver<'s, E> {
-    pub fn new(store: &'s mut SingleTypeEntityStore<E>) -> Self {
+    pub fn new(store: &'s mut EntityStore<E>) -> Self {
         let remaining_keys = store.entities.iter().map(|x| x.entity.key()).collect();
         Self {
             store,

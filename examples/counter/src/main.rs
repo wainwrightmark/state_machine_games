@@ -1,9 +1,12 @@
 use core::f32;
+use std::sync::mpsc::Sender;
 
 use glam::Vec2;
-use leptos::prelude::*;
-use rand::{RngCore, seq::SliceRandom};
+use leptos::prelude::{codee::string::JsonSerdeCodec, *};
+use leptos_use::storage::{UseStorageOptions, use_local_storage_with_options};
+use rand::{Rng, seq::SliceRandom};
 use rand_core::SeedableRng;
+use serde::{Deserialize, Serialize};
 use state_machine_games::{define_signal_lens, prelude::*};
 
 fn main() {
@@ -13,38 +16,46 @@ fn main() {
 }
 
 fn game_component() -> impl IntoView {
-    let state = CounterGameState {
-        n: 2,
-        rng: TinyRng::seed_from_u64(123),
+    let (state_signal, state_signal_write, _) =
+        use_local_storage_with_options::<CounterGameState, JsonSerdeCodec>(
+            "smg2_counter_state",
+            UseStorageOptions::default().initial_value(CounterGameState {
+                n: 2,
+                rng: TinyRng::seed_from_u64(123),
+            }),
+        );
+
+    let sender = run_game(state_signal_write);
+
+    let square = SquareButton::render_singleton::<SquareButtonArtifact>(state_signal);
+    let circles = Circle::render_entities::<CircleArtifact>(state_signal);
+
+    provide_context(sender);
+
+    let reset_action = move |_me: _| {
+        state_signal_write.update(|x| {
+            CounterCommand::Reset.apply_command(x);
+        });
     };
 
-    let square_button: ArcRwSignal<SingleTypeEntityStore<SquareButton>> = InitFromGameState::init(&state);
-    let circles: ArcRwSignal<SingleTypeEntityStore<Circle>> = InitFromGameState::init(&state);
-
-    
-    let mut machine = GameMachine::new(state);
-    machine.add_change_watcher(square_button.clone());
-    machine.add_change_watcher(circles.clone());
-    let sender = machine.command_sender().clone();
-
-    machine.run_game();
-
     view! {
+
         <svg viewBox="0 0 800.0 800.0"  style="max-width: 800px;  margin-inline: auto; ">
-        {move || SingleTypeEntityStore::render(square_button.clone(), (), sender.clone())}
-        {move || SingleTypeEntityStore::render(circles.clone(), (), ())}
+        {square}
+        {circles}
         </svg>
+
+        <button on:click=reset_action>Reset</button>
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Default, Serialize, Deserialize)]
 pub struct CounterGameState {
     pub n: usize,
     pub rng: TinyRng,
 }
 
 impl GameState for CounterGameState {
-    type Command = CounterCommand;
     fn maybe_transition(&mut self) -> MutationResult {
         MutationResult::NO_CHANGE
     }
@@ -53,6 +64,7 @@ impl GameState for CounterGameState {
 #[derive(Debug, Clone)]
 pub enum CounterCommand {
     IncrementCount(usize),
+    Reset,
 }
 
 impl GameCommand<CounterGameState> for CounterCommand {
@@ -61,6 +73,10 @@ impl GameCommand<CounterGameState> for CounterCommand {
             CounterCommand::IncrementCount(n) => {
                 game_state.n += n;
                 let _ = game_state.rng.next_u64();
+                MutationResult::CHANGED_NO_TRANSITION
+            }
+            CounterCommand::Reset => {
+                game_state.n = 0;
                 MutationResult::CHANGED_NO_TRANSITION
             }
         }
@@ -98,9 +114,9 @@ impl Circle {
 impl GameEntity for Circle {
     type Artifact = CircleArtifact;
     type Key = Key;
-    type StateSegment = CounterGameState;
+    type Segment = CounterGameState;
 
-    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::Segment) -> impl Iterator<Item = Self> {
         let mut arr: Vec<_> = (0u32..game_state.n as u32).collect();
 
         let mut rng = game_state.rng.clone();
@@ -122,8 +138,8 @@ impl GameEntity for Circle {
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         let position = self.position();
         let artifact = CircleArtifact {
-            size: RwSignal::new(0.0),
-            position: RwSignal::new(position),
+            size: ArcRwSignal::new(0.0),
+            position: ArcRwSignal::new(position),
         };
 
         let size = animate_towards::<CircleSizeLens>(10.0, 0.05);
@@ -134,7 +150,7 @@ impl GameEntity for Circle {
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        _former_entity_state: EntityState,
+        _former_entity_state: EntityLifecycle,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         let position = animate_towards::<CirclePositionLens>(self.position(), 0.1).to_stage();
@@ -145,8 +161,8 @@ impl GameEntity for Circle {
 
 #[derive(Debug, Clone)]
 pub struct CircleArtifact {
-    pub position: RwSignal<Vec2>,
-    pub size: RwSignal<f32>,
+    pub position: ArcRwSignal<Vec2>,
+    pub size: ArcRwSignal<f32>,
 }
 
 define_signal_lens!(CirclePositionLens, CircleArtifact, Vec2, position);
@@ -154,10 +170,13 @@ define_signal_lens!(CircleSizeLens, CircleArtifact, f32, size);
 
 impl GameArtifact for CircleArtifact {}
 
-impl LeptosGameArtifact for CircleArtifact {
-    type Command = ();
-    fn render(self, _: (), _sender: impl CommandSender<Self::Command>) -> impl IntoView {
-        view! {<circle cx={move ||self.position.get().x} cy={move ||self.position.get().y} r=self.size fill="#1111EE" style="pointer-events:none;" />}
+impl LeptosRender for CircleArtifact {
+    type Artifact = Self;
+
+    fn render(artifact: Self::Artifact) -> impl IntoView {
+        let px = artifact.position.clone();
+        let py = artifact.position.clone();
+        view! {<circle cx={move ||px.get().x} cy={move ||py.get().y} r=artifact.size fill="#1111EE" style="pointer-events:none;" />}
     }
 }
 
@@ -168,43 +187,39 @@ pub struct SquareButton {
     pub n: usize,
 }
 
-impl GameEntity for SquareButton {
-    type StateSegment = CounterGameState;
+impl SingletonEntity for SquareButton {
+    type Segment = CounterGameState;
     type Artifact = SquareButtonArtifact;
-    type Key = Key;
 
-    fn key(&self) -> Self::Key {
-        Key::SquareButton
-    }
-
-    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
-        [SquareButton { n: game_state.n }].into_iter()
-    }
-
-    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+    fn init(segment: &Self::Segment) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         (
             SquareButtonArtifact {
-                text: RwSignal::new(self.n.to_string()),
+                text: RwSignal::new(segment.n.to_string()),
                 x: SQUARE_POSITION.x,
                 y: SQUARE_POSITION.y,
-                size: RwSignal::new(self.n as f32 * 10.0),
+                size: RwSignal::new(get_size(segment.n)),
             },
             AnimationList::EMPTY,
         )
     }
 
-    fn on_update(
-        &self,
+    fn update(
         artifact: &mut Self::Artifact,
-        _former_entity_state: EntityState,
+        current_entity_state: &Self::Segment,
+        _former_entity_state: &Self::Segment,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
-        artifact.text.set(self.n.to_string());
+        artifact.text.set(current_entity_state.n.to_string());
 
         let size_animation =
-            animate_towards::<TextBoxArtifactSizeLens>(self.n as f32 * 10.0, 0.01).to_stage();
+            animate_towards::<TextBoxArtifactSizeLens>(get_size(current_entity_state.n), 0.01)
+                .to_stage();
         artifact.update_animations([size_animation])
     }
+}
+
+fn get_size(count: usize) -> f32 {
+    (count as f32 + 100.0).log10() * 50.0
 }
 
 state_machine_games::define_signal_lens!(TextBoxArtifactSizeLens, SquareButtonArtifact, f32, size);
@@ -220,13 +235,22 @@ pub struct SquareButtonArtifact {
 
 impl GameArtifact for SquareButtonArtifact {}
 
-impl LeptosGameArtifact for SquareButtonArtifact {
-    type Command = CounterCommand;
-    fn render(self, _: (), sender: impl CommandSender<Self::Command>) -> impl leptos::IntoView {
+impl LeptosRender for SquareButtonArtifact {
+    type Artifact = Self;
+
+    fn render(artifact: Self::Artifact) -> impl IntoView + 'static {
+        let sender = expect_context::<Sender<Box<dyn GameCommand<CounterGameState>>>>();
+
+        let on_click = move |_| {
+            sender
+                .send(Box::new(CounterCommand::IncrementCount(1)))
+                .unwrap();
+        };
+
         view! {
-            <rect x={move||{self.x - (self.size.get() * 0.5)} } y={move ||{self.y - (self.size.get() *0.5)}} rx={move || self.size.get() * 0.2} ry={move|| self.size.get() * 0.2}  width=self.size height=self.size fill="#EE1111" on:click=move |_| sender.send_command(CounterCommand::IncrementCount(1)) />
-            <text font-size={move || format!("{}px", self.size.get() * 0.5)}  x=self.x y=self.y  style="pointer-events: none;user-select: none;font-family: monospace;dominant-baseline: central;text-anchor: middle;">
-                {self.text}
+            <rect x={move||{artifact.x - (artifact.size.get() * 0.5)} } y={move ||{artifact.y - (artifact.size.get() *0.5)}} rx={move || artifact.size.get() * 0.2} ry={move|| artifact.size.get() * 0.2}  width=artifact.size height=artifact.size fill="#EE1111" on:click=on_click  />
+            <text font-size={move || format!("{}px", artifact.size.get() * 0.5)}  x=artifact.x y=artifact.y  style="pointer-events: none;user-select: none;font-family: monospace;dominant-baseline: central;text-anchor: middle;">
+                {artifact.text}
             </text>
         }
     }

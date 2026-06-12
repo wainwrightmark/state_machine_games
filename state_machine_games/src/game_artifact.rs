@@ -12,20 +12,19 @@ pub trait GameArtifact: Clone + Send + Sync + 'static + Sized {
         animations: impl IntoIterator<Item = AnimationStage<Self>>,
     ) -> AnimationList<Self> {
         AnimationList::new_unfinished(&self, animations)
-    }    
+    }
 }
 
-#[cfg(feature = "leptos")]
 use leptos::prelude::*;
 
 use crate::prelude::{AnimationList, AnimationStage};
 
-#[cfg(feature = "leptos")]
-pub trait LeptosGameArtifact<Argument: Clone + Send + Sync + 'static = ()>: GameArtifact {
-    type Command: Send + 'static;
-    fn render(
-        self,
-        argument: Argument,
-        sender: impl crate::prelude::CommandSender<Self::Command>,
-    ) -> impl IntoView;
+// pub trait LeptosGameArtifact: GameArtifact {
+//     fn render(self) -> impl IntoView;
+// }
+
+pub trait LeptosRender{
+    type Artifact: GameArtifact;
+
+    fn render(artifact: Self::Artifact)-> impl IntoView + 'static;
 }

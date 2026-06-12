@@ -8,15 +8,15 @@ pub mod game_artifact;
 pub mod game_command;
 pub mod game_entity;
 pub mod game_entity_key;
-pub mod game_machine;
 pub mod game_state;
 pub mod lens;
 pub mod mutation_result;
 pub mod resource;
+pub mod singleton_store;
 pub mod skeleton;
+pub mod svg_coordinates;
 pub mod tiny_rng;
 pub mod value_watcher;
-pub mod svg_coordinates;
 
 pub mod prelude {
     pub use crate::animate_result::*;
@@ -29,15 +29,15 @@ pub mod prelude {
     pub use crate::game_command::*;
     pub use crate::game_entity::*;
     pub use crate::game_entity_key::*;
-    pub use crate::game_machine::*;
     pub use crate::game_state::*;
+
     pub use crate::lens::*;
     pub use crate::mutation_result::*;
-    pub use crate::resource::*;
+
+    pub use crate::singleton_store::*;
     pub use crate::skeleton::*;
-    pub use crate::tiny_rng::*;
-    pub use crate::value_watcher::*;
     pub use crate::svg_coordinates::*;
+    pub use crate::tiny_rng::*;
 
     pub use glam::*;
 }

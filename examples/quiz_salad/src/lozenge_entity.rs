@@ -59,13 +59,13 @@ impl LozengeEntity {
 impl GameEntity for LozengeEntity {
     type Artifact = LozengeArtifact;
     type Key = usize;
-    type StateSegment = QuizSaladGameState;
+    type Segment = QuizSaladGameState;
 
     fn key(&self) -> Self::Key {
         self.index
     }
 
-    fn get_entities(segment: &Self::StateSegment) -> impl Iterator<Item = Self> {
+    fn get_entities(segment: &Self::Segment) -> impl Iterator<Item = Self> {
         let lozenge_count = segment.found_words.word_completions.len();
         segment
             .found_words
@@ -95,12 +95,13 @@ impl GameEntity for LozengeEntity {
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        _former_entity_state: EntityState,
+        _former_entity_state: EntityLifecycle,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         artifact.update_animations([
             animate_towards::<LozengeArtifactFillLens>(self.fill(), 1.0 / 1000.0).to_stage(),
-            animate_towards::<LozengeArtifactStrokeWidthLens>(self.stroke_width(), 20.0 / 1000.0).to_stage(),
+            animate_towards::<LozengeArtifactStrokeWidthLens>(self.stroke_width(), 20.0 / 1000.0)
+                .to_stage(),
         ])
     }
 }
@@ -115,23 +116,25 @@ pub struct LozengeArtifact {
 
 impl GameArtifact for LozengeArtifact {}
 
-impl LeptosGameArtifact for LozengeArtifact {
-    type Command = QuizSaladCommand;
-    fn render(
-        self,
-        _: (),
-        sender: impl state_machine_games::prelude::CommandSender<Self::Command>,
-    ) -> impl IntoView {
+impl LeptosRender for LozengeArtifact {
+    type Artifact = Self;
+    fn render(artifact: Self::Artifact) -> impl IntoView {
         let Self {
             index,
             position: Vec2 { x, y },
             fill,
             stroke_width,
-        } = self;
+        } = artifact;
+
+        //let context = expect_context::<WriteSignal<QuizSaladGameState>>();
+        let sender = expect_context::<Sender<Box<dyn GameCommand<QuizSaladGameState>>>>();
+
         let on_click = move |_: MouseEvent| {
-            sender.send_command(QuizSaladCommand::LozengeClicked(LozengeClickedCommand(
-                index,
-            )));
+            sender
+                .send(Box::new(QuizSaladCommand::LozengeClicked(
+                    LozengeClickedCommand(index),
+                )))
+                .unwrap();
         };
         view! {
             <rect x={x} y={y}
@@ -145,4 +148,6 @@ impl LeptosGameArtifact for LozengeArtifact {
             </rect>
         }
     }
+    
+    
 }

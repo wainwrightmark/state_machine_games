@@ -4,26 +4,27 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-console_error_panic_hook = {workspace = true }
-wasm-logger = {workspace = true }
-leptos = { workspace = true , features = ["csr"], optional = true}
-glam = {workspace = true }
+console_error_panic_hook = "0.1.7"
+wasm-logger = "0.2.0"
+leptos = { version = "0.8", features = ["csr"]}
+glam = {version = "0.32"}
 
-leptos-use = {workspace = true, optional = true}
-rand = {workspace = true }
-static_assertions = {workspace = true }
-impl-trait-for-tuples = {workspace = true }
-strum = { workspace = true, features = ["derive"] }
-const_sized_bit_set = {workspace = true, features = ["std"]}
-bevy_color = {workspace = true, optional = true}
+leptos-use = {version = "0.18"}
+rand = {version = "0.10"}
+static_assertions = "1.1.0"
+impl-trait-for-tuples = "0.2.3"
+strum = { version = "0.28", features = ["derive"] }
+const_sized_bit_set = {version = "0.5.0", features = ["std"]}
+bevy_color = {version = "0.18", optional = true}
+serde = { version = "1.0.228", features = ["derive"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom = { version = "0.4", features = ["wasm_js"] }
 
 
 [dev-dependencies]
-insta = {workspace = true }
+insta = "1.47"
 
 [features]
-leptos = ["dep:leptos", "dep:leptos-use"]
+
 bevy_color= ["dep:bevy_color"]

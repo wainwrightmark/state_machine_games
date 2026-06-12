@@ -6,22 +6,22 @@ edition = "2024"
 
 
 [dependencies]
-state_machine_games = {path = "../../state_machine_games", features = ["leptos"]}
+state_machine_games = {path = "../../state_machine_games"}
 geometrid = "0.10"
 wasm-logger = "0.2.0"
 console_error_panic_hook = "0.1.7"
-rand= "0.9"
+rand= "0.10"
 web-time = "1.1"
 serde = { version = "1", features = ["derive", "rc"] }
-strum = { version = "0.27", features = ["derive"] }
+strum = { version = "0.28", features = ["derive"] }
 itertools = {version = "0.14"}
 
 
 leptos = { version = "0.8", features = ["csr"] }
-leptos-use = {version = "0.16"}
+leptos-use = {version = "0.18"}
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom = { version = "0.4", features = ["wasm_js"] }
 
 [dev-dependencies]
 insta   = "1.43"

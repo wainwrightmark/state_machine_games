@@ -191,6 +191,7 @@ impl<TArtifact: GameArtifact> AnimationStage<TArtifact> {
             }
             AnimateResult::FinishStep => {
                 let Some(mut next) = self.next.take() else {
+                    //leptos::logging::log!("Animation Stage Finished {}",  std::any::type_name::<TArtifact>());
                     return AnimateResult::FinishStep;
                 };
 

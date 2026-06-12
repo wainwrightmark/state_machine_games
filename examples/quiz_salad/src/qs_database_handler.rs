@@ -1,8 +1,7 @@
 use indexed_db_futures::{Build, database::Database};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use state_machine_games::prelude::ChangeWatcher;
-use web_sys::js_sys;
+use state_machine_games::prelude::GameCommand;
 use ws_core::{BasicWordTrait, LevelTrait, TileSet32};
 
 use crate::{
@@ -15,67 +14,71 @@ use crate::{
 
 const STORE_NAME: &'static str = "quiz_salad_saves";
 
-pub struct FoundWordsStateTracker {
-    current_puzzle: Puzzle,
-    current_found_words: FoundWordsState,
-    sender: async_channel::Sender<QSDatabaseCommand>,
-}
+// fn track_found_words(){
+//     set_up_db();
+// }
 
-impl FoundWordsStateTracker {
-    pub fn new(
-        current_puzzle: Puzzle,
-        current_found_words: FoundWordsState,
-        sender: async_channel::Sender<QSDatabaseCommand>,
-    ) -> Self {
-        Self {
-            current_puzzle,
-            current_found_words,
-            sender,
-        }
-    }
-}
+// pub struct FoundWordsStateTracker {
+//     current_puzzle: Puzzle,
+//     current_found_words: FoundWordsState,
+//     sender: async_channel::Sender<QSDatabaseCommand>,
+// }
 
-impl ChangeWatcher<QuizSaladGameState> for FoundWordsStateTracker {
-    fn on_state_change(
-        &mut self,
-        state: &QuizSaladGameState,
-        reason: &state_machine_games::prelude::StateChangeReason<QuizSaladGameState>,
-    ) -> bool {
-        match reason {
-            state_machine_games::prelude::StateChangeReason::InitialState => {
-                return false;
-            }
-            state_machine_games::prelude::StateChangeReason::Transition => {
-                return false;
-            }
-            state_machine_games::prelude::StateChangeReason::Command(_) => {}
-        }
+// impl FoundWordsStateTracker {
+//     pub fn new(
+//         current_puzzle: Puzzle,
+//         current_found_words: FoundWordsState,
+//         sender: async_channel::Sender<QSDatabaseCommand>,
+//     ) -> Self {
+//         Self {
+//             current_puzzle,
+//             current_found_words,
+//             sender,
+//         }
+//     }
+// }
 
-        if self.current_puzzle != state.puzzle {
-            self.current_puzzle = state.puzzle.clone();
-            self.current_found_words = state.found_words.clone();
-            //update the puzzle and found words but don't submit a save
-            return true;
-        }
+// impl ChangeWatcher<QuizSaladGameState> for FoundWordsStateTracker {
+//     fn on_state_change(
+//         &mut self,
+//         state: &QuizSaladGameState,
+//         reason: &state_machine_games::prelude::StateChangeReason<QuizSaladGameState>,
+//     ) -> bool {
+//         match reason {
+//             state_machine_games::prelude::StateChangeReason::InitialState => {
+//                 return false;
+//             }
+//             state_machine_games::prelude::StateChangeReason::Transition => {
+//                 return false;
+//             }
+//             state_machine_games::prelude::StateChangeReason::Command(_) => {}
+//         }
 
-        if self.current_found_words != state.found_words {
-            self.current_found_words = state.found_words.clone();
-            let now = js_sys::Date::now();
-            let elapsed_ms = (now - state.start_timestamp).max(0.0);
+//         if self.current_puzzle != state.puzzle {
+//             self.current_puzzle = state.puzzle.clone();
+//             self.current_found_words = state.found_words.clone();
+//             //update the puzzle and found words but don't submit a save
+//             return true;
+//         }
 
-            let sls =
-                SavedLevelState::new(&self.current_puzzle, &self.current_found_words, elapsed_ms);
-            leptos::logging::log!("Send Save Level Command");
-            self.sender
-                .try_send(QSDatabaseCommand::SaveLevel(sls))
-                .unwrap();
-            return true;
-        }
-        return false;
-    }
+//         if self.current_found_words != state.found_words {
+//             self.current_found_words = state.found_words.clone();
+//             let now = js_sys::Date::now();
+//             let elapsed_ms = (now - state.start_timestamp).max(0.0);
 
-    fn step_animations(&mut self, _delta_ms: f64) {}
-}
+//             let sls =
+//                 SavedLevelState::new(&self.current_puzzle, &self.current_found_words, elapsed_ms);
+//             leptos::logging::log!("Send Save Level Command");
+//             self.sender
+//                 .try_send(QSDatabaseCommand::SaveLevel(sls))
+//                 .unwrap();
+//             return true;
+//         }
+//         return false;
+//     }
+
+//     fn step_animations(&mut self, _delta_ms: f64) {}
+// }
 
 pub async fn set_up_db() -> indexed_db_futures::OpenDbResult<Database> {
     let db = Database::open("quiz_salad")
@@ -94,7 +97,7 @@ pub async fn set_up_db() -> indexed_db_futures::OpenDbResult<Database> {
 }
 
 pub async fn handle_db_messages(
-    output_sender: std::sync::mpsc::Sender<QuizSaladCommand>,
+    output_sender: std::sync::mpsc::Sender<Box<dyn GameCommand<QuizSaladGameState> + 'static>>,
     command_receiver: async_channel::Receiver<QSDatabaseCommand>,
 ) {
     leptos::logging::log!("Opening DB");
@@ -115,7 +118,7 @@ pub enum QSDatabaseCommand {
 }
 
 impl DatabaseCommand for QSDatabaseCommand {
-    type Output = QuizSaladCommand;
+    type Output = Box<dyn GameCommand<QuizSaladGameState> + 'static>;
 
     async fn run_command(
         &self,
@@ -139,9 +142,9 @@ impl DatabaseCommand for QSDatabaseCommand {
                         let command = QuizSaladCommand::ChangeLevel {
                             puzzle: puzzle.clone(),
                             found_words,
-                            elapsed_ms
+                            elapsed_ms,
                         };
-                        return Ok(Some(command));
+                        return Ok(Some(Box::new(command) ));
                     }
                     None => return Ok(None),
                 }

@@ -1,0 +1,13 @@
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+
+[build]
+#publish = "dist"
+#command = "rustup default stable; rustup update stable; cargo install trunk --locked; trunk build --release"
+
+
+[context.production]
+environment = { NETLIFY_EXPERIMENTAL_BUILD_RUST_SOURCE = "true" }

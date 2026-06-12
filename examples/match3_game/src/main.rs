@@ -1,12 +1,13 @@
+use std::sync::mpsc::Sender;
+
 use geometrid::{prelude::TileMap, vector::Vector};
 use leptos::prelude::*;
-use rand::{Rng, SeedableRng};
+use rand::{Rng, RngExt, SeedableRng};
 use state_machine_games::prelude::*;
 use strum::{EnumCount, FromRepr};
 
 pub type Match3Tile = geometrid::tile::Tile<8, 8>;
 pub type Match3Grid = geometrid::tile_map::TileMap<Option<Gem>, 8, 8, 64>;
-
 
 pub fn main() {
     wasm_logger::init(wasm_logger::Config::default());
@@ -15,31 +16,27 @@ pub fn main() {
 }
 
 fn game_component() -> impl IntoView {
-    let state = Match3Game::new_random(123);
+    let state = RwSignal::new(Match3Game::new_random(123));
+    let sender = run_game(state);
 
-    let score_text : ArcRwSignal<SingleTypeEntityStore<ScoreTextEntity>> = InitFromGameState::init(&state);
-    let moves_left : ArcRwSignal<SingleTypeEntityStore<MovesLeftEntity>> = InitFromGameState::init(&state);
-    let match3 : ArcRwSignal<SingleTypeEntityStore<Match3TileEntity>> =InitFromGameState::init(&state); 
+    provide_context(sender);
 
-    
-    let mut machine = GameMachine::new(state);
-    machine.add_change_watcher(score_text.clone());
-    machine.add_change_watcher(moves_left.clone());
-    machine.add_change_watcher(match3.clone());
-    let sender = machine.command_sender();
-    machine.run_game();
+    let score = ScoreTextEntity::render_singleton::<TextArtifact>(Memo::new(move |_x| state.read().score).into());
+    let moves =  MovesLeftEntity::render_singleton::<TextArtifact>(Memo::new(move |_x| state.read().score).into());
+
+    let match3_tiles = Match3TileEntity::render_entities::<TileArtifact>(state.into());
 
     view! {
         <svg viewBox="0 0 800.0 800.0"  style="max-width: 800px;  margin-inline: auto; ">
-        {move || SingleTypeEntityStore::render(score_text.clone(),(), ())}
-        {move || SingleTypeEntityStore::render(moves_left.clone(),(), ())}
-        {move || SingleTypeEntityStore::render(match3.clone(),(), sender.clone())}
+        {score}
+        {moves}
+        {match3_tiles}
         </svg>
 
     }
 }
 
-const FONT_SIZE: f32 = 72.0;
+const FONT_SIZE: f32 = 32.0;
 const SCALE: f32 = 80.0;
 const TOP_OFFSET: f32 = 120.0;
 const SQUARE_SIZE: f32 = SCALE * 0.9;
@@ -173,17 +170,17 @@ pub struct TextArtifact {
     pub x: f32,
     pub y: f32,
     pub font_size: f32,
-    pub text: RwSignal<String>,
+    pub text: ArcRwSignal<String>,
 }
 
 impl GameArtifact for TextArtifact {}
 
-impl LeptosGameArtifact for TextArtifact {
-    type Command = ();
-    fn render(self, _: (), _sender: impl CommandSender<Self::Command>) -> impl IntoView {
+impl LeptosRender for TextArtifact {
+    type Artifact = Self;
+    fn render(artifact: Self::Artifact) -> impl IntoView {
         view! {
-            <text x=self.x y=self.y font-size=self.font_size style="user-select: none;">
-                {self.text}
+            <text x=artifact.x y=artifact.y font-size=artifact.font_size style="user-select: none;">
+                {artifact.text}
             </text>
         }
     }
@@ -191,12 +188,12 @@ impl LeptosGameArtifact for TextArtifact {
 
 #[derive(Debug, Clone)]
 pub struct TileArtifact {
-    pub tile: RwSignal<Match3Tile>,
-    pub x: RwSignal<f32>,
-    pub y: RwSignal<f32>,
+    pub tile: ArcRwSignal<Match3Tile>,
+    pub x: ArcRwSignal<f32>,
+    pub y: ArcRwSignal<f32>,
     pub fill: &'static str,
-    pub selected: RwSignal<bool>,
-    pub scale: RwSignal<f32>,
+    pub selected: ArcRwSignal<bool>,
+    pub scale: ArcRwSignal<f32>,
 }
 
 state_machine_games::define_signal_lens!(TileArtifactXLens, TileArtifact, f32, x);
@@ -205,19 +202,20 @@ state_machine_games::define_signal_lens!(TileArtifactScaleLens, TileArtifact, f3
 
 impl GameArtifact for TileArtifact {}
 
-impl LeptosGameArtifact for TileArtifact {
-    type Command = Match3Command;
-    fn render(self, _: (), sender: impl CommandSender<Self::Command>) -> impl IntoView {
+impl LeptosRender for TileArtifact {
+    type Artifact = Self;
+    fn render(artifact: Self::Artifact) -> impl IntoView {
+        let sender = expect_context::<Sender<Box<dyn GameCommand<Match3Game>>>>();
         view! {
-            <rect x={self.x} y={self.y}
+            <rect x={artifact.x} y={artifact.y}
             width={SQUARE_SIZE}
             height ={SQUARE_SIZE}
             rx="2%" ry="2%"
             transform-origin="center"
-            fill={self.fill}
-            stroke={move || if self.selected.get() { "#222222FF" } else { "#00000000" }}
-            style= {move || format!("transform-box:fill-box; transform: scale({}); stroke-width: 10px;  transition: stroke 1s;", self.scale.get())}
-            on:click=move|_|{ sender.send_command(Match3Command::TileClicked(self.tile.get_untracked()));  } >
+            fill={artifact.fill}
+            stroke={move || if artifact.selected.get() { "#222222FF" } else { "#00000000" }}
+            style= {move || format!("transform-box:fill-box; transform: scale({}); stroke-width: 10px;  transition: stroke 1s;", artifact.scale.get())}
+            on:click=move|_|{ sender.send_command(Box::new(Match3Command::TileClicked(artifact.tile.get_untracked())));  } >
             </rect>
         }
     }
@@ -228,25 +226,13 @@ pub struct ScoreTextEntity {
     pub score: u64,
 }
 
-impl GameEntity for ScoreTextEntity {
+impl SingletonEntity for ScoreTextEntity {
     type Artifact = TextArtifact;
-    type Key = ();
-    type StateSegment = Match3Game;
+    type Segment = u64;
 
-    fn key(&self) -> Self::Key {
-        ()
-    }
-
-    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
-        [Self {
-            score: game_state.score,
-        }]
-        .into_iter()
-    }
-
-    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+    fn init(segment: &Self::Segment) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         let artifact = TextArtifact {
-            text: RwSignal::new(format!("Score: {}", self.score)),
+            text: ArcRwSignal::new(format!("Score: {}", *segment)),
             font_size: FONT_SIZE,
             x: 10.0,
             y: 40.0,
@@ -255,13 +241,13 @@ impl GameEntity for ScoreTextEntity {
         artifact.with_animations([])
     }
 
-    fn on_update(
-        &self,
+    fn update(
         artifact: &mut Self::Artifact,
-        _former_entity_state: EntityState,
+        current_segment: &Self::Segment,
+        _previous_segment: &Self::Segment,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
-        artifact.text.set(format!("Score: {}", self.score));
+        artifact.text.set(format!("Score: {}", *current_segment));
         AnimationList::EMPTY
     }
 }
@@ -271,25 +257,13 @@ pub struct MovesLeftEntity {
     pub moves: u64,
 }
 
-impl GameEntity for MovesLeftEntity {
+impl SingletonEntity for MovesLeftEntity {
     type Artifact = TextArtifact;
-    type Key = ();
-    type StateSegment = Match3Game;
+    type Segment = u64;
 
-    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
-        [Self {
-            moves: game_state.moves_left,
-        }]
-        .into_iter()
-    }
-
-    fn key(&self) -> Self::Key {
-        ()
-    }
-
-    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+    fn init(segment: &Self::Segment) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         let artifact = TextArtifact {
-            text: RwSignal::new(format!("Moves Left: {}", self.moves)),
+            text: ArcRwSignal::new(format!("Moves Left: {}", *segment)),
             font_size: FONT_SIZE,
             x: 10.0,
             y: 100.0,
@@ -298,13 +272,13 @@ impl GameEntity for MovesLeftEntity {
         artifact.with_animations([])
     }
 
-    fn on_update(
-        &self,
+    fn update(
         artifact: &mut Self::Artifact,
-        _former_entity_state: EntityState,
+        current_segment: &Self::Segment,
+        _previous_segment: &Self::Segment,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
-        artifact.text.set(format!("Moves: {}", self.moves));
+        artifact.text.set(format!("Moves: {}", *current_segment));
         AnimationList::EMPTY
     }
 }
@@ -330,13 +304,12 @@ impl Match3TileEntity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TileKey(u32);
 
-
 impl GameEntity for Match3TileEntity {
     type Artifact = TileArtifact;
     type Key = TileKey;
-    type StateSegment = Match3Game;
+    type Segment = Match3Game;
 
-    fn get_entities(game_state: &Self::StateSegment) -> impl Iterator<Item = Self> {
+    fn get_entities(game_state: &Self::Segment) -> impl Iterator<Item = Self> {
         let selected_tile = game_state.selected_tile;
         game_state.grid.enumerate().flat_map(move |(tile, gem)| {
             if let Some(Gem {
@@ -379,17 +352,18 @@ impl GameEntity for Match3TileEntity {
 
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         let artifact = TileArtifact {
-            tile: RwSignal::new(self.tile),
-            x: RwSignal::new(Self::get_x(self.tile.x())),
-            y: RwSignal::new(100.0),
+            tile: ArcRwSignal::new(self.tile),
+            x: ArcRwSignal::new(Self::get_x(self.tile.x())),
+            y: ArcRwSignal::new(100.0),
             fill: self.gem_type.fill(),
-            selected: RwSignal::new(self.selected),
-            scale: RwSignal::new(0.0),
+            selected: ArcRwSignal::new(self.selected),
+            scale: ArcRwSignal::new(0.0),
         };
 
         let animations = [
             animate_towards::<TileArtifactScaleLens>(1.0, 1.0 / 1000.0).to_stage(),
-            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64 / 100.0).to_stage(),
+            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64 / 100.0)
+                .to_stage(),
         ];
 
         artifact.with_animations(animations)
@@ -398,22 +372,23 @@ impl GameEntity for Match3TileEntity {
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        _former_entity_state: EntityState,
+        _former_entity_state: EntityLifecycle,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         artifact.selected.set(self.selected);
         artifact.tile.set(self.tile);
         //change x,y,selected,scale
         vec![
-            animate_towards::<TileArtifactXLens>(Self::get_x(self.tile.x()), SCALE as f64 / 1000.0).to_stage(),
-            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64 / 1000.0).to_stage(),
-        ].into()
+            animate_towards::<TileArtifactXLens>(Self::get_x(self.tile.x()), SCALE as f64 / 1000.0)
+                .to_stage(),
+            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64 / 1000.0)
+                .to_stage(),
+        ]
+        .into()
     }
 }
 
 impl GameState for Match3Game {
-    type Command = Match3Command;
-
     fn maybe_transition(&mut self) -> MutationResult {
         let mut changed = false;
 
@@ -507,7 +482,6 @@ impl GameState for Match3Game {
 
 #[cfg(test)]
 mod tests {
-    
 
     // #[test]
     // pub fn test_game(){

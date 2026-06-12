@@ -11,13 +11,13 @@ pub struct AnimatedTextEntity {
 impl GameEntity for AnimatedTextEntity {
     type Artifact = AnimatedTextArtifact;
     type Key = usize;
-    type StateSegment = QuizSaladGameState;
+    type Segment = QuizSaladGameState;
 
     fn key(&self) -> Self::Key {
         self.word_index
     }
 
-    fn get_entities(segment: &Self::StateSegment) -> impl Iterator<Item = Self> {
+    fn get_entities(segment: &Self::Segment) -> impl Iterator<Item = Self> {
         if !segment.chosen_state.word_just_found {
             return None.into_iter();
         }
@@ -50,8 +50,8 @@ impl GameEntity for AnimatedTextEntity {
 
         let artifact = Self::Artifact {
             text: self.text,
-            position: RwSignal::new(position),
-            scale: RwSignal::new(1.0),
+            position: ArcRwSignal::new(position),
+            scale: ArcRwSignal::new(1.0),
             color: CLASSIC_COLOR_SCHEME.animated_word,
         };
 
@@ -61,7 +61,7 @@ impl GameEntity for AnimatedTextEntity {
 
         let distance = position.distance(target_position) as f64;
 
-        //log!("Position {position:?} target position {target_position} distance {distance}");
+        log!("Position {position:?} target position {target_position} distance {distance}");
 
         let animations = [
             animate_towards::<AnimatedTextArtifactPositionLens>(
@@ -69,10 +69,13 @@ impl GameEntity for AnimatedTextEntity {
                 (distance / duration_ms).abs(),
             )
             .to_stage(),
-            animate_set_value::<AnimatedTextArtifactScaleLens>(0.0).to_stage()
-            .precede_with(animate_wait(1000.0))
-            .precede_with(
-            animate_towards::<AnimatedTextArtifactScaleLens>(0.5, 1.0 / duration_ms)),
+            animate_set_value::<AnimatedTextArtifactScaleLens>(0.0)
+                .to_stage()
+                .precede_with(animate_wait(1000.0))
+                .precede_with(animate_towards::<AnimatedTextArtifactScaleLens>(
+                    0.5,
+                    1.0 / duration_ms,
+                )),
         ];
 
         artifact.with_animations(animations)
@@ -81,9 +84,10 @@ impl GameEntity for AnimatedTextEntity {
     fn on_update(
         &self,
         _artifact: &mut Self::Artifact,
-        _former_entity_state: EntityState,
+        _former_entity_state: EntityLifecycle,
         previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
+        log!("Entity Updated: {}", std::any::type_name::<Self>());
         previous_animations
     }
 
@@ -92,6 +96,7 @@ impl GameEntity for AnimatedTextEntity {
         _artifact: &mut Self::Artifact,
         previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
+        log!("Entity Died: {}", std::any::type_name::<Self>());
         previous_animations
     }
 }
@@ -99,8 +104,8 @@ impl GameEntity for AnimatedTextEntity {
 #[derive(Debug, Clone)]
 pub struct AnimatedTextArtifact {
     pub text: Ustr,
-    pub position: RwSignal<Vec2>,
-    pub scale: RwSignal<f32>,
+    pub position: ArcRwSignal<Vec2>,
+    pub scale: ArcRwSignal<f32>,
     pub color: Srgba,
 }
 
@@ -119,25 +124,23 @@ define_signal_lens!(
 
 impl GameArtifact for AnimatedTextArtifact {}
 
-impl LeptosGameArtifact for AnimatedTextArtifact {
-    type Command = ();
-    fn render(
-        self,
-        _: (),
-        _sender: impl state_machine_games::prelude::CommandSender<Self::Command>,
-    ) -> impl IntoView {
+impl LeptosRender for AnimatedTextArtifact {
+    type Artifact = Self;
+    fn render(artifact: Self::Artifact) -> impl IntoView {
+        let apx = artifact.position.clone();
+        let apy = artifact.position;
         view! {
 
-            <text x={move|| self.position.get().x} y={move|| self.position.get().y}
+            <text x={move|| apx.get().x} y={move|| apy.get().y}
                 font-size={ANIMATED_WORD_FONT_SIZE}
                 font-weight="600"
                 font-family={FONT_FAMILY}
                 dominant-baseline="central"
-                fill={self.color.to_hex()}
+                fill={artifact.color.to_hex()}
                 transform-origin="center"
-                transform={move || format!("scale({})", self.scale.get()) }
+                transform={move || format!("scale({})", artifact.scale.get()) }
                 style="text-align: center; text-anchor: middle; transform-box: fill-box;">{
-                    {self.text.to_string()}
+                    {artifact.text.to_string()}
                 }</text>
 
         }
