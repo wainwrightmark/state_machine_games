@@ -9,6 +9,7 @@ pub mod grid_input;
 pub mod layout;
 pub mod layout_util;
 pub mod lozenge_entity;
+pub mod menu;
 pub mod puzzle;
 pub mod qs_database_handler;
 pub mod quiz_salad_command;
@@ -16,7 +17,6 @@ pub mod quiz_salad_game_state;
 pub mod tile;
 pub mod util;
 pub mod word_line3;
-pub mod menu;
 
 use std::sync::mpsc::Sender;
 
@@ -296,12 +296,13 @@ fn get_tile_from_position(position: Vec2, sensitivity: f32) -> Option<Tile4x4> {
 
     let tile = Tile4x4::try_new(x, y)?;
 
+    let p =  glam::f32::Vec2 {
+        x: LEFT_OFFSET - position.x,
+        y: TOP_OFFSET - position.y,
+    };
+
     let c = tile.get_center(TILE_SIZE);
-    let distances = ((c + Vec2 {
-        x: LEFT_OFFSET,
-        y: TOP_OFFSET,
-    } - position)
-        / TILE_SIZE)
+    let distances = ((c + p) / TILE_SIZE)
         .abs();
 
     // log!(

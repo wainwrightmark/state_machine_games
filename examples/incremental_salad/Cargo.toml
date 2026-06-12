@@ -1,5 +1,5 @@
 [package]
-name = "quiz_salad"
+name = "incremental_salad"
 version = "0.1.0"
 publish = false
 edition = "2024"
@@ -26,12 +26,13 @@ leptos = { version = "0.8", features = ["csr"] }
 leptos_router = { version = "0.8" }
 leptos-use = { version = "0.17" }
 const_sized_bit_set = "0.5.0"
-web-sys = {version = "0.3", features = ["SvgElement"]}
+web-sys = { version = "0.3", features = ["SvgElement"] }
 function_name = "0.3.0"
-indexed_db_futures = {version = "0.6.4", features = ["serde"]}
+indexed_db_futures = { version = "0.6.4", features = ["serde"] }
 serde_json = "1.0.149"
 async-channel = "2.5"
-glam = "0.32"
+glam = "0.31.0"
+rand_core = "0.10.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
