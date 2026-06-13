@@ -1,9 +1,0 @@
-- [x] leptos routing - custom level
-- [x] save state - state change watcher
-- [x] Better system for effects (e.g. animated words)
-- [x] Better touch controls
-- [x] Better word line
-- [ ] Implement phases - end screen
-- [ ] Timer
-- [x] Background color
-- [x] Split into multiple files
