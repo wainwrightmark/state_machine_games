@@ -71,11 +71,16 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
                     return false;
                 }
 
+                let store_reset =Self::should_reset_store(&segment, &store.segment);
+                if store_reset{
+                    store.entities.clear();
+                }
+
                 store.segment = segment.clone();
 
                 let mut receiver = GeneralEntityReceiver::new(store);
                 receiver.receive();
-                let changed = receiver.finish();
+                let changed = receiver.finish() || store_reset;
                 if changed {
                     if store.animated_entities.is_empty() {
 
@@ -92,6 +97,10 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
 
         Effect::new(effect_fn);
         store1
+    }
+
+    fn should_reset_store(new_state: &Self::Segment, prev_state: &Self::Segment)-> bool{
+        false
     }
 
     fn render_entities<LR: LeptosRender<Artifact = Self::Artifact>>(
