@@ -99,6 +99,10 @@ impl GameEntity for LozengeEntity {
             })
     }
 
+    fn should_reset_store(new_state: &Self::Segment, prev_state: &Self::Segment) -> bool {
+        new_state.0.start_timestamp != prev_state.0.start_timestamp
+    }
+
     fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         let position = self.position();
 
@@ -112,12 +116,23 @@ impl GameEntity for LozengeEntity {
         .with_animations([])
     }
 
+    f
+
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        _former_entity_state: EntityLifecycle,
+        former_entity_lifecycle: EntityLifecycle,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
+
+        if former_entity_lifecycle == EntityLifecycle::Reset {
+            artifact.fill.set(self.fill());
+            artifact.stroke_width.set(self.stroke_width());
+
+            return AnimationList::EMPTY;
+        }
+
+
         artifact.update_animations([
             animate_towards::<LozengeArtifactFillLens>(self.fill(), 1.0 / 1000.0).to_stage(),
             animate_towards::<LozengeArtifactStrokeWidthLens>(self.stroke_width(), 20.0 / 1000.0)

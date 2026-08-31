@@ -3,4 +3,5 @@
 pub enum EntityLifecycle {
     Alive,
     Dead,
+    Reset
 }

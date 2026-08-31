@@ -81,6 +81,10 @@ impl<E: GameEntity> StoredEntity<E> {
                 self.lifecycle = EntityLifecycle::Dead;
             }
             EntityLifecycle::Dead => {}
+            EntityLifecycle::Reset => {
+                self.animations.clear();
+                self.lifecycle = EntityLifecycle::Dead;
+            }
         }
 
         let should_remove =  self.animations.is_empty();

@@ -33,7 +33,7 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
-        former_entity_state: EntityLifecycle,
+        former_entity_lifecycle: EntityLifecycle,
         previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact>; //todo try mutating the animations
 
@@ -71,12 +71,15 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
                     return false;
                 }
 
-                let store_reset =Self::should_reset_store(&segment, &store.segment);
-                if store_reset{
-                    store.entities.clear();
-                }
+                let store_reset = Self::should_reset_store(&segment, &store.segment);
 
                 store.segment = segment.clone();
+
+                if store_reset {
+                    for entity in store.entities.iter_mut(){
+                        entity.lifecycle = EntityLifecycle::Reset;
+                    }
+                }
 
                 let mut receiver = GeneralEntityReceiver::new(store);
                 receiver.receive();
@@ -99,7 +102,7 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
         store1
     }
 
-    fn should_reset_store(new_state: &Self::Segment, prev_state: &Self::Segment)-> bool{
+    fn should_reset_store(new_state: &Self::Segment, prev_state: &Self::Segment) -> bool {
         false
     }
 
@@ -118,11 +121,11 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
                     .map(|x| x.entity.key())
                     .collect();
 
-                leptos::logging::log!(
-                    "{} artifacts of {}",
-                    artifacts.len(),
-                    std::any::type_name::<Self>()
-                );
+                // leptos::logging::log!(
+                //     "{} artifacts of {}",
+                //     artifacts.len(),
+                //     std::any::type_name::<Self>()
+                // );
 
                 artifacts
             },
