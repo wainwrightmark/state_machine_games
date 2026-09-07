@@ -23,9 +23,9 @@ impl DalasDrowGameState {
         }
     }
 
-    pub fn is_complete(&self)-> bool{
-        for w in self.puzzle.words.iter(){
-            if w.find_solution(self.grid).is_none(){
+    pub fn is_complete(&self) -> bool {
+        for w in self.puzzle.words.iter() {
+            if w.find_solution(self.grid).is_none() {
                 return false;
             }
         }
@@ -33,11 +33,7 @@ impl DalasDrowGameState {
     }
 }
 
-impl GameState for DalasDrowGameState {
-    fn maybe_transition(&mut self) -> MutationResult {
-        MutationResult::NO_CHANGE
-    }
-}
+impl GameState for DalasDrowGameState {}
 
 define_lens!(StartTimeLens, DalasDrowGameState, f64, start_timestamp);
 define_lens!(

@@ -3,7 +3,7 @@ use std::sync::mpsc::Sender;
 use geometrid::{prelude::TileMap, vector::Vector};
 use leptos::prelude::*;
 use rand::{Rng, RngExt, SeedableRng};
-use state_machine_games::prelude::*;
+use state_machine_games::{delayed_effect::MutationResult, prelude::*};
 use strum::{EnumCount, FromRepr};
 
 pub type Match3Tile = geometrid::tile::Tile<8, 8>;
@@ -17,12 +17,16 @@ pub fn main() {
 
 fn game_component() -> impl IntoView {
     let state = RwSignal::new(Match3Game::new_random(123));
-    let sender = run_game(state);
+    let sender = run_game(state, [DelayedMutation{mutation: Mutation::Static(&maybe_transition), delay_ms: 1000.0}].into_iter());
 
     provide_context(sender);
 
-    let score = ScoreTextEntity::render_singleton::<TextArtifact>(Memo::new(move |_x| state.read().score).into());
-    let moves =  MovesLeftEntity::render_singleton::<TextArtifact>(Memo::new(move |_x| state.read().score).into());
+    let score = ScoreTextEntity::render_singleton::<TextArtifact>(
+        Memo::new(move |_x| state.read().score).into(),
+    );
+    let moves = MovesLeftEntity::render_singleton::<TextArtifact>(
+        Memo::new(move |_x| state.read().score).into(),
+    );
 
     let match3_tiles = Match3TileEntity::render_entities::<TileArtifact>(state.into());
 
@@ -55,6 +59,8 @@ pub struct Match3Game {
 
     pub rng_state: TinyRng,
 }
+
+impl GameState for Match3Game {}
 
 impl Match3Game {
     pub fn new_random(seed: u64) -> Self {
@@ -124,9 +130,9 @@ pub enum Match3Command {
 }
 
 impl GameCommand<Match3Game> for Match3Command {
-    fn apply_command(&self, game_state: &mut Match3Game) -> MutationResult {
+    fn apply_command(&self, game_state: &mut Match3Game) -> MutationResult<Match3Game> {
         if game_state.grid.iter().any(|x| x.is_none()) {
-            return MutationResult::NO_CHANGE;
+            return MutationResult::NoChange;
         }
 
         let Match3Command::TileClicked(tile) = *self;
@@ -156,12 +162,12 @@ impl GameCommand<Match3Game> for Match3Command {
                 game_state.selected_tile = Some(tile);
             }
         }
-        let transition_callback_in_ms = if true { Some(1000.0) } else { None };
+        //let transition_callback_in_ms = if true { Some(1000.0) } else { None };
 
-        MutationResult {
-            changed: true,
-            transition_callback_in_ms,
-        }
+        MutationResult::Changed(Some(DelayedMutation {
+            mutation: Mutation::Static(&maybe_transition),
+            delay_ms: 1000.0,
+        }))
     }
 }
 
@@ -388,95 +394,97 @@ impl GameEntity for Match3TileEntity {
     }
 }
 
-impl GameState for Match3Game {
-    fn maybe_transition(&mut self) -> MutationResult {
-        let mut changed = false;
+fn maybe_transition(game_state: &mut Match3Game) -> MutationResult<Match3Game> {
+    let mut changed = false;
 
-        let mut new_grid = self.grid.clone();
+    let mut new_grid = game_state.grid.clone();
 
-        //find all lines
-        let mut any_removed = false;
+    //find all lines
+    let mut any_removed = false;
 
-        for i_is_x in [false, true] {
-            for i in 0..8u8 {
-                let mut previous_gem_type: Option<GemType> = None;
-                let mut consecutive = 0;
-                for j in 0..8u8 {
-                    let tile = if i_is_x {
-                        Match3Tile::try_new(i, j).unwrap()
-                    } else {
-                        Match3Tile::try_new(j, i).unwrap()
-                    };
-                    let gem_type = self.grid[tile].map(|x| x.gem_type);
+    for i_is_x in [false, true] {
+        for i in 0..8u8 {
+            let mut previous_gem_type: Option<GemType> = None;
+            let mut consecutive = 0;
+            for j in 0..8u8 {
+                let tile = if i_is_x {
+                    Match3Tile::try_new(i, j).unwrap()
+                } else {
+                    Match3Tile::try_new(j, i).unwrap()
+                };
+                let gem_type = game_state.grid[tile].map(|x| x.gem_type);
 
-                    if let Some(gem_type) = gem_type {
-                        if Some(gem_type) == previous_gem_type {
-                            consecutive += 1;
-                            if consecutive >= 3 {
-                                changed = true;
-                                self.score += 1;
-                                new_grid[tile] = None;
-                                if consecutive == 3 {
-                                    //also remove the two previous tiles
-                                    any_removed = true;
-                                    for sub in [2, 1] {
-                                        let tile_to_remove = if i_is_x {
-                                            Match3Tile::try_new(i, j - sub).unwrap()
-                                        } else {
-                                            Match3Tile::try_new(j - sub, i).unwrap()
-                                        };
-                                        new_grid[tile_to_remove] = None;
-                                    }
+                if let Some(gem_type) = gem_type {
+                    if Some(gem_type) == previous_gem_type {
+                        consecutive += 1;
+                        if consecutive >= 3 {
+                            changed = true;
+                            game_state.score += 1;
+                            new_grid[tile] = None;
+                            if consecutive == 3 {
+                                //also remove the two previous tiles
+                                any_removed = true;
+                                for sub in [2, 1] {
+                                    let tile_to_remove = if i_is_x {
+                                        Match3Tile::try_new(i, j - sub).unwrap()
+                                    } else {
+                                        Match3Tile::try_new(j - sub, i).unwrap()
+                                    };
+                                    new_grid[tile_to_remove] = None;
                                 }
                             }
-                        } else {
-                            previous_gem_type = Some(gem_type);
-                            consecutive = 1;
                         }
                     } else {
-                        previous_gem_type = None;
-                        consecutive = 0;
-                    }
-                }
-            }
-        }
-        if any_removed {
-            self.moves_left += 1;
-        }
-
-        //move down all tiles with a space below them
-        for tile in Match3Tile::iter_by_row().rev() {
-            let gem = new_grid[tile];
-            if gem.is_none() {
-                if let Some(above_tile) = tile.const_add(&Vector::NORTH) {
-                    //log::info!("Moving gem down to {tile}");
-                    //move the tile from above down
-                    new_grid.swap(tile, above_tile);
-                    if new_grid[tile].is_some() {
-                        changed = true;
+                        previous_gem_type = Some(gem_type);
+                        consecutive = 1;
                     }
                 } else {
-                    //log::info!("Creating new gem at {tile}");
-                    //this tile is on the top row so create a new tile
-                    let new_gem_type = GemType::new_random(&mut self.rng_state);
-                    let new_index = self.next_index;
-                    self.next_index += 1; //todo be careful of this
-                    changed = true;
-                    new_grid[tile] = Some(self.next_tiles[tile.x() as usize]);
-                    self.next_tiles[tile.x() as usize] = Gem {
-                        index: new_index,
-                        gem_type: new_gem_type,
-                    };
+                    previous_gem_type = None;
+                    consecutive = 0;
                 }
             }
         }
+    }
+    if any_removed {
+        game_state.moves_left += 1;
+    }
 
-        self.grid = new_grid;
-
-        MutationResult {
-            changed,
-            transition_callback_in_ms: if changed { Some(1000.0) } else { None },
+    //move down all tiles with a space below them
+    for tile in Match3Tile::iter_by_row().rev() {
+        let gem = new_grid[tile];
+        if gem.is_none() {
+            if let Some(above_tile) = tile.const_add(&Vector::NORTH) {
+                //log::info!("Moving gem down to {tile}");
+                //move the tile from above down
+                new_grid.swap(tile, above_tile);
+                if new_grid[tile].is_some() {
+                    changed = true;
+                }
+            } else {
+                //log::info!("Creating new gem at {tile}");
+                //this tile is on the top row so create a new tile
+                let new_gem_type = GemType::new_random(&mut game_state.rng_state);
+                let new_index = game_state.next_index;
+                game_state.next_index += 1; //todo be careful of this
+                changed = true;
+                new_grid[tile] = Some(game_state.next_tiles[tile.x() as usize]);
+                game_state.next_tiles[tile.x() as usize] = Gem {
+                    index: new_index,
+                    gem_type: new_gem_type,
+                };
+            }
         }
+    }
+
+    game_state.grid = new_grid;
+
+    if changed {
+        MutationResult::Changed(Some(DelayedMutation {
+            mutation: Mutation::Static(&maybe_transition),
+            delay_ms: 1000.0,
+        }))
+    } else {
+        MutationResult::NoChange
     }
 }
 

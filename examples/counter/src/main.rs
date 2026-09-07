@@ -7,7 +7,7 @@ use leptos_use::storage::{UseStorageOptions, use_local_storage_with_options};
 use rand::{Rng, seq::SliceRandom};
 use rand_core::SeedableRng;
 use serde::{Deserialize, Serialize};
-use state_machine_games::{define_signal_lens, prelude::*};
+use state_machine_games::{define_signal_lens, delayed_effect::MutationResult, prelude::*};
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
@@ -25,7 +25,7 @@ fn game_component() -> impl IntoView {
             }),
         );
 
-    let sender = run_game(state_signal_write);
+    let sender = run_game(state_signal_write, std::iter::empty());
 
     let square = SquareButton::render_singleton::<SquareButtonArtifact>(state_signal);
     let circles = Circle::render_entities::<CircleArtifact>(state_signal);
@@ -55,11 +55,7 @@ pub struct CounterGameState {
     pub rng: TinyRng,
 }
 
-impl GameState for CounterGameState {
-    fn maybe_transition(&mut self) -> MutationResult {
-        MutationResult::NO_CHANGE
-    }
-}
+impl GameState for CounterGameState {}
 
 #[derive(Debug, Clone)]
 pub enum CounterCommand {
@@ -68,16 +64,18 @@ pub enum CounterCommand {
 }
 
 impl GameCommand<CounterGameState> for CounterCommand {
-    fn apply_command(&self, game_state: &mut CounterGameState) -> MutationResult {
+    fn apply_command(&self, game_state: &mut CounterGameState) -> MutationResult<CounterGameState> {
         match self {
             CounterCommand::IncrementCount(n) => {
                 game_state.n += n;
                 let _ = game_state.rng.next_u64();
-                MutationResult::CHANGED_NO_TRANSITION
+
+                MutationResult::Changed(None)
+                
             }
             CounterCommand::Reset => {
                 game_state.n = 0;
-                MutationResult::CHANGED_NO_TRANSITION
+                MutationResult::Changed(None)
             }
         }
     }

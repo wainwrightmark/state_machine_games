@@ -88,7 +88,7 @@ pub enum ChessCommand {
 }
 
 impl GameCommand<ChessState> for ChessCommand {
-    fn apply_command(&self, game_state: &mut ChessState) -> MutationResult {
+    fn apply_command(&self, game_state: &mut ChessState) -> MutationResult<ChessState> {
         match self.clone() {
             ChessCommand::PlayBestMove { depth } => {
                 let mut engine = Engine::from_board(game_state.board.clone());
@@ -97,19 +97,19 @@ impl GameCommand<ChessState> for ChessCommand {
                 let response = engine.search_depth_verbose(depth);
                 if let Some(best_move) = response.get_best_move() {
                     match game_state.board.push(best_move) {
-                        Ok(()) => MutationResult::CHANGED_NO_TRANSITION,
+                        Ok(()) => MutationResult::Changed(None),
                         Err(err) => {
                             leptos::logging::error!("{err}");
-                            MutationResult::NO_CHANGE
+                            MutationResult::NoChange
                         }
                     }
                 } else {
-                    MutationResult::NO_CHANGE
+                    MutationResult::NoChange
                 }
             }
             ChessCommand::Restart => {
                 game_state.board = Board::default();
-                MutationResult::CHANGED_NO_TRANSITION
+                MutationResult::Changed(None)
             }
             ChessCommand::ClickSquare(square) => {
                 match game_state.selected_square {
@@ -139,11 +139,11 @@ impl GameCommand<ChessState> for ChessCommand {
                         {
                             game_state.selected_square = Some(square);
                         } else {
-                            return MutationResult::NO_CHANGE;
+                            return MutationResult::NoChange;
                         }
                     }
                 }
-                MutationResult::CHANGED_NO_TRANSITION
+                MutationResult::Changed(None)
             }
         }
     }
@@ -433,6 +433,8 @@ pub struct ChessState {
     pub board: Board,
     pub selected_square: Option<Square>,
 }
+
+impl GameState for ChessState{}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BoardAnnotationsSegment {

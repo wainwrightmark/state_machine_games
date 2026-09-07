@@ -645,6 +645,8 @@ impl ApproachValue for f32 {
     }
 }
 
+
+
 pub trait SpiralValue: ApproachValue {
     fn get_radians(&self, center: &Self) -> f32;
     fn get_distance_from(&self, center: &Self) -> f32;

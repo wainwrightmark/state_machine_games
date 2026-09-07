@@ -1,24 +1,34 @@
-use crate::prelude::*;
+use crate::{
+    delayed_effect::{DelayedEffectStore, MutationResult},
+    prelude::*,
+};
 use leptos::prelude::Update;
 use std::sync::{Arc, Mutex, mpsc};
 
-pub trait GameState: Send + Sync + 'static + Sized {
-    fn maybe_transition(&mut self) -> MutationResult;
-}
+pub trait GameState: Send + Sync + 'static + Sized {}
 
 pub fn run_game<GS: GameState>(
     state: impl Clone + Update<Value = GS> + 'static,
+    initial_mutations: impl Iterator<Item = DelayedMutation<GS>>
 ) -> mpsc::Sender<Box<dyn GameCommand<GS>>> {
     let (sender, receiver) = mpsc::channel::<Box<dyn GameCommand<GS>>>();
 
-    let ms_until_transition: Arc<Mutex<Option<f64>>> = Arc::new(Mutex::new(Some(0.0)));
+    let mut delayed_effect_store = DelayedEffectStore::new();
+    for dm in initial_mutations{
+        delayed_effect_store.push_delayed_mutation(dm);
+    }
+
+    let delayed_effect_store: Arc<Mutex<DelayedEffectStore<GS>>> =
+        Arc::new(Mutex::new(delayed_effect_store));
+
+    //let ms_until_transition: Arc<Mutex<Option<f64>>> = Arc::new(Mutex::new(Some(0.0)));
     let receiver = Arc::new(receiver);
 
     leptos_use::use_raf_fn(move |args| {
         step_game(
             state.clone(),
             receiver.clone(),
-            ms_until_transition.clone(),
+            delayed_effect_store.clone(),
             args.delta,
         )
     });
@@ -29,44 +39,27 @@ pub fn run_game<GS: GameState>(
 fn step_game<GS: GameState>(
     gs: impl Update<Value = GS>,
     receiver: Arc<mpsc::Receiver<Box<dyn GameCommand<GS>>>>,
-    ms_until_transition: Arc<Mutex<Option<f64>>>,
+    delayed_effect_store: Arc<Mutex<DelayedEffectStore<GS>>>,
+
     delta_ms: f64,
 ) {
-    let mut remaining_ms = delta_ms;
-    //leptos::logging::log!("Step game {delta_ms}ms");
-
-    let mut ms_until_transition = ms_until_transition
+    let mut delayed_effect_store = delayed_effect_store
         .lock()
-        .expect("Could not get ms_until_transition");
+        .expect("Could not get delayed effect store");
 
-    while let Some(transition_ms) = ms_until_transition.as_mut()
-        && remaining_ms > 0.0
-    {
-        if remaining_ms >= *transition_ms {
-            remaining_ms -= *transition_ms;
-
-            gs.maybe_update(|gs| {
-                let mutation_result = gs.maybe_transition();
-                *ms_until_transition = mutation_result.transition_callback_in_ms;
-
-                mutation_result.changed
-            });
-        } else {
-            *transition_ms = *transition_ms - remaining_ms;
-            remaining_ms = 0.0;
-        }
-    }
+    gs.maybe_update(|gs| delayed_effect_store.tick(gs, delta_ms));
 
     while let Some(cmd) = receiver.try_recv().ok() {
         //leptos::logging::log!("Found command {cmd:?}");
-        gs.maybe_update(|gs| {
-            let mr = cmd.apply_command(gs);
-            //leptos::logging::log!("Command Applied {cmd:?} {mr:?}");
-            if mr.changed {
-                *ms_until_transition = mr.transition_callback_in_ms;
-            }
+        gs.maybe_update(|gs| match cmd.apply_command(gs) {
+            MutationResult::NoChange => false,
+            MutationResult::Changed(maybe_delayed_effect) => {
+                if let Some(dm) = maybe_delayed_effect {
+                    delayed_effect_store.push_delayed_mutation(dm);
+                }
 
-            mr.changed
+                true
+            }
         });
     }
 }

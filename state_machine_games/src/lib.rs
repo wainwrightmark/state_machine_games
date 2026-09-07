@@ -1,6 +1,7 @@
 pub mod animate_result;
 pub mod animation;
 pub mod command_sender;
+pub mod delayed_effect;
 pub mod entity_receiver;
 pub mod entity_state;
 pub mod entity_store;
@@ -10,7 +11,6 @@ pub mod game_entity;
 pub mod game_entity_key;
 pub mod game_state;
 pub mod lens;
-pub mod mutation_result;
 pub mod resource;
 pub mod singleton_store;
 pub mod skeleton;
@@ -32,7 +32,7 @@ pub mod prelude {
     pub use crate::game_state::*;
 
     pub use crate::lens::*;
-    pub use crate::mutation_result::*;
+    pub use crate::delayed_effect::*;
 
     pub use crate::singleton_store::*;
     pub use crate::skeleton::*;
