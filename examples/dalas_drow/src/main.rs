@@ -29,7 +29,7 @@ use crate::colors::CLASSIC_COLOR_SCHEME;
 use crate::dalas_drow_command::DalasDrowCommand;
 
 use crate::layout::*;
-use bevy_color::Srgba;
+
 #[allow(unused_imports)]
 use leptos::logging::log;
 use leptos::prelude::*;
@@ -98,7 +98,8 @@ fn game_component(puzzle_memo: Memo<Puzzle>) -> impl IntoView {
 
     let state_signal = RwSignal::new(state);
 
-    let sender: Sender<Box<dyn GameCommand<DalasDrowGameState> + 'static>> = run_game(state_signal, std::iter::empty());
+    let sender: Sender<Box<dyn GameCommand<DalasDrowGameState> + 'static>> =
+        run_game(state_signal, std::iter::empty());
 
     let tiles = TileEntity::render_entities::<TileRender>(state_signal.into());
     let tile_texts = TileEntity::render_entities::<TileTextRender>(state_signal.into());

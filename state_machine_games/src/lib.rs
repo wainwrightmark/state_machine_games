@@ -39,5 +39,7 @@ pub mod prelude {
     pub use crate::svg_coordinates::*;
     pub use crate::tiny_rng::*;
 
+    pub use simple_color::*;
+
     pub use glam::*;
 }

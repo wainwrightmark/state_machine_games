@@ -6,9 +6,7 @@ edition = "2024"
 
 
 [dependencies]
-state_machine_games = { path = "../../state_machine_games", features = [
-    "bevy_color",
-] }
+state_machine_games = { path = "../../state_machine_games" }
 geometrid = "0.10"
 wasm-logger = "0.2.0"
 console_error_panic_hook = "0.1.7"
@@ -19,11 +17,11 @@ strum = { version = "0.28", features = ["derive"] }
 itertools = { version = "0.14" }
 ws_core = { path = 'C:\Source\rust\word_salad\ws_core' }
 anyhow = "1"
-bevy_color = "*"
+
 base64 = "0.22"
 leptos = { version = "0.8", features = ["csr"] }
 leptos_router = { version = "0.8" }
-leptos-use = { version = "0.18" }
+leptos-use = { version = "*" }
 const_sized_bit_set = "0.5.0"
 web-sys = { version = "0.3", features = ["SvgElement"] }
 function_name = "0.3.0"

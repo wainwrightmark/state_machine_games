@@ -143,7 +143,7 @@ pub struct LozengeArtifact {
     pub index: usize,
     pub position: Vec2,
     pub text: Ustr,
-    pub fill: RwSignal<bevy_color::Srgba>,
+    pub fill: RwSignal<Srgba>,
     pub stroke_width: RwSignal<f32>,
 }
 

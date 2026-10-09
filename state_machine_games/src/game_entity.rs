@@ -63,7 +63,7 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
         });
         let store = store1.clone();
         //todo actually pause
-        let pause = pause_raf.pause.clone();
+        let _pause = pause_raf.pause.clone();
         let effect_fn = move || {
             store.maybe_update(move |store| {
                 let segment = state_signal.read();
@@ -102,7 +102,7 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
         store1
     }
 
-    fn should_reset_store(new_state: &Self::Segment, prev_state: &Self::Segment) -> bool {
+    fn should_reset_store(_new_state: &Self::Segment, _prev_state: &Self::Segment) -> bool {
         false
     }
 

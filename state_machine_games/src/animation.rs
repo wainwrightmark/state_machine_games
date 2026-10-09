@@ -159,12 +159,19 @@ pub fn animate_towards<L: GetValueLens + UpdateLens<Value: ApproachValue, Object
     }
 }
 
-pub fn animate_spring<L: GetValueLens + UpdateLens<Value: ApproachValue + DifferenceLogScaling, Object: GameArtifact>>(
+pub fn animate_spring<
+    L: GetValueLens + UpdateLens<Value: ApproachValue + DifferenceLogScaling, Object: GameArtifact>,
+>(
     target_value: L::Value,
     base_velocity_units_per_ms: f64,
-    log_scaling: f64
-)-> AnimateSpringTowards<L::Object, L::Value, L>{
-    AnimateSpringTowards { target_value, base_velocity_units_per_ms, log_scaling, phantom: PhantomData }
+    log_scaling: f64,
+) -> AnimateSpringTowards<L::Object, L::Value, L> {
+    AnimateSpringTowards {
+        target_value,
+        base_velocity_units_per_ms,
+        log_scaling,
+        phantom: PhantomData,
+    }
 }
 
 impl<TArtifact: GameArtifact> AnimationStage<TArtifact> {
@@ -551,21 +558,20 @@ pub trait ApproachValue: Send + Sync + 'static + Clone + PartialEq {
     ) -> bool;
 }
 
-#[cfg(feature = "bevy_color")]
-impl ApproachValue for bevy_color::Srgba {
+impl ApproachValue for simple_color::Srgba {
     fn approach(
         value: &mut Self,
         target_value: &Self,
         velocity_units_per_ms: f64,
         delta_ms: f64,
     ) -> bool {
-        use bevy_color::ColorToComponents;
+        
         let v4 = value.to_vec4();
         let v4 = v4.move_towards(
             target_value.to_vec4(),
             (velocity_units_per_ms * delta_ms) as f32,
         );
-        *value = bevy_color::Srgba::from_vec4(v4);
+        *value = simple_color::Srgba::from_vec4(v4);
         value == target_value
     }
 }
@@ -644,8 +650,6 @@ impl ApproachValue for f32 {
         }
     }
 }
-
-
 
 pub trait SpiralValue: ApproachValue {
     fn get_radians(&self, center: &Self) -> f32;

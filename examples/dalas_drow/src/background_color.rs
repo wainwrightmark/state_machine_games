@@ -1,4 +1,3 @@
-use bevy_color::Srgba;
 use leptos::prelude::RwSignal;
 use state_machine_games::{
     define_signal_lens,
@@ -20,8 +19,6 @@ impl GameArtifact for BackgroundColor {}
 pub struct BackgroundTargetColor {
     pub color: Srgba,
 }
-
-
 
 // impl HasSegment<BackgroundTargetColor> for QuizSaladGameState {
 //     fn get_segment(&self) -> BackgroundTargetColor {
