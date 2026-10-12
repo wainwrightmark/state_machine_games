@@ -59,6 +59,14 @@ pub struct AnimationStage<TArtifact: GameArtifact> {
 }
 
 impl<TArtifact: GameArtifact> AnimationStage<TArtifact> {
+    pub fn empty() -> Self {
+        Self {
+            current: Box::new(AnimateEmpty),
+            next: None,
+            loop_next: false,
+        }
+    }
+
     pub fn is_finished(&self, artifact: &TArtifact) -> bool {
         let mut stage = self;
         loop {
@@ -224,6 +232,11 @@ impl<TArtifact: GameArtifact> AnimationStage<TArtifact> {
         };
         new_stage
     }
+
+    pub fn and_then(mut self, next: impl Animation<TArtifact>) -> Self {
+        self.next = Some(Box::new(next.to_stage()));
+        self
+    }
 }
 
 pub trait Animation<TArtifact: GameArtifact>: Send + Sync + 'static {
@@ -242,6 +255,22 @@ pub trait Animation<TArtifact: GameArtifact>: Send + Sync + 'static {
             next: None,
             loop_next: false,
         }
+    }
+}
+
+pub struct AnimateEmpty;
+
+impl<TArtifact: GameArtifact> Animation<TArtifact> for AnimateEmpty {
+    fn step(&mut self, _object: &mut TArtifact, _delta_ms: f64) -> AnimateResult {
+        AnimateResult::FinishStep
+    }
+
+    fn is_finished(&self, _target: &TArtifact) -> bool {
+        true
+    }
+
+    fn box_clone(&self) -> Box<dyn Animation<TArtifact>> {
+        Box::new(Self)
     }
 }
 
@@ -350,6 +379,20 @@ pub struct AnimateSetValue<
 > {
     target_value: V,
     phantom: PhantomData<Lens>,
+}
+
+impl<
+    T: GameArtifact,
+    V: Send + Sync + 'static + Clone + PartialEq,
+    Lens: SetValueLens<Object = T, Value = V>,
+> AnimateSetValue<T, V, Lens>
+{
+    pub fn new(target_value: V) -> Self {
+        Self {
+            target_value,
+            phantom: PhantomData,
+        }
+    }
 }
 
 impl<T: GameArtifact, V: ApproachValue, Lens: SetValueLens<Object = T, Value = V>> Clone
@@ -565,7 +608,6 @@ impl ApproachValue for simple_color::Srgba {
         velocity_units_per_ms: f64,
         delta_ms: f64,
     ) -> bool {
-        
         let v4 = value.to_vec4();
         let v4 = v4.move_towards(
             target_value.to_vec4(),
