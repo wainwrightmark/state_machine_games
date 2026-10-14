@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::prelude::*;
-use glam::{FloatExt, Vec2, f32};
+use glam::{Vec2, f32};
 
 /// A set of animations to be run in parallel
 pub struct AnimationList<T: GameArtifact> {
@@ -97,22 +97,6 @@ impl<T: GameArtifact> Clone for AnimationStage<T> {
     }
 }
 
-// pub fn animate_angle<L: GetValueLens + UpdateLens<Value: SpiralValue, Object: GameArtifact>>(
-//     mut target_radians: f32,
-//     center: L::Value,
-//     velocity_radians_per_ms: f64,
-// ) -> AnimateRadial<L::Object, L::Value, L> {
-//     while target_radians > std::f32::consts::PI {
-//         target_radians -= std::f32::consts::TAU
-//     }
-//     AnimateRadial::<L::Object, L::Value, L> {
-//         target_radians,
-//         center,
-//         velocity_radians_per_ms,
-//         phantom: PhantomData,
-//     }
-// }
-
 #[derive(Debug, Clone)]
 pub struct AnimateWait {
     duration_ms_remaining: f64,
@@ -149,7 +133,7 @@ pub fn animate_set_value<
     L: GetValueLens + SetValueLens<Value: ApproachValue, Object: GameArtifact>,
 >(
     target_value: L::Value,
-) -> AnimateSetValue<L::Object, L::Value, L> {
+) -> AnimateSetValue<L> {
     AnimateSetValue {
         target_value,
         phantom: Default::default(),
@@ -167,13 +151,32 @@ pub fn animate_towards<L: GetValueLens + UpdateLens<Value: ApproachValue, Object
     }
 }
 
+pub fn animate_ease<
+    Lens: GetValueLens + UpdateLens<Value: EaseValue, Object: GameArtifact>,
+    F: Fn(f64) -> f64 + Clone + Send + Sync + 'static,
+>(
+    from: Lens::Value,
+    to: Lens::Value,
+    duration_ms: f64,
+    _lens: Lens,
+    func: F,
+) -> AnimateEase<Lens, F> {
+    AnimateEase {
+        from,
+        to,
+        progress: 0.0,
+        progress_per_ms: duration_ms.recip(),
+        func,
+    }
+}
+
 pub fn animate_spring<
     L: GetValueLens + UpdateLens<Value: ApproachValue + DifferenceLogScaling, Object: GameArtifact>,
 >(
     target_value: L::Value,
     base_velocity_units_per_ms: f64,
     log_scaling: f64,
-) -> AnimateSpringTowards<L::Object, L::Value, L> {
+) -> AnimateSpringTowards<L> {
     AnimateSpringTowards {
         target_value,
         base_velocity_units_per_ms,
@@ -278,23 +281,23 @@ pub trait EaseFunction<V>: Clone + Copy + Send + Sync + 'static {
     fn ease(self, from: V, to: V, ratio: f64) -> V;
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Lerp32;
+// #[derive(Debug, Clone, Copy)]
+// pub struct Lerp32;
 
-impl EaseFunction<f32> for Lerp32 {
-    fn ease(self, from: f32, to: f32, ratio: f64) -> f32 {
-        from.lerp(to, ratio as f32)
-    }
-}
+// impl EaseFunction<f32> for Lerp32 {
+//     fn ease(self, from: f32, to: f32, ratio: f64) -> f32 {
+//         from.lerp(to, ratio as f32)
+//     }
+// }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Lerp64;
+// #[derive(Debug, Clone, Copy)]
+// pub struct Lerp64;
 
-impl EaseFunction<f64> for Lerp64 {
-    fn ease(self, from: f64, to: f64, ratio: f64) -> f64 {
-        from.lerp(to, ratio)
-    }
-}
+// impl EaseFunction<f64> for Lerp64 {
+//     fn ease(self, from: f64, to: f64, ratio: f64) -> f64 {
+//         from.lerp(to, ratio)
+//     }
+// }
 
 // #[derive(Debug)]
 // pub struct AnimateRadial<
@@ -373,21 +376,16 @@ impl EaseFunction<f64> for Lerp64 {
 
 #[derive(Debug)]
 pub struct AnimateSetValue<
-    T: GameArtifact,
-    V: Send + Sync + 'static + Clone + PartialEq,
-    Lens: SetValueLens<Object = T, Value = V>,
+    Lens: SetValueLens<Object: GameArtifact, Value: Send + Sync + 'static + Clone + PartialEq>,
 > {
-    target_value: V,
+    target_value: Lens::Value,
     phantom: PhantomData<Lens>,
 }
 
-impl<
-    T: GameArtifact,
-    V: Send + Sync + 'static + Clone + PartialEq,
-    Lens: SetValueLens<Object = T, Value = V>,
-> AnimateSetValue<T, V, Lens>
+impl<Lens: SetValueLens<Object: GameArtifact, Value: Send + Sync + 'static + Clone + PartialEq>>
+    AnimateSetValue<Lens>
 {
-    pub fn new(target_value: V) -> Self {
+    pub const fn new(target_value: Lens::Value) -> Self {
         Self {
             target_value,
             phantom: PhantomData,
@@ -395,8 +393,8 @@ impl<
     }
 }
 
-impl<T: GameArtifact, V: ApproachValue, Lens: SetValueLens<Object = T, Value = V>> Clone
-    for AnimateSetValue<T, V, Lens>
+impl<Lens: SetValueLens<Object: GameArtifact, Value: ApproachValue>> Clone
+    for AnimateSetValue<Lens>
 {
     fn clone(&self) -> Self {
         Self {
@@ -407,22 +405,20 @@ impl<T: GameArtifact, V: ApproachValue, Lens: SetValueLens<Object = T, Value = V
 }
 
 impl<
-    T: GameArtifact,
-    V: ApproachValue + Clone + PartialEq,
-    Lens: GetValueLens + SetValueLens<Object = T, Value = V>,
-> Animation<T> for AnimateSetValue<T, V, Lens>
+    Lens: GetValueLens<Object: GameArtifact, Value: ApproachValue + Clone + PartialEq> + SetValueLens,
+> Animation<Lens::Object> for AnimateSetValue<Lens>
 {
-    fn step(&mut self, object: &mut T, _delta_ms: f64) -> AnimateResult {
+    fn step(&mut self, object: &mut Lens::Object, _delta_ms: f64) -> AnimateResult {
         Lens::set(object, self.target_value.clone());
         AnimateResult::FinishStep
     }
 
-    fn is_finished(&self, target: &T) -> bool {
+    fn is_finished(&self, target: &Lens::Object) -> bool {
         self.target_value == Lens::get_value(target)
     }
 
-    fn box_clone(&self) -> Box<dyn Animation<T>> {
-        let clone: AnimateSetValue<T, V, Lens> = self.clone();
+    fn box_clone(&self) -> Box<dyn Animation<Lens::Object>> {
+        let clone: AnimateSetValue<Lens> = self.clone();
         Box::new(clone)
     }
 }
@@ -470,11 +466,9 @@ impl DifferenceLogScaling for f32 {
 
 #[derive(Debug)]
 pub struct AnimateSpringTowards<
-    T: GameArtifact,
-    V: ApproachValue + DifferenceLogScaling,
-    Lens: UpdateLens<Object = T, Value = V>,
+    Lens: GetValueLens + UpdateLens<Object: GameArtifact, Value: ApproachValue + DifferenceLogScaling>,
 > {
-    target_value: V,
+    target_value: Lens::Value,
     base_velocity_units_per_ms: f64,
     /// if the current distance is x, the velocity is:
     /// base_velocity * 2^max(1.0, x/log_scaling)
@@ -483,10 +477,8 @@ pub struct AnimateSpringTowards<
 }
 
 impl<
-    T: GameArtifact,
-    V: ApproachValue + DifferenceLogScaling,
-    Lens: UpdateLens<Object = T, Value = V>,
-> Clone for AnimateSpringTowards<T, V, Lens>
+    Lens: GetValueLens + UpdateLens<Object: GameArtifact, Value: ApproachValue + DifferenceLogScaling>,
+> Clone for AnimateSpringTowards<Lens>
 {
     fn clone(&self) -> Self {
         Self {
@@ -499,22 +491,20 @@ impl<
 }
 
 impl<
-    T: GameArtifact,
-    V: ApproachValue + DifferenceLogScaling,
-    Lens: GetValueLens + UpdateLens<Object = T, Value = V>,
-> Animation<T> for AnimateSpringTowards<T, V, Lens>
+    Lens: GetValueLens + UpdateLens<Object: GameArtifact, Value: ApproachValue + DifferenceLogScaling>,
+> Animation<Lens::Object> for AnimateSpringTowards<Lens>
 {
-    fn step(&mut self, object: &mut T, delta_ms: f64) -> AnimateResult {
+    fn step(&mut self, object: &mut Lens::Object, delta_ms: f64) -> AnimateResult {
         let mut result: AnimateResult = AnimateResult::FinishStep;
         Lens::update(object, |current_value| {
-            let velocity = V::calculate_scaled_velocity(
+            let velocity = Lens::Value::calculate_scaled_velocity(
                 current_value,
                 &self.target_value,
                 self.log_scaling,
                 self.base_velocity_units_per_ms,
             );
 
-            if V::approach(current_value, &self.target_value, velocity, delta_ms) {
+            if Lens::Value::approach(current_value, &self.target_value, velocity, delta_ms) {
                 result = AnimateResult::FinishStep;
             } else {
                 result = AnimateResult::Continue;
@@ -524,12 +514,12 @@ impl<
         result
     }
 
-    fn is_finished(&self, target: &T) -> bool {
+    fn is_finished(&self, target: &Lens::Object) -> bool {
         self.target_value == Lens::get_value(target)
     }
 
-    fn box_clone(&self) -> Box<dyn Animation<T>> {
-        let clone: AnimateSpringTowards<T, V, Lens> = self.clone();
+    fn box_clone(&self) -> Box<dyn Animation<Lens::Object>> {
+        let clone: AnimateSpringTowards<Lens> = self.clone();
         Box::new(clone)
     }
 }
@@ -592,7 +582,7 @@ impl<
 }
 
 #[derive(Debug)]
-pub struct Easing<
+pub struct AnimateEase<
     Lens: UpdateLens<Object: GameArtifact, Value: EaseValue>,
     F: Fn(f64) -> f64 + Clone + Send + Sync + 'static,
 > {
@@ -607,7 +597,7 @@ pub struct Easing<
 impl<
     Lens: UpdateLens<Object: GameArtifact, Value: EaseValue>,
     F: Fn(f64) -> f64 + Clone + Send + Sync + 'static,
-> Animation<Lens::Object> for Easing<Lens, F>
+> Animation<Lens::Object> for AnimateEase<Lens, F>
 {
     fn step(&mut self, object: &mut Lens::Object, delta_ms: f64) -> AnimateResult {
         self.progress = (self.progress + (self.progress_per_ms * delta_ms)).min(1.0);
