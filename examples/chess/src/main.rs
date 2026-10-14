@@ -216,6 +216,7 @@ impl GameEntity for ChessSquareEntity {
         &self,
         _artifact: &mut Self::Artifact,
         _former_entity_state: EntityLifecycle,
+        _previous_value: Self,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         AnimationList::EMPTY
@@ -309,6 +310,7 @@ impl GameEntity for BoardAnnotation {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityLifecycle,
+        _previous_value: Self,
         previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         *artifact = *self;
@@ -380,6 +382,7 @@ impl GameEntity for ChessPiece {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityLifecycle,
+        _previous_value: Self,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         *artifact = *self;

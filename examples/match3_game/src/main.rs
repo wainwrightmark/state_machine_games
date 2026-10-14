@@ -379,6 +379,7 @@ impl GameEntity for Match3TileEntity {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityLifecycle,
+        _previous_value: Self,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         artifact.selected.set(self.selected);

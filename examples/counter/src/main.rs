@@ -149,6 +149,7 @@ impl GameEntity for Circle {
         &self,
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityLifecycle,
+        _previous_value: Self,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         let position = animate_towards::<CirclePositionLens>(self.position(), 0.1).to_stage();

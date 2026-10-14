@@ -34,6 +34,7 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
         &self,
         artifact: &mut Self::Artifact,
         former_entity_lifecycle: EntityLifecycle,
+        previous_value: Self,
         previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact>; //todo try mutating the animations
 

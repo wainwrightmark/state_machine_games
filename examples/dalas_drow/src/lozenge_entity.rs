@@ -121,6 +121,7 @@ impl GameEntity for LozengeEntity {
         &self,
         artifact: &mut Self::Artifact,
         former_entity_lifecycle: EntityLifecycle,
+        _previous_value: Self,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
         if former_entity_lifecycle == EntityLifecycle::Reset {

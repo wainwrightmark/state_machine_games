@@ -49,9 +49,15 @@ impl<E: GameEntity> StoredEntity<E> {
             //do nothing
         } else {
             let previous_animations = std::mem::take(&mut prev.animations);
-            prev.animations =
-                new_entity.on_update(&mut prev.artifact, prev.lifecycle, previous_animations);
-            prev.entity = new_entity;
+
+            let prev_entity = std::mem::replace(&mut prev.entity, new_entity);
+            prev.animations = prev.entity.on_update(
+                &mut prev.artifact,
+                prev.lifecycle,
+                prev_entity,
+                previous_animations,
+            );
+
             prev.lifecycle = EntityLifecycle::Alive;
         }
     }
@@ -87,8 +93,8 @@ impl<E: GameEntity> StoredEntity<E> {
             }
         }
 
-        let should_remove =  self.animations.is_empty();
-        
+        let should_remove = self.animations.is_empty();
+
         should_remove
     }
 }
