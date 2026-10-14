@@ -591,6 +591,104 @@ impl<
     }
 }
 
+#[derive(Debug)]
+pub struct Easing<
+    Lens: UpdateLens<Object: GameArtifact, Value: EaseValue>,
+    F: Fn(f64) -> f64 + Clone + Send + Sync + 'static,
+> {
+    pub from: Lens::Value,
+    pub to: Lens::Value,
+    /// Between 0.0 and 1.0
+    pub progress: f64,
+    pub progress_per_ms: f64,
+    pub func: F,
+}
+
+impl<
+    Lens: UpdateLens<Object: GameArtifact, Value: EaseValue>,
+    F: Fn(f64) -> f64 + Clone + Send + Sync + 'static,
+> Animation<Lens::Object> for Easing<Lens, F>
+{
+    fn step(&mut self, object: &mut Lens::Object, delta_ms: f64) -> AnimateResult {
+        self.progress = (self.progress + (self.progress_per_ms * delta_ms)).min(1.0);
+
+        let t = (self.func)(self.progress);
+        let new_value = self.from.mix(&self.to, t);
+
+        Lens::update(object, |v| *v = new_value);
+
+        if self.progress >= 1.0 {
+            AnimateResult::FinishStep
+        } else {
+            AnimateResult::Continue
+        }
+    }
+
+    fn is_finished(&self, _target: &Lens::Object) -> bool {
+        self.progress >= 1.0
+    }
+
+    fn box_clone(&self) -> Box<dyn Animation<Lens::Object>> {
+        let Self {
+            from,
+            to,
+            progress,
+            progress_per_ms,
+            func,
+        } = self;
+        Box::new(Self {
+            from: from.clone(),
+            to: to.clone(),
+            progress: *progress,
+            progress_per_ms: *progress_per_ms,
+            func: func.clone(),
+        })
+    }
+}
+
+pub trait EaseValue: Send + Sync + 'static + Clone + PartialEq {
+    fn mix(&self, other: &Self, factor: f64) -> Self;
+}
+
+impl EaseValue for Srgba {
+    fn mix(&self, other: &Self, factor: f64) -> Self {
+        let factor = factor as f32;
+        let n_factor = 1.0 - factor;
+        Self {
+            red: self.red * n_factor + other.red * factor,
+            green: self.green * n_factor + other.green * factor,
+            blue: self.blue * n_factor + other.blue * factor,
+            alpha: self.alpha * n_factor + other.alpha * factor,
+        }
+    }
+}
+
+impl EaseValue for f32 {
+    fn mix(&self, other: &Self, factor: f64) -> Self {
+        let factor = factor as f32;
+        let n_factor = 1.0 - factor;
+        self * n_factor + other * factor
+    }
+}
+
+impl EaseValue for f64 {
+    fn mix(&self, other: &Self, factor: f64) -> Self {
+        let n_factor = 1.0 - factor;
+        self * n_factor + other * factor
+    }
+}
+
+impl EaseValue for Vec2 {
+    fn mix(&self, other: &Self, factor: f64) -> Self {
+        let factor = factor as f32;
+        let n_factor = 1.0 - factor;
+        Self {
+            x: self.x * n_factor + other.x * factor,
+            y: self.y * n_factor + other.y * factor,
+        }
+    }
+}
+
 pub trait ApproachValue: Send + Sync + 'static + Clone + PartialEq {
     ///Returns `true` if the value has now reached the target
     fn approach(
@@ -693,22 +791,22 @@ impl ApproachValue for f32 {
     }
 }
 
-pub trait SpiralValue: ApproachValue {
-    fn get_radians(&self, center: &Self) -> f32;
-    fn get_distance_from(&self, center: &Self) -> f32;
-    fn from_radians_and_distance(radians: f32, distance: f32, center: &Self) -> Self;
-}
+// pub trait SpiralValue: ApproachValue {
+//     fn get_radians(&self, center: &Self) -> f32;
+//     fn get_distance_from(&self, center: &Self) -> f32;
+//     fn from_radians_and_distance(radians: f32, distance: f32, center: &Self) -> Self;
+// }
 
-impl SpiralValue for Vec2 {
-    fn from_radians_and_distance(radians: f32, distance: f32, center: &Self) -> Self {
-        center + (Vec2::from_angle(radians) * distance)
-    }
+// impl SpiralValue for Vec2 {
+//     fn from_radians_and_distance(radians: f32, distance: f32, center: &Self) -> Self {
+//         center + (Vec2::from_angle(radians) * distance)
+//     }
 
-    fn get_distance_from(&self, center: &Self) -> f32 {
-        Vec2::distance(*self, *center)
-    }
+//     fn get_distance_from(&self, center: &Self) -> f32 {
+//         Vec2::distance(*self, *center)
+//     }
 
-    fn get_radians(&self, center: &Self) -> f32 {
-        center.angle_to(*self)
-    }
-}
+//     fn get_radians(&self, center: &Self) -> f32 {
+//         center.angle_to(*self)
+//     }
+// }

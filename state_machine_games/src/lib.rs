@@ -17,6 +17,7 @@ pub mod skeleton;
 pub mod svg_coordinates;
 pub mod tiny_rng;
 pub mod value_watcher;
+pub mod easings;
 
 pub mod prelude {
     pub use crate::animate_result::*;
