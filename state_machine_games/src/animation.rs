@@ -781,6 +781,29 @@ impl ApproachValue for f32 {
     }
 }
 
+impl <T: ApproachValue + Default> ApproachValue for Option<T>{
+    fn approach(
+        value: &mut Self,
+        target_value: &Self,
+        velocity_units_per_ms: f64,
+        delta_ms: f64,
+    ) -> bool {
+
+        match (value.as_mut(), target_value){
+            (None, None) => {return true;},
+            (None, Some(tv)) => {
+                let mut v = T::default();
+                let r  = <T as ApproachValue>::approach(&mut v, tv, velocity_units_per_ms, delta_ms);
+
+                 *value = Some(v);
+                 r
+            } ,
+            (Some(_), None) => {*value = None; return true;},
+            (Some(v), Some(tv)) => <T as ApproachValue>::approach(v, tv, velocity_units_per_ms, delta_ms),
+        }
+    }
+}
+
 // pub trait SpiralValue: ApproachValue {
 //     fn get_radians(&self, center: &Self) -> f32;
 //     fn get_distance_from(&self, center: &Self) -> f32;
