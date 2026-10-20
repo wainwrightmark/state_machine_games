@@ -17,7 +17,14 @@ pub fn main() {
 
 fn game_component() -> impl IntoView {
     let state = RwSignal::new(Match3Game::new_random(123));
-    let sender = run_game(state, [DelayedMutation{mutation: Mutation::Static(&maybe_transition), delay_ms: 1000.0}].into_iter());
+    let sender = run_game(
+        state,
+        [DelayedMutation {
+            mutation: Mutation::Static(&maybe_transition),
+            delay_ms: 1000.0,
+        }]
+        .into_iter(),
+    );
 
     provide_context(sender);
 
@@ -164,10 +171,10 @@ impl GameCommand<Match3Game> for Match3Command {
         }
         //let transition_callback_in_ms = if true { Some(1000.0) } else { None };
 
-        MutationResult::Changed(Some(DelayedMutation {
+        MutationResult::ChangedWithMutation(DelayedMutation {
             mutation: Mutation::Static(&maybe_transition),
             delay_ms: 1000.0,
-        }))
+        })
     }
 }
 
@@ -480,10 +487,10 @@ fn maybe_transition(game_state: &mut Match3Game) -> MutationResult<Match3Game> {
     game_state.grid = new_grid;
 
     if changed {
-        MutationResult::Changed(Some(DelayedMutation {
+        MutationResult::ChangedWithMutation(DelayedMutation {
             mutation: Mutation::Static(&maybe_transition),
             delay_ms: 1000.0,
-        }))
+        })
     } else {
         MutationResult::NoChange
     }

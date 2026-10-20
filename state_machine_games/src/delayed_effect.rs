@@ -28,7 +28,9 @@ impl<GS: GameState> Mutation<GS> {
 
 pub enum MutationResult<GS: GameState> {
     NoChange,
-    Changed(Option<DelayedMutation<GS>>),
+    Changed,
+    ChangedWithMutation(DelayedMutation<GS>),
+    ChangedWithMutationVec(Vec<DelayedMutation<GS>>),
 }
 
 struct MutationAtTime<GS: GameState> {
@@ -38,7 +40,9 @@ struct MutationAtTime<GS: GameState> {
 
 impl<GS: GameState> Ord for MutationAtTime<GS> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.time_ms.total_cmp(&other.time_ms)
+        //This is to be used in a max heap so we reverse the comparison
+        //This means shorter times will be put on top of the heap
+        self.time_ms.total_cmp(&other.time_ms).reverse()
     }
 }
 
@@ -52,7 +56,9 @@ impl<GS: GameState> PartialEq for MutationAtTime<GS> {
 
 impl<GS: GameState> PartialOrd for MutationAtTime<GS> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.time_ms.partial_cmp(&other.time_ms)
+        //This is to be used in a max heap so we reverse the comparison
+        //This means shorter times will be put on top of the heap
+        self.time_ms.partial_cmp(&other.time_ms).map(|x|x.reverse())
     }
 }
 
@@ -88,14 +94,18 @@ impl<GS: GameState> DelayedEffectStore<GS> {
             };
             match top.mutation.apply(game_state) {
                 MutationResult::NoChange => {}
-                MutationResult::Changed(maybe_delayed_effect) => {
-                    match maybe_delayed_effect {
-                        None => {}
-                        Some(dm) => {
-                            self.push_delayed_mutation(dm);
-                        }
-                    }
+                MutationResult::Changed => {
                     changed = true;
+                }
+                MutationResult::ChangedWithMutation(dm) => {
+                    self.push_delayed_mutation(dm);
+                    changed = true;
+                }
+                MutationResult::ChangedWithMutationVec(delayed_mutations) => {
+                    for dm in delayed_mutations.into_iter() {
+                        self.push_delayed_mutation(dm);
+                        changed = true;
+                    }
                 }
             }
         }

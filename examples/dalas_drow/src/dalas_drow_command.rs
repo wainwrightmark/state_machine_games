@@ -20,18 +20,18 @@ impl GameCommand<DalasDrowGameState> for DalasDrowCommand {
             DalasDrowCommand::ResetLevel => {
                 let start_timestamp = js_sys::Date::now();
                 *game_state = DalasDrowGameState::new(game_state.puzzle.clone(), start_timestamp);
-                MutationResult::Changed(None)
+                MutationResult::Changed
             }
 
             DalasDrowCommand::ChangeLevel { puzzle } => {
                 *game_state = DalasDrowGameState::new(puzzle.clone(), js_sys::Date::now());
-                MutationResult::Changed(None)
+                MutationResult::Changed
             }
             DalasDrowCommand::ClickTile(tile) => match game_state.selected_tile {
                 Some(selected_tile) => {
                     if selected_tile == *tile {
                         game_state.selected_tile = None;
-                        return MutationResult::Changed(None);
+                        return MutationResult::Changed;
                     } else {
                         //logging::log!("Swapping tiles {tile} & {selected_tile}");
 
@@ -44,12 +44,12 @@ impl GameCommand<DalasDrowGameState> for DalasDrowCommand {
                                     as u32,
                             );
                         }
-                        return MutationResult::Changed(None);
+                        return MutationResult::Changed;
                     }
                 }
                 None => {
                     game_state.selected_tile = Some(*tile);
-                    return MutationResult::Changed(None);
+                    return MutationResult::Changed;
                 }
             },
         }

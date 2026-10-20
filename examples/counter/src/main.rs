@@ -70,12 +70,12 @@ impl GameCommand<CounterGameState> for CounterCommand {
                 game_state.n += n;
                 let _ = game_state.rng.next_u64();
 
-                MutationResult::Changed(None)
+                MutationResult::Changed{}
                 
             }
             CounterCommand::Reset => {
                 game_state.n = 0;
-                MutationResult::Changed(None)
+                MutationResult::Changed{}
             }
         }
     }

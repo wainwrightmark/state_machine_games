@@ -53,13 +53,19 @@ fn step_game<GS: GameState>(
         //leptos::logging::log!("Found command {cmd:?}");
         gs.maybe_update(|gs| match cmd.apply_command(gs) {
             MutationResult::NoChange => false,
-            MutationResult::Changed(maybe_delayed_effect) => {
-                if let Some(dm) = maybe_delayed_effect {
+            MutationResult::Changed => {
+                true
+            },
+            MutationResult::ChangedWithMutation(dm) => {
+                delayed_effect_store.push_delayed_mutation(dm);
+                true
+            },
+            MutationResult::ChangedWithMutationVec(delayed_mutations) => {
+                for dm in delayed_mutations{
                     delayed_effect_store.push_delayed_mutation(dm);
                 }
-
                 true
-            }
+            },
         });
     }
 }

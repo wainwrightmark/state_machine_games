@@ -97,7 +97,7 @@ impl GameCommand<ChessState> for ChessCommand {
                 let response = engine.search_depth_verbose(depth);
                 if let Some(best_move) = response.get_best_move() {
                     match game_state.board.push(best_move) {
-                        Ok(()) => MutationResult::Changed(None),
+                        Ok(()) => MutationResult::Changed,
                         Err(err) => {
                             leptos::logging::error!("{err}");
                             MutationResult::NoChange
@@ -109,7 +109,7 @@ impl GameCommand<ChessState> for ChessCommand {
             }
             ChessCommand::Restart => {
                 game_state.board = Board::default();
-                MutationResult::Changed(None)
+                MutationResult::Changed
             }
             ChessCommand::ClickSquare(square) => {
                 match game_state.selected_square {
@@ -143,7 +143,7 @@ impl GameCommand<ChessState> for ChessCommand {
                         }
                     }
                 }
-                MutationResult::Changed(None)
+                MutationResult::Changed
             }
         }
     }
