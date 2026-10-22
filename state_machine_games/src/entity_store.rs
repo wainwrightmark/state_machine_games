@@ -23,6 +23,18 @@ impl<E: GameEntity> EntityStore<E> {
 
         s
     }
+
+    pub(crate) fn refresh_animation_list(&mut self) {
+        self.animated_entities.clear();
+        let animated_entity_keys = self
+            .entities
+            .iter()
+            .enumerate()
+            .filter(|(_index, e)| e.has_animations())
+            .map(|x| x.0);
+
+        self.animated_entities.extend(animated_entity_keys);
+    }
 }
 
 pub struct StoredEntity<E: GameEntity> {

@@ -44,15 +44,19 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
 
         let store = store1.clone();
         let pause_raf = leptos_use::use_raf_fn(move |a| {
-            store.update_untracked(move |s| {
+            store.maybe_update(move |s| {
                 // if s.animated_entities.count() > 0 {
                 //     log!("Animating {} Entities of type {}", s.animated_entities.count(), std::any::type_name::<Self>());
                 // }
-
+                let mut dead_entities_removed = 0;
                 s.animated_entities.retain(|key| {
-                    if let Some(b) = s.entities.get_mut(*key as usize) {
+                    if let Some(b) = s.entities.get_mut(*key as usize - dead_entities_removed) {
                         let retain = b.step_animate(a.delta);
                         if !retain {
+                            if b.lifecycle.is_dead() {
+                                s.entities.remove(*key as usize - dead_entities_removed);
+                                dead_entities_removed += 1;
+                            }
                             //log!("Finished animating Entity of type {}",  std::any::type_name::<Self>());
                         }
                         retain
@@ -60,6 +64,11 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
                         false
                     }
                 });
+                if dead_entities_removed > 0 {
+                    s.refresh_animation_list();
+                }
+
+                dead_entities_removed > 0
             });
         });
         let store = store1.clone();
@@ -77,7 +86,7 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
                 store.segment = segment.clone();
 
                 if store_reset {
-                    for entity in store.entities.iter_mut(){
+                    for entity in store.entities.iter_mut() {
                         entity.lifecycle = EntityLifecycle::Reset;
                     }
                 }

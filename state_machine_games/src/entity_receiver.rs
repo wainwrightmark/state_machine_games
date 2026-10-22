@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use const_sized_bit_set::prelude::*;
 use std::collections::HashSet;
 
 pub trait EntityReceiver<E: GameEntity> {
@@ -44,16 +43,7 @@ impl<'s, E: GameEntity> GeneralEntityReceiver<'s, E> {
             }
         }
 
-        self.store.animated_entities.clear();
-        let animated_entity_keys = self
-            .store
-            .entities
-            .iter()
-            .enumerate()
-            .filter(|(_index, e)| e.has_animations())
-            .map(|x| x.0);
-
-        self.store.animated_entities.extend(animated_entity_keys);
+        self.store.refresh_animation_list();
 
         self.changed
     }
@@ -61,7 +51,7 @@ impl<'s, E: GameEntity> GeneralEntityReceiver<'s, E> {
 
 impl<'s, E: GameEntity> EntityReceiver<E> for GeneralEntityReceiver<'s, E> {
     fn receive(&mut self) {
-        let entities= E::get_entities(&self.store.segment);
+        let entities = E::get_entities(&self.store.segment);
         for entity in entities {
             let key = entity.key();
 

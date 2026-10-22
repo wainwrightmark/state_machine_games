@@ -187,13 +187,13 @@ pub fn animate_spring<
 
 impl<TArtifact: GameArtifact> AnimationStage<TArtifact> {
     fn continue_with(&mut self, new_stage: Box<Self>, set_loop: bool) {
-        //todo find a way to avoid tail recursion
-        if let Some(next) = self.next.as_mut() {
-            next.as_mut().continue_with(new_stage, set_loop);
-        } else {
-            self.loop_next = set_loop;
-            self.next = Some(new_stage)
+        let mut s = self;
+
+        while let Some(ref mut next) = s.next {
+            s = next.as_mut();
         }
+        s.loop_next = set_loop;
+        s.next = Some(new_stage);
     }
 
     pub fn loop_forever(&mut self) {
@@ -236,8 +236,9 @@ impl<TArtifact: GameArtifact> AnimationStage<TArtifact> {
         new_stage
     }
 
+    /// Adds 'next' to the end of the chain. Returns self.    
     pub fn and_then(mut self, next: impl Animation<TArtifact>) -> Self {
-        self.next = Some(Box::new(next.to_stage()));
+        self.continue_with(Box::new(next.to_stage()), false);
         self
     }
 }
@@ -280,99 +281,6 @@ impl<TArtifact: GameArtifact> Animation<TArtifact> for AnimateEmpty {
 pub trait EaseFunction<V>: Clone + Copy + Send + Sync + 'static {
     fn ease(self, from: V, to: V, ratio: f64) -> V;
 }
-
-// #[derive(Debug, Clone, Copy)]
-// pub struct Lerp32;
-
-// impl EaseFunction<f32> for Lerp32 {
-//     fn ease(self, from: f32, to: f32, ratio: f64) -> f32 {
-//         from.lerp(to, ratio as f32)
-//     }
-// }
-
-// #[derive(Debug, Clone, Copy)]
-// pub struct Lerp64;
-
-// impl EaseFunction<f64> for Lerp64 {
-//     fn ease(self, from: f64, to: f64, ratio: f64) -> f64 {
-//         from.lerp(to, ratio)
-//     }
-// }
-
-// #[derive(Debug)]
-// pub struct AnimateRadial<
-//     T: GameArtifact,
-//     V: SpiralValue,
-//     Lens: GetValueLens + UpdateLens<Object = T, Value = V>,
-// > {
-//     target_radians: f32,
-//     center: V,
-//     velocity_radians_per_ms: f64,
-//     phantom: PhantomData<Lens>,
-// }
-
-// impl<T: GameArtifact, V: SpiralValue, Lens: GetValueLens + UpdateLens<Object = T, Value = V>>
-//     Animation<T> for AnimateRadial<T, V, Lens>
-// {
-//     fn step(&self, object: &mut T, delta_ms: f64) -> AnimateResult {
-//         let mut result: AnimateResult = AnimateResult::FinishStep;
-//         Lens::update(object, |current_value| {
-//             let mut current_radians = V::get_radians(current_value, &self.center);
-//             let current_distance = V::get_distance_from(current_value, &self.center);
-
-//             let mut adj_target_radians = self.target_radians;
-//             if self.velocity_radians_per_ms >= 0.0{
-//                 current_radians += std::f32::consts::TAU;
-//                 adj_target_radians += std::f32::consts::TAU;
-//             }else{
-//                 current_radians -= std::f32::consts::TAU;
-//                 adj_target_radians -= std::f32::consts::TAU;
-//             }
-
-//             let p = current_radians;
-
-//             if f32::approach(
-//                 &mut current_radians,
-//                 &adj_target_radians,
-//                 self.velocity_radians_per_ms,
-//                 delta_ms,
-//             ) {
-//                 result = AnimateResult::FinishStep;
-//             } else {
-//                 result = AnimateResult::Continue;
-//             }
-
-//             *current_value =
-//                 V::from_radians_and_distance(current_radians, current_distance, &self.center);
-
-//             leptos::logging::log!("prev {p} target {adj_target_radians} new {current_radians}  new calc {}", V::get_radians(current_value, &self.center) + std::f32::consts::TAU);
-//         });
-
-//         result
-//     }
-
-//     fn is_finished(&self, target: &T) -> bool {
-//         self.target_radians == V::get_radians(&Lens::get_value(target), &self.center)
-//     }
-
-//     fn box_clone(&self) -> Box<dyn Animation<T>> {
-//         let clone: AnimateRadial<T, V, Lens> = self.clone();
-//         Box::new(clone)
-//     }
-// }
-
-// impl<T: GameArtifact, V: SpiralValue, Lens: GetValueLens + UpdateLens<Object = T, Value = V>> Clone
-//     for AnimateRadial<T, V, Lens>
-// {
-//     fn clone(&self) -> Self {
-//         Self {
-//             target_radians: self.target_radians.clone(),
-//             center: self.center.clone(),
-//             velocity_radians_per_ms: self.velocity_radians_per_ms.clone(),
-//             phantom: self.phantom.clone(),
-//         }
-//     }
-// }
 
 #[derive(Debug)]
 pub struct AnimateSetValue<
@@ -781,45 +689,31 @@ impl ApproachValue for f32 {
     }
 }
 
-impl <T: ApproachValue + Default> ApproachValue for Option<T>{
+impl<T: ApproachValue + Default> ApproachValue for Option<T> {
     fn approach(
         value: &mut Self,
         target_value: &Self,
         velocity_units_per_ms: f64,
         delta_ms: f64,
     ) -> bool {
-
-        match (value.as_mut(), target_value){
-            (None, None) => {return true;},
+        match (value.as_mut(), target_value) {
+            (None, None) => {
+                return true;
+            }
             (None, Some(tv)) => {
                 let mut v = T::default();
-                let r  = <T as ApproachValue>::approach(&mut v, tv, velocity_units_per_ms, delta_ms);
+                let r = <T as ApproachValue>::approach(&mut v, tv, velocity_units_per_ms, delta_ms);
 
-                 *value = Some(v);
-                 r
-            } ,
-            (Some(_), None) => {*value = None; return true;},
-            (Some(v), Some(tv)) => <T as ApproachValue>::approach(v, tv, velocity_units_per_ms, delta_ms),
+                *value = Some(v);
+                r
+            }
+            (Some(_), None) => {
+                *value = None;
+                return true;
+            }
+            (Some(v), Some(tv)) => {
+                <T as ApproachValue>::approach(v, tv, velocity_units_per_ms, delta_ms)
+            }
         }
     }
 }
-
-// pub trait SpiralValue: ApproachValue {
-//     fn get_radians(&self, center: &Self) -> f32;
-//     fn get_distance_from(&self, center: &Self) -> f32;
-//     fn from_radians_and_distance(radians: f32, distance: f32, center: &Self) -> Self;
-// }
-
-// impl SpiralValue for Vec2 {
-//     fn from_radians_and_distance(radians: f32, distance: f32, center: &Self) -> Self {
-//         center + (Vec2::from_angle(radians) * distance)
-//     }
-
-//     fn get_distance_from(&self, center: &Self) -> f32 {
-//         Vec2::distance(*self, *center)
-//     }
-
-//     fn get_radians(&self, center: &Self) -> f32 {
-//         center.angle_to(*self)
-//     }
-// }
