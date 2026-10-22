@@ -67,6 +67,8 @@ pub trait SingletonEntity: Send + Sync + 'static + Sized {
             RwSignal::new(SingletonEntityStore::new(state_signal.get_untracked()));
 
         let store = store1.clone();
+        #[expect(deprecated)]
+        #[expect(unused)]
         let pause_raf = leptos_use::use_raf_fn(move |a| {
             store.update_untracked(move |s| s.step_animate(a.delta));
         });

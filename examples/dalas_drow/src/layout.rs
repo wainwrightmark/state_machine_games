@@ -78,7 +78,7 @@ pub const fn postgame_tile_position(
     Vec2 { x, y }
 }
 
-pub const fn lozenge_position(index: usize, lozenge_count: usize, origin: PositionOrigin) -> Vec2 {
+pub const fn lozenge_position(index: usize, _lozenge_count: usize, origin: PositionOrigin) -> Vec2 {
 
     let x_index = index % 3;
     let y_index = index / 3;

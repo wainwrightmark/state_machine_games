@@ -43,6 +43,7 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
             RwSignal::new(EntityStore::new(state_signal.get_untracked()));
 
         let store = store1.clone();
+        #[expect(deprecated)]
         let pause_raf = leptos_use::use_raf_fn(move |a| {
             store.maybe_update(move |s| {
                 // if s.animated_entities.count() > 0 {

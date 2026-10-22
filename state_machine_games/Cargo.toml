@@ -9,7 +9,8 @@ wasm-logger = "0.2.0"
 leptos = { version = "0.8", features = ["csr"]}
 glam = {version = "*"}
 
-leptos-use = {version = ">=0.18"}
+leptos-use = {version = ">=0.20", default-features = false, features = ["use_raf_fn"]}
+web-sys= {version = ">=0.3", default-features = false, features = ["DomRect", "Element", "TouchEvent", "TouchList", "Touch"]}
 rand = {version = "0.10"}
 static_assertions = "1.1.0"
 impl-trait-for-tuples = "0.2.3"

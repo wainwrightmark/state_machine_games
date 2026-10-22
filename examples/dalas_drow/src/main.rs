@@ -215,42 +215,42 @@ fn timer_component(seconds: Memo<u32>) -> impl IntoView {
     }
 }
 
-fn get_tile_from_position(position: Vec2, sensitivity: f32) -> Option<Tile4x4> {
-    let y = position.y - TOP_OFFSET;
-    let x = position.x - LEFT_OFFSET;
+// fn get_tile_from_position(position: Vec2, sensitivity: f32) -> Option<Tile4x4> {
+//     let y = position.y - TOP_OFFSET;
+//     let x = position.x - LEFT_OFFSET;
 
-    if x < 0.0 || y < 0.0 {
-        return None;
-    }
+//     if x < 0.0 || y < 0.0 {
+//         return None;
+//     }
 
-    const TILE_SIZE: f32 = BOARD_SIZE / 4.0;
+//     const TILE_SIZE: f32 = BOARD_SIZE / 4.0;
 
-    let x = x / TILE_SIZE;
-    let y = y / TILE_SIZE;
-    let x = x as u8;
-    let y = y as u8;
+//     let x = x / TILE_SIZE;
+//     let y = y / TILE_SIZE;
+//     let x = x as u8;
+//     let y = y as u8;
 
-    let tile = Tile4x4::try_new(x, y)?;
+//     let tile = Tile4x4::try_new(x, y)?;
 
-    let p = glam::f32::Vec2 {
-        x: LEFT_OFFSET - position.x,
-        y: TOP_OFFSET - position.y,
-    };
+//     let p = glam::f32::Vec2 {
+//         x: LEFT_OFFSET - position.x,
+//         y: TOP_OFFSET - position.y,
+//     };
 
-    let c = tile.get_center(TILE_SIZE);
-    let distances = ((c + p) / TILE_SIZE).abs();
+//     let c = tile.get_center(TILE_SIZE);
+//     let distances = ((c + p) / TILE_SIZE).abs();
 
-    // log!(
-    //     "Position: {position}\n
-    // Tile {tile}\n
-    //  Sensitivity {sensitivity}\n
-    //  Distances {distances}"
-    // );
+//     // log!(
+//     //     "Position: {position}\n
+//     // Tile {tile}\n
+//     //  Sensitivity {sensitivity}\n
+//     //  Distances {distances}"
+//     // );
 
-    if distances.x <= sensitivity && distances.y <= sensitivity {
-        //leptos::logging::log!("GIC: {gic:?}");
-        Some(tile)
-    } else {
-        None
-    }
-}
+//     if distances.x <= sensitivity && distances.y <= sensitivity {
+//         //leptos::logging::log!("GIC: {gic:?}");
+//         Some(tile)
+//     } else {
+//         None
+//     }
+// }

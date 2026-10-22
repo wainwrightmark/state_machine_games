@@ -23,7 +23,7 @@ pub fn run_game<GS: GameState>(
 
     //let ms_until_transition: Arc<Mutex<Option<f64>>> = Arc::new(Mutex::new(Some(0.0)));
     let receiver = Arc::new(receiver);
-
+    #[expect(deprecated)]
     leptos_use::use_raf_fn(move |args| {
         step_game(
             state.clone(),
