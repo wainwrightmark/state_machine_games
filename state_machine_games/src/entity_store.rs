@@ -89,13 +89,13 @@ impl<E: GameEntity> StoredEntity<E> {
         !self.animations.is_empty()
     }
 
-    pub(crate) fn kill(&mut self) -> bool {
+    pub(crate) fn kill(&mut self, segment: &E::Segment) -> bool {
         match self.lifecycle {
             EntityLifecycle::Alive => {
                 let previous_animations = std::mem::take(&mut self.animations);
                 self.animations = self
                     .entity
-                    .on_death(&mut self.artifact, previous_animations);
+                    .on_death(segment, &mut self.artifact, previous_animations);
                 self.lifecycle = EntityLifecycle::Dead;
             }
             EntityLifecycle::Dead => {}

@@ -30,7 +30,7 @@ impl<'s, E: GameEntity> GeneralEntityReceiver<'s, E> {
             {
                 Ok(index) => match self.store.entities.get_mut(index) {
                     Some(ab) => {
-                        if ab.kill() {
+                        if ab.kill(&self.store.segment) {
                             self.store.entities.remove(index);
                             self.changed = true
                         }

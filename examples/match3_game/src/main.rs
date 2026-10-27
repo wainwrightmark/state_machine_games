@@ -348,6 +348,7 @@ impl GameEntity for Match3TileEntity {
 
     fn on_death(
         &self,
+        new_segment: &Self::Segment,
         artifact: &mut Self::Artifact,
         _previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {

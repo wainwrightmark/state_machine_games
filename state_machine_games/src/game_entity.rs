@@ -19,8 +19,10 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
     #[allow(unused)]
     /// animations to run when this entity dies
     /// the entity will not be deleted until all animations have finished
+    /// `Self` in this case is the previous value of the entity from the last time it was present
     fn on_death(
         &self,
+        new_segment: &Self::Segment,
         artifact: &mut Self::Artifact,
         previous_animations: AnimationList<Self::Artifact>,
     ) -> AnimationList<Self::Artifact> {
