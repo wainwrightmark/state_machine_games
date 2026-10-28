@@ -192,6 +192,7 @@ impl GameEntity for ChessSquareEntity {
     type Artifact = ChessSquareArtifact;
     type Key = u8;
     type Segment = ();
+    type Animations = ();
 
     fn key(&self) -> Self::Key {
         self.square.to_int()
@@ -205,11 +206,10 @@ impl GameEntity for ChessSquareEntity {
         entities
     }
 
-    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        ChessSquareArtifact {
+    fn on_new(&self) -> (Self::Artifact, Self::Animations) {
+        (ChessSquareArtifact {
             square: self.square,
-        }
-        .with_animations([])
+        }, ())
     }
 
     fn on_update(
@@ -217,9 +217,9 @@ impl GameEntity for ChessSquareEntity {
         _artifact: &mut Self::Artifact,
         _former_entity_state: EntityLifecycle,
         _previous_value: Self,
-        _previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact> {
-        AnimationList::EMPTY
+        _previous_animations: Self::Animations,
+    ) -> Self::Animations {
+        ()
     }
 }
 
@@ -279,6 +279,7 @@ impl GameEntity for BoardAnnotation {
     type Artifact = Self;
     type Key = Self;
     type Segment = BoardAnnotationsSegment;
+    type Animations = ();
 
     fn key(&self) -> Self::Key {
         *self
@@ -302,8 +303,8 @@ impl GameEntity for BoardAnnotation {
         })
     }
 
-    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        self.with_animations([])
+    fn on_new(&self) -> (Self::Artifact, Self::Animations) {
+        (*self, ())
     }
 
     fn on_update(
@@ -311,8 +312,8 @@ impl GameEntity for BoardAnnotation {
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityLifecycle,
         _previous_value: Self,
-        previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact> {
+        previous_animations: Self::Animations,
+    ) -> Self::Animations {
         *artifact = *self;
         previous_animations
     }
@@ -360,6 +361,7 @@ impl GameEntity for ChessPiece {
     type Artifact = Self;
     type Key = Self;
     type Segment = ChessPosition;
+    type Animations = ();
 
     fn key(&self) -> Self::Key {
         *self
@@ -374,8 +376,8 @@ impl GameEntity for ChessPiece {
         entities
     }
 
-    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
-        self.with_animations([])
+    fn on_new(&self) -> (Self::Artifact, Self::Animations) {
+        (*self, ())
     }
 
     fn on_update(
@@ -383,10 +385,10 @@ impl GameEntity for ChessPiece {
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityLifecycle,
         _previous_value: Self,
-        _previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact> {
+        _previous_animations: Self::Animations,
+    ) -> Self::Animations {
         *artifact = *self;
-        AnimationList::EMPTY
+        ()
     }
 }
 

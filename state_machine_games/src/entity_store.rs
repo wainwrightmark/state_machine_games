@@ -40,7 +40,7 @@ impl<E: GameEntity> EntityStore<E> {
 pub struct StoredEntity<E: GameEntity> {
     pub entity: E,
     pub artifact: E::Artifact,
-    pub animations: AnimationList<E::Artifact>,
+    pub animations: E::Animations,
     pub lifecycle: EntityLifecycle,
 }
 
@@ -79,7 +79,7 @@ impl<E: GameEntity> StoredEntity<E> {
     }
 
     pub(crate) fn step_animate(&mut self, delta_ms: f64) -> bool {
-        self.animations.inner.retain_mut(|animation| {
+        self.animations.retain_mut(|animation| {
             match animation.step(&mut self.artifact, delta_ms) {
                 AnimateResult::Continue => true,
                 AnimateResult::FinishStep => false,

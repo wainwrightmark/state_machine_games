@@ -9,6 +9,8 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
     //The type of the state that these entities can be gotten from
     type Segment: PartialEq + Clone + Send + Sync + 'static + Sized;
 
+    type Animations: AnimationCollection<Self::Artifact>;
+
     fn key(&self) -> Self::Key;
 
     //todo give the game state the opportunity to promise that the entities are sorted
@@ -24,21 +26,21 @@ pub trait GameEntity: PartialEq + Send + Sync + 'static + Sized {
         &self,
         new_segment: &Self::Segment,
         artifact: &mut Self::Artifact,
-        previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact> {
-        AnimationList::EMPTY
+        previous_animations: Self::Animations,
+    ) -> Self::Animations {
+        Self::Animations::default()
     }
 
     /// what to do when this entity is new
-    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>);
+    fn on_new(&self) -> (Self::Artifact, Self::Animations);
 
     fn on_update(
         &self,
         artifact: &mut Self::Artifact,
         former_entity_lifecycle: EntityLifecycle,
         previous_value: Self,
-        previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact>; //todo try mutating the animations
+        previous_animations: Self::Animations,
+    ) -> Self::Animations; //todo try mutating the animations
 
     fn track_entities(state_signal: Signal<Self::Segment>) -> RwSignal<EntityStore<Self>> {
         let store1: RwSignal<EntityStore<Self>> =

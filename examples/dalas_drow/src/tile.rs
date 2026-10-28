@@ -103,7 +103,7 @@ impl TileEntity {
 impl GameEntity for TileEntity {
     type Artifact = TileArtifact;
     type Key = u8;
-
+    type Animations = AnimationList<Self::Artifact>;
     type Segment = DalasDrowGameState;
 
     fn key(&self) -> Self::Key {

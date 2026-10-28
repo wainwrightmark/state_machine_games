@@ -113,6 +113,7 @@ impl GameEntity for Circle {
     type Artifact = CircleArtifact;
     type Key = Key;
     type Segment = CounterGameState;
+    type Animations = AnimationList<Self::Artifact>;
 
     fn get_entities(game_state: &Self::Segment) -> impl Iterator<Item = Self> {
         let mut arr: Vec<_> = (0u32..game_state.n as u32).collect();

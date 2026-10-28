@@ -18,6 +18,7 @@ pub mod svg_coordinates;
 pub mod tiny_rng;
 pub mod value_watcher;
 pub mod easings;
+pub mod tuples_animation_collection;
 
 pub mod prelude {
     pub use crate::animate_result::*;
@@ -43,4 +44,6 @@ pub mod prelude {
     pub use simple_color::*;
 
     pub use glam::*;
+
+    pub use paste::paste;
 }

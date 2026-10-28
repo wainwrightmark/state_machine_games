@@ -3,9 +3,46 @@ use std::marker::PhantomData;
 use crate::prelude::*;
 use glam::{Vec2, f32};
 
+pub trait AnimationCollection<T: GameArtifact>: Default + Send + Sync + 'static {
+    fn is_empty(&self) -> bool;
+
+    /// Remove all elements where the function returns false
+    fn retain_mut(&mut self, f: impl FnMut(&mut AnimationStage<T>) -> bool);
+
+    fn clear(&mut self);
+}
+
+impl<T: GameArtifact> AnimationCollection<T> for () {
+    fn is_empty(&self) -> bool {
+        true
+    }
+
+    fn retain_mut(&mut self, _f: impl FnMut(&mut AnimationStage<T>) -> bool) {
+        ()
+    }
+
+    fn clear(&mut self) {
+        ()
+    }
+}
+
 /// A set of animations to be run in parallel
 pub struct AnimationList<T: GameArtifact> {
     pub inner: Vec<AnimationStage<T>>,
+}
+
+impl<T: GameArtifact> AnimationCollection<T> for AnimationList<T> {
+    fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    fn retain_mut(&mut self, f: impl FnMut(&mut AnimationStage<T>) -> bool) {
+        self.inner.retain_mut(f);
+    }
+
+    fn clear(&mut self) {
+        self.inner.clear();
+    }
 }
 
 impl<T: GameArtifact> Default for AnimationList<T> {
@@ -27,14 +64,6 @@ impl<T: GameArtifact> AnimationList<T> {
             .collect();
 
         Self { inner }
-    }
-
-    pub const fn is_empty(&self) -> bool {
-        self.inner.is_empty()
-    }
-
-    pub fn clear(&mut self) {
-        self.inner.clear();
     }
 
     pub fn push(&mut self, t: AnimationStage<T>) {

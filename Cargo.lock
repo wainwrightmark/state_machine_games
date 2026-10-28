@@ -3453,6 +3453,7 @@ dependencies = [
  "insta",
  "leptos",
  "leptos-use 0.20.0",
+ "paste",
  "rand 0.10.3",
  "serde",
  "simple_color",

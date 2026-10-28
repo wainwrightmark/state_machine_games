@@ -53,6 +53,7 @@ impl GameEntity for LozengeEntity {
     type Artifact = LozengeArtifact;
     type Key = usize;
     type Segment = DalasDrowGameState;
+    type Animations = AnimationList<Self::Artifact>;
 
     fn key(&self) -> Self::Key {
         self.index

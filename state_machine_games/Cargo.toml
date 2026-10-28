@@ -19,6 +19,7 @@ const_sized_bit_set = {version = "0.5.0", features = ["std"]}
 #simple_color = {path='C:\Source\rust\simple_color'}
 simple_color = {git='https://github.com/wainwrightmark/simple_color'}
 serde = { version = ">=1", features = ["derive"] }
+paste = "1.0.15"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.4", features = ["wasm_js"] }

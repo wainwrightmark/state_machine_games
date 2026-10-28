@@ -23,7 +23,6 @@ use lozenge_entity::*;
 use state_machine_games::value_watcher::watch_value;
 use tile::*;
 use web_sys::js_sys;
-use ws_core::HasCenter;
 
 use crate::colors::CLASSIC_COLOR_SCHEME;
 use crate::dalas_drow_command::DalasDrowCommand;

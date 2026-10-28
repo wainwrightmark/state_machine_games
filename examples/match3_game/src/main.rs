@@ -3,7 +3,9 @@ use std::sync::mpsc::Sender;
 use geometrid::{prelude::TileMap, vector::Vector};
 use leptos::prelude::*;
 use rand::{Rng, RngExt, SeedableRng};
-use state_machine_games::{delayed_effect::MutationResult, prelude::*};
+use state_machine_games::{
+    define_animation_collection, delayed_effect::MutationResult, prelude::*,
+};
 use strum::{EnumCount, FromRepr};
 
 pub type Match3Tile = geometrid::tile::Tile<8, 8>;
@@ -213,6 +215,8 @@ state_machine_games::define_signal_lens!(TileArtifactXLens, TileArtifact, f32, x
 state_machine_games::define_signal_lens!(TileArtifactYLens, TileArtifact, f32, y);
 state_machine_games::define_signal_lens!(TileArtifactScaleLens, TileArtifact, f32, scale);
 
+define_animation_collection!(TileArtifact, x, y, scale);
+
 impl GameArtifact for TileArtifact {}
 
 impl LeptosRender for TileArtifact {
@@ -321,6 +325,7 @@ impl GameEntity for Match3TileEntity {
     type Artifact = TileArtifact;
     type Key = TileKey;
     type Segment = Match3Game;
+    type Animations = TileArtifactAnimationCollection;
 
     fn get_entities(game_state: &Self::Segment) -> impl Iterator<Item = Self> {
         let selected_tile = game_state.selected_tile;
@@ -348,23 +353,27 @@ impl GameEntity for Match3TileEntity {
 
     fn on_death(
         &self,
-        new_segment: &Self::Segment,
+        _new_segment: &Self::Segment,
         artifact: &mut Self::Artifact,
-        _previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact> {
+        mut previous_animations: Self::Animations,
+    ) -> Self::Animations {
         artifact.selected.set(self.selected);
         artifact.tile.set(self.tile);
 
-        artifact.update_animations([
-            animate_towards::<TileArtifactScaleLens>(0.0, 1.0 / 1000.0).to_stage(),
+        previous_animations.x = Some(
             animate_towards::<TileArtifactXLens>(Self::get_x(self.tile.x()), SCALE as f64 / 1000.0)
                 .to_stage(),
+        );
+        previous_animations.y = Some(
             animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64 / 1000.0)
                 .to_stage(),
-        ])
+        );
+        previous_animations.scale =
+            Some(animate_towards::<TileArtifactScaleLens>(0.0, 1.0 / 1000.0).to_stage());
+        previous_animations
     }
 
-    fn on_new(&self) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+    fn on_new(&self) -> (Self::Artifact, Self::Animations) {
         let artifact = TileArtifact {
             tile: ArcRwSignal::new(self.tile),
             x: ArcRwSignal::new(Self::get_x(self.tile.x())),
@@ -374,13 +383,20 @@ impl GameEntity for Match3TileEntity {
             scale: ArcRwSignal::new(0.0),
         };
 
-        let animations = [
-            animate_towards::<TileArtifactScaleLens>(1.0, 1.0 / 1000.0).to_stage(),
-            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64 / 100.0)
-                .to_stage(),
-        ];
-
-        artifact.with_animations(animations)
+        (
+            artifact,
+            Self::Animations {
+                x: None,
+                y: Some(
+                    animate_towards::<TileArtifactYLens>(
+                        Self::get_y(self.tile.y()),
+                        SCALE as f64 / 100.0,
+                    )
+                    .to_stage(),
+                ),
+                scale: Some(animate_towards::<TileArtifactScaleLens>(1.0, 1.0 / 1000.0).to_stage()),
+            },
+        )
     }
 
     fn on_update(
@@ -388,18 +404,29 @@ impl GameEntity for Match3TileEntity {
         artifact: &mut Self::Artifact,
         _former_entity_state: EntityLifecycle,
         _previous_value: Self,
-        _previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact> {
+        _previous_animations: Self::Animations,
+    ) -> Self::Animations {
         artifact.selected.set(self.selected);
         artifact.tile.set(self.tile);
         //change x,y,selected,scale
-        vec![
-            animate_towards::<TileArtifactXLens>(Self::get_x(self.tile.x()), SCALE as f64 / 1000.0)
+
+        Self::Animations {
+            scale: _previous_animations.scale,
+            x: Some(
+                animate_towards::<TileArtifactXLens>(
+                    Self::get_x(self.tile.x()),
+                    SCALE as f64 / 1000.0,
+                )
                 .to_stage(),
-            animate_towards::<TileArtifactYLens>(Self::get_y(self.tile.y()), SCALE as f64 / 1000.0)
+            ),
+            y: Some(
+                animate_towards::<TileArtifactYLens>(
+                    Self::get_y(self.tile.y()),
+                    SCALE as f64 / 1000.0,
+                )
                 .to_stage(),
-        ]
-        .into()
+            ),
+        }
     }
 }
 
