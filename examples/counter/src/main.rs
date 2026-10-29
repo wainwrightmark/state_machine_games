@@ -190,8 +190,9 @@ pub struct SquareButton {
 impl SingletonEntity for SquareButton {
     type Segment = CounterGameState;
     type Artifact = SquareButtonArtifact;
+    type Animations = AnimationList<Self::Artifact>;
 
-    fn init(segment: &Self::Segment) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+    fn init(segment: &Self::Segment) -> (Self::Artifact, Self::Animations) {
         (
             SquareButtonArtifact {
                 text: RwSignal::new(segment.n.to_string()),
@@ -199,7 +200,7 @@ impl SingletonEntity for SquareButton {
                 y: SQUARE_POSITION.y,
                 size: RwSignal::new(get_size(segment.n)),
             },
-            AnimationList::EMPTY,
+            Self::Animations::default(),
         )
     }
 
@@ -207,8 +208,8 @@ impl SingletonEntity for SquareButton {
         artifact: &mut Self::Artifact,
         current_entity_state: &Self::Segment,
         _former_entity_state: &Self::Segment,
-        _previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact> {
+        _previous_animations: Self::Animations,
+    ) -> Self::Animations {
         artifact.text.set(current_entity_state.n.to_string());
 
         let size_animation =

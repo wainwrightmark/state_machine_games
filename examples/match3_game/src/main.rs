@@ -246,8 +246,9 @@ pub struct ScoreTextEntity {
 impl SingletonEntity for ScoreTextEntity {
     type Artifact = TextArtifact;
     type Segment = u64;
+    type Animations = ();
 
-    fn init(segment: &Self::Segment) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+    fn init(segment: &Self::Segment) -> (Self::Artifact, Self::Animations) {
         let artifact = TextArtifact {
             text: ArcRwSignal::new(format!("Score: {}", *segment)),
             font_size: FONT_SIZE,
@@ -255,17 +256,17 @@ impl SingletonEntity for ScoreTextEntity {
             y: 40.0,
         };
 
-        artifact.with_animations([])
+        (artifact, ())
     }
 
     fn update(
         artifact: &mut Self::Artifact,
         current_segment: &Self::Segment,
         _previous_segment: &Self::Segment,
-        _previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact> {
+        _previous_animations: Self::Animations,
+    ) -> Self::Animations {
         artifact.text.set(format!("Score: {}", *current_segment));
-        AnimationList::EMPTY
+        ()
     }
 }
 
@@ -277,8 +278,9 @@ pub struct MovesLeftEntity {
 impl SingletonEntity for MovesLeftEntity {
     type Artifact = TextArtifact;
     type Segment = u64;
+    type Animations = ();
 
-    fn init(segment: &Self::Segment) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+    fn init(segment: &Self::Segment) -> (Self::Artifact, Self::Animations) {
         let artifact = TextArtifact {
             text: ArcRwSignal::new(format!("Moves Left: {}", *segment)),
             font_size: FONT_SIZE,
@@ -286,17 +288,17 @@ impl SingletonEntity for MovesLeftEntity {
             y: 100.0,
         };
 
-        artifact.with_animations([])
+        (artifact, ())
     }
 
     fn update(
         artifact: &mut Self::Artifact,
         current_segment: &Self::Segment,
         _previous_segment: &Self::Segment,
-        _previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact> {
+        _previous_animations: Self::Animations,
+    ) -> Self::Animations {
         artifact.text.set(format!("Moves: {}", *current_segment));
-        AnimationList::EMPTY
+        ()
     }
 }
 

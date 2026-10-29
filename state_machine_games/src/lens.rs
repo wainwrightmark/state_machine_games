@@ -2,9 +2,11 @@ use std::marker::PhantomData;
 
 use glam::Vec2;
 
-pub trait Lens: std::fmt::Debug + Clone + PartialEq + Send + Sync + 'static {
+pub trait Lens:
+    std::fmt::Debug + Clone + Default + core::any::Any + PartialEq + Send + Sync + 'static
+{
     type Object;
-    type Value: 'static;
+    type Value: core::any::Any + PartialEq + Clone + Send + Sync + Sized + 'static;
 }
 // todo have both types of lens `GetRefLens` and `GetRefMaybeLens` etc.
 // The second type should be automatically inferred from the first
@@ -46,19 +48,33 @@ pub struct IdentityLens<T: std::fmt::Debug + Send + Sync + 'static> {
     phantom: PhantomData<T>,
 }
 
-impl<T: std::fmt::Debug + Send + Sync + 'static> GetRefLens for IdentityLens<T> {
+impl<T: std::fmt::Debug + Send + Sync + 'static> Default for IdentityLens<T> {
+    fn default() -> Self {
+        Self {
+            phantom: Default::default(),
+        }
+    }
+}
+
+impl<T: std::fmt::Debug + PartialEq + Clone + core::any::Any + Send + Sync + 'static> GetRefLens
+    for IdentityLens<T>
+{
     fn get_ref(object: &Self::Object) -> &Self::Value {
         object
     }
 }
 
-impl<T: std::fmt::Debug + Clone + Send + Sync + 'static> GetValueLens for IdentityLens<T> {
+impl<T: std::fmt::Debug + PartialEq + Clone + Send + Sync + 'static> GetValueLens
+    for IdentityLens<T>
+{
     fn get_value(object: &<Self as Lens>::Object) -> <Self as Lens>::Value {
         object.clone()
     }
 }
 
-impl<T: std::fmt::Debug + Send + Sync + 'static> GetMutLens for IdentityLens<T> {
+impl<T: std::fmt::Debug + PartialEq + Clone + core::any::Any + Send + Sync + 'static> GetMutLens
+    for IdentityLens<T>
+{
     fn get_mut(object: &mut Self::Object) -> &mut Self::Value {
         object
     }
@@ -78,7 +94,9 @@ impl<T: std::fmt::Debug + Send + Sync + 'static> PartialEq for IdentityLens<T> {
     }
 }
 
-impl<T: std::fmt::Debug + Send + Sync + 'static> Lens for IdentityLens<T> {
+impl<T: std::fmt::Debug + PartialEq + Clone + core::any::Any + Send + Sync + 'static> Lens
+    for IdentityLens<T>
+{
     type Object = T;
     type Value = T;
 }
@@ -90,6 +108,14 @@ impl<T: std::fmt::Debug + Send + Sync + 'static> Lens for IdentityLens<T> {
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 pub struct Prism2<L1: Lens, L2: Lens<Object = L1::Value>> {
     phantom: PhantomData<(L1, L2)>,
+}
+
+impl<L1: Lens, L2: Lens<Object = L1::Value>> Default for Prism2<L1, L2> {
+    fn default() -> Self {
+        Self {
+            phantom: Default::default(),
+        }
+    }
 }
 
 impl<L1: Lens, L2: Lens<Object = L1::Value>> Lens for Prism2<L1, L2> {
@@ -120,6 +146,16 @@ impl<L1: GetMutLens, L2: Lens<Object = L1::Value> + GetMutLens> GetMutLens for P
 #[derive(Debug, PartialEq, Clone, Copy, Eq)]
 pub struct Prism3<L1: Lens, L2: Lens<Object = L1::Value>, L3: Lens<Object = L2::Value>> {
     phantom: PhantomData<(L1, L2, L3)>,
+}
+
+impl<L1: Lens, L2: Lens<Object = L1::Value>, L3: Lens<Object = L2::Value>> Default
+    for Prism3<L1, L2, L3>
+{
+    fn default() -> Self {
+        Self {
+            phantom: Default::default(),
+        }
+    }
 }
 
 impl<L1: Lens, L2: Lens<Object = L1::Value>, L3: Lens<Object = L2::Value>> Lens
@@ -212,7 +248,7 @@ impl_set_lens!((L0, l0), (L1, l1), (L2, l2), (L3, l3));
 #[macro_export]
 macro_rules! define_lens {
     ($L:ident, $O:ty, $V:ty, $p:ident) => {
-        #[derive(Debug, Clone, PartialEq, Eq)]
+        #[derive(Debug, Clone, PartialEq, Eq, Default)]
         pub struct $L;
 
         impl $crate::lens::Lens for $L {
@@ -243,7 +279,7 @@ macro_rules! define_lens {
 #[macro_export]
 macro_rules! define_signal_lens {
     ($L:ident, $O:ty, $V:ty, $p:ident) => {
-        #[derive(Debug, Clone, PartialEq, Eq)]
+        #[derive(Debug, Clone, PartialEq, Eq, Default)]
         pub struct $L;
 
         impl $crate::lens::Lens for $L {
@@ -258,19 +294,21 @@ macro_rules! define_signal_lens {
         }
 
         impl $crate::lens::GetValueLens for $L {
-            fn get_value(object: &Self::Object)-> Self::Value{
+            fn get_value(object: &Self::Object) -> Self::Value {
                 object.$p.get_untracked()
             }
         }
 
         impl $crate::lens::SetValueLens for $L {
-            fn set(object: &mut <Self as $crate::lens::Lens>::Object, value: <Self as $crate::lens::Lens>::Value) {
+            fn set(
+                object: &mut <Self as $crate::lens::Lens>::Object,
+                value: <Self as $crate::lens::Lens>::Value,
+            ) {
                 object.$p.set(value)
             }
         }
     };
 }
-
 
 define_lens!(Vec2XLens, Vec2, f32, x);
 define_lens!(Vec2YLens, Vec2, f32, y);

@@ -7,7 +7,7 @@ use leptos::{
 
 pub struct SingletonEntityStore<E: SingletonEntity> {
     pub artifact: E::Artifact,
-    pub animations: AnimationList<E::Artifact>,
+    pub animations: E::Animations,
     pub segment: E::Segment,
 }
 
@@ -26,7 +26,7 @@ impl<E: SingletonEntity> SingletonEntityStore<E> {
     }
 
     pub(crate) fn step_animate(&mut self, delta_ms: f64) -> bool {
-        self.animations.inner.retain_mut(|animation| {
+        self.animations.retain_mut(|animation| {
             match animation.step(&mut self.artifact, delta_ms) {
                 AnimateResult::Continue => true,
                 AnimateResult::FinishStep => false,
@@ -41,15 +41,16 @@ pub trait SingletonEntity: Send + Sync + 'static + Sized {
     //The type of the state that this singleton can be derived from
     type Segment: PartialEq + Clone + Send + Sync + 'static + Sized;
     type Artifact: GameArtifact;
+    type Animations: AnimationCollection<Self::Artifact>;
 
-    fn init(segment: &Self::Segment) -> (Self::Artifact, AnimationList<Self::Artifact>);
+    fn init(segment: &Self::Segment) -> (Self::Artifact, Self::Animations);
 
     fn update(
         artifact: &mut Self::Artifact,
         current_segment: &Self::Segment,
         previous_segment: &Self::Segment,
-        previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact>;
+        previous_animations: Self::Animations,
+    ) -> Self::Animations;
 
     fn render_singleton<LR: LeptosRender<Artifact = Self::Artifact>>(
         state_signal: Signal<Self::Segment>,
@@ -57,7 +58,7 @@ pub trait SingletonEntity: Send + Sync + 'static + Sized {
         // leptos::logging::log!("Rendering singleton for {}", std::any::type_name::<Self>());
         let store1: RwSignal<SingletonEntityStore<Self>> = Self::track_singleton(state_signal);
 
-        move || LR::render(store1.read().artifact.clone()) 
+        move || LR::render(store1.read().artifact.clone())
     }
 
     fn track_singleton(

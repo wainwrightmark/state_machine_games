@@ -502,15 +502,15 @@ impl GameArtifact for EvaluationResource {}
 
 impl SingletonEntity for EvaluationResource {
     type Segment = ChessPosition;
-
     type Artifact = Self;
+    type Animations = ();
 
-    fn init(segment: &Self::Segment) -> (Self::Artifact, AnimationList<Self::Artifact>) {
+    fn init(segment: &Self::Segment) -> (Self::Artifact, Self::Animations) {
         (
             Self {
                 value: RwSignal::new(segment.slow_evaluate()),
             },
-            Default::default(),
+            ()
         )
     }
 
@@ -518,9 +518,9 @@ impl SingletonEntity for EvaluationResource {
         artifact: &mut Self::Artifact,
         current_segment: &Self::Segment,
         _previous_segment: &Self::Segment,
-        _previous_animations: AnimationList<Self::Artifact>,
-    ) -> AnimationList<Self::Artifact> {
+        _previous_animations: Self::Animations,
+    ) -> Self::Animations {
         artifact.value.set(current_segment.slow_evaluate());
-        Default::default()
+        ()
     }
 }

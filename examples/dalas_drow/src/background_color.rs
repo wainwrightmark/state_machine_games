@@ -41,6 +41,7 @@ pub struct BackgroundTargetColor {
 impl SingletonEntity for BackgroundColor {
     type Segment = Srgba;
     type Artifact = Self;
+    type Animations = AnimationList<Self::Artifact>;
 
     fn init(segment: &Self::Segment) -> (Self::Artifact, AnimationList<Self::Artifact>) {
         (

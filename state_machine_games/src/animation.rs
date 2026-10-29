@@ -1,4 +1,7 @@
-use std::marker::PhantomData;
+use std::{
+    any::{Any, TypeId},
+    marker::PhantomData,
+};
 
 use crate::prelude::*;
 use glam::{Vec2, f32};
@@ -114,6 +117,37 @@ impl<TArtifact: GameArtifact> AnimationStage<TArtifact> {
             }
         }
     }
+
+    pub fn end_value_for_lens<L: Lens<Object = TArtifact>>(&self, lens: L) -> Option<L::Value> {
+        let mut end_value: Option<<L as Lens>::Value> = None;
+        let mut next: Option<&Self> = Some(self);
+
+        let type_id = Any::type_id(&lens);
+
+        'l: while let Some(current) = next {
+            if current.loop_next {
+                return None;
+            }
+
+            if let Some(target_value) = current
+                .current
+                .as_ref()
+                .target_value_if_lens(type_id)
+                .and_then(|x| x.downcast_ref::<L::Value>())
+            {
+                end_value = Some(target_value.clone());
+            }
+
+            match &current.next {
+                Some(n) => {
+                    next = Some(n.as_ref());
+                }
+                None => break 'l,
+            }
+        }
+
+        end_value
+    }
 }
 
 impl<T: GameArtifact> Clone for AnimationStage<T> {
@@ -149,6 +183,10 @@ impl<TArtifact: GameArtifact> Animation<TArtifact> for AnimateWait {
     fn box_clone(&self) -> Box<dyn Animation<TArtifact>> {
         let c: AnimateWait = self.clone();
         Box::new(c)
+    }
+
+    fn target_value_if_lens(&self, _lens_type_id: TypeId) -> Option<&dyn Any> {
+        None
     }
 }
 
@@ -272,7 +310,40 @@ impl<TArtifact: GameArtifact> AnimationStage<TArtifact> {
     }
 }
 
-pub trait Animation<TArtifact: GameArtifact>: Send + Sync + 'static {
+pub trait UpdateIfTargetDifferent<TArtifact: GameArtifact> {
+    fn update_if_target_different<L: Lens<Object = TArtifact>>(
+        &mut self,
+        lens: L,
+        target: L::Value,
+        f: impl FnOnce() -> AnimationStage<TArtifact>,
+    );
+}
+
+impl<TArtifact: GameArtifact> UpdateIfTargetDifferent<TArtifact> for Option<AnimationStage<TArtifact>> {
+    fn update_if_target_different<L: Lens<Object = TArtifact>>(
+        &mut self,
+        lens: L,
+        target: L::Value,
+        f: impl FnOnce() -> AnimationStage<TArtifact>,
+    ) {
+        {
+            match self {
+                Some(current_animation) => {
+                    if current_animation
+                        .end_value_for_lens(lens)
+                        .is_some_and(|x| x.eq(&target))
+                    {
+                        *self = Some(f())
+                    }
+                    // if current_animation.end_value_for_lens(lens)
+                }
+                None => *self = Some(f()),
+            }
+        }
+    }
+}
+
+pub trait Animation<TArtifact: GameArtifact>: std::any::Any + Send + Sync + 'static {
     fn step(&mut self, object: &mut TArtifact, delta_ms: f64) -> AnimateResult;
 
     fn is_finished(&self, target: &TArtifact) -> bool;
@@ -289,7 +360,14 @@ pub trait Animation<TArtifact: GameArtifact>: Send + Sync + 'static {
             loop_next: false,
         }
     }
+
+    /// Returns the target value if one exists and the lens of this animation matches the given type id
+    fn target_value_if_lens(&self, lens_type_id: TypeId) -> Option<&dyn Any>;
 }
+
+// pub trait AnimationTargetValue<TArtifact: GameArtifact, V> : Animation<TArtifact>{
+//     fn target_value(&self)-> V;
+// }
 
 pub struct AnimateEmpty;
 
@@ -305,6 +383,10 @@ impl<TArtifact: GameArtifact> Animation<TArtifact> for AnimateEmpty {
     fn box_clone(&self) -> Box<dyn Animation<TArtifact>> {
         Box::new(Self)
     }
+
+    fn target_value_if_lens(&self, _lens_type_id: TypeId) -> Option<&dyn Any> {
+        None
+    }
 }
 
 pub trait EaseFunction<V>: Clone + Copy + Send + Sync + 'static {
@@ -313,14 +395,18 @@ pub trait EaseFunction<V>: Clone + Copy + Send + Sync + 'static {
 
 #[derive(Debug)]
 pub struct AnimateSetValue<
-    Lens: SetValueLens<Object: GameArtifact, Value: Send + Sync + 'static + Clone + PartialEq>,
+    Lens: SetValueLens<Object: GameArtifact, Value: Send + Sync + 'static + Clone + PartialEq + Sized>,
 > {
     target_value: Lens::Value,
     phantom: PhantomData<Lens>,
 }
 
-impl<Lens: SetValueLens<Object: GameArtifact, Value: Send + Sync + 'static + Clone + PartialEq>>
-    AnimateSetValue<Lens>
+impl<
+    Lens: SetValueLens<
+            Object: GameArtifact,
+            Value: std::any::Any + Send + Sync + 'static + Clone + PartialEq + Sized,
+        >,
+> AnimateSetValue<Lens>
 {
     pub const fn new(target_value: Lens::Value) -> Self {
         Self {
@@ -328,6 +414,16 @@ impl<Lens: SetValueLens<Object: GameArtifact, Value: Send + Sync + 'static + Clo
             phantom: PhantomData,
         }
     }
+
+    // pub fn get_end_value_for_lens<Lens2 : SetValueLens<Object = Lens::Object, Value : Sized>>(&self, option: &mut Option< Lens2::Value>){
+    //     if TypeId::of::<Lens2>()  == TypeId::of::<Lens>(){
+    //         let tv: Lens::Value = self.target_value.clone();
+
+    //         let v2 = std::any::Any::type_id(&self) tv.downcast_ref();
+    //         let v2: Lens2::Value = unsafe{ std::mem::transmute(tv)};
+    //         *option = Some(v2);
+    //     }
+    // }
 }
 
 impl<Lens: SetValueLens<Object: GameArtifact, Value: ApproachValue>> Clone
@@ -357,6 +453,14 @@ impl<
     fn box_clone(&self) -> Box<dyn Animation<Lens::Object>> {
         let clone: AnimateSetValue<Lens> = self.clone();
         Box::new(clone)
+    }
+
+    fn target_value_if_lens(&self, lens_type_id: TypeId) -> Option<&dyn Any> {
+        if lens_type_id == Lens::default().type_id() {
+            Some(&self.target_value)
+        } else {
+            None
+        }
     }
 }
 
@@ -459,6 +563,14 @@ impl<
         let clone: AnimateSpringTowards<Lens> = self.clone();
         Box::new(clone)
     }
+
+    fn target_value_if_lens(&self, lens_type_id: TypeId) -> Option<&dyn Any> {
+        if lens_type_id == Lens::default().type_id() {
+            Some(&self.target_value)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -516,6 +628,14 @@ impl<
         let clone: AnimateMoveTowards<T, V, Lens> = self.clone();
         Box::new(clone)
     }
+
+    fn target_value_if_lens(&self, lens_type_id: TypeId) -> Option<&dyn Any> {
+        if lens_type_id == Lens::default().type_id() {
+            Some(&self.target_value)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -570,6 +690,14 @@ impl<
             progress_per_ms: *progress_per_ms,
             func: func.clone(),
         })
+    }
+
+    fn target_value_if_lens(&self, lens_type_id: TypeId) -> Option<&dyn Any> {
+        if lens_type_id == Lens::default().type_id() {
+            Some(&self.to)
+        } else {
+            None
+        }
     }
 }
 
