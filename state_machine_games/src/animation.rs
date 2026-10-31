@@ -331,7 +331,7 @@ impl<TArtifact: GameArtifact> UpdateIfTargetDifferent<TArtifact> for Option<Anim
                 Some(current_animation) => {
                     if current_animation
                         .end_value_for_lens(lens)
-                        .is_some_and(|x| x.eq(&target))
+                        .is_some_and(|x| !x.eq(&target))
                     {
                         *self = Some(f())
                     }
